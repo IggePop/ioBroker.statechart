@@ -28,7 +28,7 @@
     "acorn": "^8.19.0",
     "acorn-walk": "^8.3.5",
     "suncalc": "^1.9.0",
-    "xstate": "^5.33.2"
+    "xstate": "^5.33.3"
   },
   "devDependencies": {
     "@alcalzone/release-script": "^5.2.1",
