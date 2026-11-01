@@ -34,7 +34,11 @@ jobs:
           lint: true
 
   # The built adapter (build) and admin tab (admin/build) are committed, so the adapter can be installed
-  # directly from GitHub. This job fails if they were not rebuilt and committed after changes of src or admin/src.
+  # directly from GitHub.
+  # - Pull requests: fails if they were not rebuilt and committed after changes of src or admin/src.
+  #   Dependabot cannot rebuild them, so its pull requests are only built, not compared.
+  # - Pushes to main (e.g. a merged Dependabot pull request): an outdated build is rebuilt and committed.
+  #   The push uses AUTO_MERGE_TOKEN: it passes the rules of main (admin) and triggers this workflow again.
   check-build:
     if: contains(github.event.head_commit.message, '[skip ci]') == false
 
@@ -42,6 +46,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          token: ${{ github.event_name == 'push' && secrets.AUTO_MERGE_TOKEN || github.token }}
       - uses: actions/setup-node@v7
         with:
           node-version: '22.x'
@@ -49,12 +55,26 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Check that the committed build and admin/build are up to date
+        if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
         run: |
           if ! git diff --quiet -- build admin/build || [ -n "$(git ls-files --others --exclude-standard -- build admin/build)" ]; then
             git status --short -- build admin/build
             echo "::error::build or admin/build is outdated. Run 'npm run build' and commit both."
             exit 1
           fi
+      - name: Commit the rebuilt build and admin/build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git add -A -- build admin/build
+          if git diff --cached --quiet; then
+            echo "build and admin/build are up to date"
+            exit 0
+          fi
+          git status --short -- build admin/build
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Rebuild build and admin/build"
+          git push
 
   # Runs adapter tests on all supported node versions and OSes
   adapter-tests:

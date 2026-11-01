@@ -10,6 +10,22 @@ updates:
     assignees:
       - IggePop
     versioning-strategy: increase
+    ignore:
+      # @iobroker/adapter-react-v5 requires MUI 6 and React 18 (peer dependencies), so their major updates
+      # cannot be installed. Update them together with a new version of @iobroker/adapter-react-v5.
+      - dependency-name: "@mui/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      # The adapter supports Node.js 22: the types must not contain APIs of newer versions
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"

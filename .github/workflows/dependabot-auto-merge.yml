@@ -1,27 +1,40 @@
-# Automatically merge Dependabot PRs when version comparison is within the range
-# that is configured in .github/auto-merge.yml
+# Enables GitHub's auto-merge for Dependabot pull requests of the following kinds:
+# - patch updates of production dependencies (also indirect ones)
+# - patch and minor updates of development dependencies
+# GitHub merges them (squash) when the required checks of main have passed.
+# Other updates, e.g. major updates, have to be merged by hand.
 
 name: Auto-Merge Dependabot PRs
 
 on:
-  # WARNING: This needs to be run in the PR base, DO NOT build untrusted code in this action
+  # WARNING: This runs in the PR base with access to the secrets, DO NOT check out or build the PR code here
   # details under https://github.blog/changelog/2021-02-19-github-actions-workflows-triggered-by-dependabot-prs-will-run-with-read-only-permissions/
   pull_request_target:
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   auto-merge:
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Check if PR should be auto-merged
-        uses: ahmadnassri/action-dependabot-auto-merge@v2
+      - name: Read the metadata of the update
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
         with:
-          # In order to use this, you need to go to https://github.com/settings/tokens and
-          # create a Personal Access Token with the permission "public_repo".
-          # Enter this token in your repository settings under "Secrets" and name it AUTO_MERGE_TOKEN
-          github-token: ${{ secrets.AUTO_MERGE_TOKEN }}
-          # By default, squash and merge, so Github chooses nice commit messages
-          command: squash and merge
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge
+        if: |
+          (steps.metadata.outputs.dependency-type != 'direct:development' &&
+           steps.metadata.outputs.update-type == 'version-update:semver-patch') ||
+          (steps.metadata.outputs.dependency-type == 'direct:development' &&
+           (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+            steps.metadata.outputs.update-type == 'version-update:semver-minor'))
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          # a personal access token (permission "public_repo"), so the merge triggers the workflows on main
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}

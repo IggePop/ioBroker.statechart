@@ -571,6 +571,14 @@ not run a build. After changes in `src` or `admin/src`, run `npm run build` and 
 `admin/build` as well. The workflow job `check-build` fails if they are outdated. The source maps are not
 committed.
 
+**Dependabot** proposes updates monthly. Patch updates (and minor updates of development dependencies) are
+merged automatically when the checks pass, which are required for `main`. Dependabot cannot rebuild the
+committed build, so `check-build` does not compare it in Dependabot pull requests. Instead, after every push to
+`main`, it rebuilds `build` and `admin/build` and commits them if they changed. The workflows need the secret
+`AUTO_MERGE_TOKEN`, a personal access token with the permission `public_repo`. Major updates of MUI, React and
+`@types/node` are ignored: `@iobroker/adapter-react-v5` requires MUI 6 and React 18, and the adapter supports
+Node.js 22.
+
 | Path | Content |
 |---|---|
 | `src/main.ts` | Adapter: loads the charts, subscribes the inputs, restarts a chart when it is saved |
