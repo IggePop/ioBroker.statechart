@@ -1,5 +1,11 @@
 import { expect } from "chai";
-import { getDeclarations, validateChart, validateCode, validateTransitionLabel } from "./chart-validation";
+import {
+    getDeclarations,
+    quoteChangeArguments,
+    validateChart,
+    validateCode,
+    validateTransitionLabel,
+} from "./chart-validation";
 import type { ChartSymbol } from "./chart-model";
 import type { Diagnostic } from "./chart-validation";
 
@@ -62,6 +68,47 @@ describe("chart-validation => validateCode", () => {
         expect(summarize(validateCode(code, "expression", symbols), code)).to.deep.equal([
             'error: Unexpected "; light = 1" @; light = 1',
         ]);
+    });
+});
+
+describe("chart-validation => change detection", () => {
+    it("accepts variables of the chart, also as string", () => {
+        const code = 'hasChanged(motion) && hasChangedTo(light, true) && hasChangedFrom("count", 0)';
+        expect(validateCode(code, "expression", symbols)).to.deep.equal([]);
+    });
+
+    it("rejects other arguments", () => {
+        const code = 'hasChanged(motion + 1) || hasChanged() || hasChangedTo("x", 1) || hasChanged(Math)';
+        expect(summarize(validateCode(code, "expression", symbols), code)).to.deep.equal([
+            "error: hasChanged() needs a variable of the chart as first argument @motion + 1",
+            "error: hasChanged() needs a variable of the chart as first argument @hasChanged()",
+            'error: hasChangedTo() needs a variable of the chart as first argument @"x"',
+            "error: hasChanged() needs a variable of the chart as first argument @Math",
+        ]);
+    });
+
+    it("reports an unknown variable only once", () => {
+        const code = "hasChanged(motoin)";
+        expect(summarize(validateCode(code, "expression", symbols), code)).to.deep.equal([
+            'error: Unknown variable "motoin" @motoin',
+        ]);
+    });
+
+    it("passes the names of the variables instead of their values", () => {
+        expect(
+            quoteChangeArguments('hasChangedTo(motion, true) && !hasChanged("light") && motion', "expression"),
+        ).to.deep.equal({
+            code: 'hasChangedTo("motion", true) && !hasChanged("light") && motion',
+            names: ["motion", "light"],
+        });
+        expect(quoteChangeArguments("if (hasChanged(count)) { log(count); }", "statements").code).to.equal(
+            'if (hasChanged("count")) { log(count); }',
+        );
+        // code with syntax errors is not executed anyway
+        expect(quoteChangeArguments("hasChanged(motion", "expression")).to.deep.equal({
+            code: "hasChanged(motion",
+            names: [],
+        });
     });
 });
 

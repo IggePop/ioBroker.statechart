@@ -31,6 +31,7 @@ __export(chart_validation_exports, {
   GLOBALS: () => GLOBALS,
   getDeclarations: () => getDeclarations,
   getFunctionNames: () => getFunctionNames,
+  quoteChangeArguments: () => quoteChangeArguments,
   validateChart: () => validateChart,
   validateCode: () => validateCode,
   validateTransitionLabel: () => validateTransitionLabel
@@ -117,8 +118,35 @@ function validateCode(code, kind, symbols, offset = 0, functionNames = []) {
     }
   });
   const inputs = new Set(symbols.filter((s) => s.scope === "input").map((s) => s.name));
-  const known = /* @__PURE__ */ new Set([...symbols.map((s) => s.name), ...functionNames]);
+  const symbolNames = new Set(symbols.map((s) => s.name));
+  const known = /* @__PURE__ */ new Set([...symbolNames, ...functionNames]);
   const diagnostics = [];
+  walk.simple(parsed.ast, {
+    CallExpression(node) {
+      if (node.callee.type !== "Identifier" || !import_chart_helpers.CHANGE_HELPERS.has(node.callee.name)) {
+        return;
+      }
+      const arg = node.arguments[0];
+      let valid;
+      if (arg?.type === "Identifier") {
+        valid = symbolNames.has(arg.name) || !(known.has(arg.name) || declared.has(arg.name) || GLOBALS.has(arg.name));
+      } else {
+        valid = arg?.type === "Literal" && typeof arg.value === "string" && symbolNames.has(arg.value);
+      }
+      if (!valid) {
+        const { start, end } = arg ?? node;
+        diagnostics.push(
+          createDiagnostic(
+            start + offset,
+            end + offset,
+            "error",
+            "%s() needs a variable of the chart as first argument",
+            [node.callee.name]
+          )
+        );
+      }
+    }
+  });
   for (const { node, write } of references) {
     const from = node.start + offset;
     const to = node.end + offset;
@@ -194,6 +222,33 @@ function getDeclarations(code) {
 function getFunctionNames(chart) {
   return (chart.functions || []).flatMap((fn) => getDeclarations(fn.code).map((d) => d.name));
 }
+function quoteChangeArguments(code, kind) {
+  const parsed = code.trim() ? parseCode(code, kind) : null;
+  if (!parsed || "diagnostic" in parsed) {
+    return { code, names: [] };
+  }
+  const names = /* @__PURE__ */ new Set();
+  const replacements = [];
+  walk.simple(parsed.ast, {
+    CallExpression(node) {
+      const arg = node.arguments[0];
+      if (node.callee.type !== "Identifier" || !import_chart_helpers.CHANGE_HELPERS.has(node.callee.name)) {
+        return;
+      }
+      if (arg?.type === "Identifier") {
+        replacements.push(arg);
+        names.add(arg.name);
+      } else if (arg?.type === "Literal" && typeof arg.value === "string") {
+        names.add(arg.value);
+      }
+    }
+  });
+  let result = code;
+  for (const { start, end, name } of replacements.sort((a, b) => b.start - a.start)) {
+    result = result.substring(0, start) + JSON.stringify(name) + result.substring(end);
+  }
+  return { code: result, names: [...names] };
+}
 function validateChart(chart) {
   const functionNames = getFunctionNames(chart);
   const problems = [];
@@ -240,6 +295,7 @@ function validateChart(chart) {
   GLOBALS,
   getDeclarations,
   getFunctionNames,
+  quoteChangeArguments,
   validateChart,
   validateCode,
   validateTransitionLabel

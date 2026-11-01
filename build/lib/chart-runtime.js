@@ -33,6 +33,7 @@ __export(chart_runtime_exports, {
 });
 module.exports = __toCommonJS(chart_runtime_exports);
 var import_node_crypto = __toESM(require("node:crypto"));
+var import_node_util = require("node:util");
 var import_node_vm = __toESM(require("node:vm"));
 var import_suncalc = __toESM(require("suncalc"));
 var import_xstate = require("xstate");
@@ -72,6 +73,7 @@ class ChartRuntime {
     this.statesById = this.structure.statesById;
     this.sandbox = import_node_vm.default.createContext(this.createHelpers());
     this.hash = getChartHash(chart);
+    this.prepareAllCode();
   }
   structure;
   statesById;
@@ -109,10 +111,60 @@ class ChartRuntime {
   wakeupCause = "input";
   /** name of the input which caused the current wakeup, for the history */
   wakeupInput = null;
+  /** the code of conditions, actions and function blocks prepared for the change detection, by kind and code */
+  preparedCode = /* @__PURE__ */ new Map();
+  /** the variables used by hasChanged() etc. */
+  changeVariables = /* @__PURE__ */ new Set();
+  /** their values at the start of the previous wakeup, null before the second wakeup */
+  previousValues = null;
+  /** their values at the start of the current wakeup, null before the first one */
+  currentValues = null;
   hash;
   actor = null;
   /** the current time, can be replaced in tests */
   now = () => Date.now();
+  /**
+   * Prepares all code of the chart for the change detection, so its variables are known from the first wakeup on
+   */
+  prepareAllCode() {
+    for (const state of this.chart.states) {
+      for (const code of [state.entry, state.during, state.exit]) {
+        this.prepareCode(code, "statements");
+      }
+    }
+    for (const transition of this.chart.transitions) {
+      try {
+        const label = (0, import_chart_model.parseTransitionLabel)(transition.label);
+        this.prepareCode(label.condition, "expression");
+        this.prepareCode(label.action, "statements");
+      } catch {
+      }
+    }
+    for (const fn of this.chart.functions || []) {
+      this.prepareCode(fn.code, "statements");
+    }
+  }
+  /**
+   * @param code A condition, action or function block
+   * @param kind Expression or statements
+   * @returns the code with the names of the variables in hasChanged() etc., see quoteChangeArguments()
+   */
+  prepareCode(code, kind) {
+    if (!code) {
+      return "";
+    }
+    const key = `${kind}:${code}`;
+    let prepared = this.preparedCode.get(key);
+    if (prepared === void 0) {
+      const quoted = (0, import_chart_validation.quoteChangeArguments)(code, kind);
+      prepared = quoted.code;
+      for (const name of quoted.names) {
+        this.changeVariables.add(name);
+      }
+      this.preparedCode.set(key, prepared);
+    }
+    return prepared;
+  }
   /**
    * IDs of all states this chart reads
    */
@@ -138,7 +190,7 @@ class ChartRuntime {
     }
     for (const fn of this.chart.functions || []) {
       const where = `function block ${(0, import_chart_validation.getDeclarations)(fn.code).map((d) => d.name).join(", ")}`;
-      this.run(this.compile(fn.code, where), where);
+      this.run(this.compile(this.prepareCode(fn.code, "statements"), where), where);
     }
     this.writeChangedOutputs();
     const machine = (0, import_xstate.createMachine)(this.buildMachineConfig());
@@ -391,6 +443,15 @@ class ChartRuntime {
           );
         }
         return new Date(time.getTime() + (Number(offsetMinutes) || 0) * 6e4);
+      },
+      hasChanged: (name) => this.getChange(name, "hasChanged").changed,
+      hasChangedFrom: (name, value) => {
+        const { changed, previous } = this.getChange(name, "hasChangedFrom");
+        return changed && (0, import_node_util.isDeepStrictEqual)(previous, value);
+      },
+      hasChangedTo: (name, value) => {
+        const { changed, current } = this.getChange(name, "hasChangedTo");
+        return changed && (0, import_node_util.isDeepStrictEqual)(current, value);
       }
     };
   }
@@ -463,6 +524,7 @@ class ChartRuntime {
     }
     this.wakeupCause = cause;
     this.wakeupInput = input;
+    this.rememberValues();
     if (!this.chart.superStep) {
       this.step(input);
     } else {
@@ -481,6 +543,43 @@ class ChartRuntime {
     this.writeChangedOutputs();
     this.persist();
     this.publishLive();
+  }
+  /**
+   * Stores the values of the variables used by the change detection at the start of a wakeup
+   */
+  rememberValues() {
+    if (!this.changeVariables.size) {
+      return;
+    }
+    this.previousValues = this.currentValues;
+    this.currentValues = /* @__PURE__ */ new Map();
+    for (const name of this.changeVariables) {
+      const value = this.sandbox[name];
+      let copy;
+      try {
+        copy = structuredClone(value);
+      } catch {
+        copy = value;
+      }
+      this.currentValues.set(name, copy);
+    }
+  }
+  /**
+   * @param name Name of the variable
+   * @param helper Name of the helper, for the error message
+   * @returns whether the variable has changed between the start of the previous and of the current wakeup
+   * @throws {Error} if the variable is unknown
+   */
+  getChange(name, helper) {
+    if (!this.changeVariables.has(name) || !this.chart.symbols.some((s) => s.name === name)) {
+      throw new Error(`${helper}() needs a variable of the chart as first argument`);
+    }
+    if (!this.previousValues || !this.currentValues) {
+      return { changed: false };
+    }
+    const previous = this.previousValues.get(name);
+    const current = this.currentValues.get(name);
+    return { changed: !(0, import_node_util.isDeepStrictEqual)(previous, current), previous, current };
   }
   /**
    * Processes the active states once, see the class description
@@ -670,7 +769,7 @@ class ChartRuntime {
       this.host.log.error(`[${this.chart.name}] Transition ${where}: ${err.message}, ignored`);
       return null;
     }
-    const condition = label.condition ? this.compile(`(${label.condition})`, `${where}/condition`) : null;
+    const condition = label.condition ? this.compile(`(${this.prepareCode(label.condition, "expression")})`, `${where}/condition`) : null;
     const { inner, reenter } = this.structure.getTransitionKind(transition);
     const config = {
       target: `#${target.id}`,
@@ -727,7 +826,7 @@ class ChartRuntime {
    */
   runAction(code, where) {
     this.run(this.compile(`{
-${code}
+${this.prepareCode(code, "statements")}
 }`, where), where);
     this.writeChangedOutputs();
   }

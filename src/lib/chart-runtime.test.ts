@@ -642,6 +642,90 @@ describe("chart-runtime => helper functions", () => {
     });
 });
 
+describe("chart-runtime => change detection", () => {
+    let runtime: ChartRuntime | undefined;
+    afterEach(() => runtime?.stop());
+
+    /**
+     * A chart with a button: Off -> On on the rising edge, On -> Off on the next rising edge
+     *
+     * @param labels Labels of the transitions Off -> On and On -> Off
+     * @param button Initial value of the button
+     */
+    async function start(labels: [string, string], button: any = false): Promise<ReturnType<typeof createHost>> {
+        const chart = createLightChart();
+        chart.symbols.push({ name: "button", scope: "input", stateId: "test.0.button" });
+        chart.transitions = [
+            { id: "t1", source: "off", target: "on", label: labels[0] },
+            { id: "t2", source: "on", target: "off", label: labels[1] },
+        ];
+        const host = createHost({ "test.0.motion": false, "test.0.button": button });
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        return host;
+    }
+
+    it("detects edges: a value which stays the same is no change", async () => {
+        const host = await start(["[hasChangedTo(button, true)]", "[hasChangedTo(button, true)]"]);
+        expect(host.active).to.deep.equal(["Off"]);
+        runtime?.handleInput("test.0.button", true);
+        expect(host.active).to.deep.equal(["Off", "On"]);
+        // the same value again, and a wakeup by another input
+        runtime?.handleInput("test.0.button", true);
+        runtime?.handleInput("test.0.motion", false);
+        expect(host.active).to.deep.equal(["Off", "On"]);
+        runtime?.handleInput("test.0.button", false);
+        expect(host.active).to.deep.equal(["Off", "On"]);
+        runtime?.handleInput("test.0.button", true);
+        expect(host.active).to.deep.equal(["Off", "On", "Off"]);
+    });
+
+    it("reports no change on the wakeup after the start", async () => {
+        const host = await start(["[hasChanged(button)]", ""], true);
+        expect(host.active).to.deep.equal(["Off"]);
+    });
+
+    it("checks the previous value with hasChangedFrom", async () => {
+        const host = await start(['[hasChangedFrom(button, "b")]', ""], "a");
+        runtime?.handleInput("test.0.button", "b");
+        runtime?.handleInput("test.0.button", "c");
+        expect(host.active).to.deep.equal(["Off", "On"]);
+    });
+
+    it("compares the values at the start of the wakeups, also changes of locals by actions", async () => {
+        const host = await start(["[motion]{count = 5;}", "[hasChanged(count) && count === 6]"]);
+        runtime?.handleInput("test.0.motion", true);
+        expect(runtime?.sandbox.count).to.equal(6);
+        expect(host.active).to.deep.equal(["Off", "On"]);
+        // the change by the actions of the previous wakeup is seen now
+        runtime?.handleInput("test.0.motion", true);
+        expect(host.active).to.deep.equal(["Off", "On", "Off"]);
+    });
+
+    it("detects changes inside objects and in function blocks", async () => {
+        const chart = createLightChart();
+        chart.symbols.push({ name: "list", scope: "local", initial: [] });
+        chart.functions = [{ id: "f", x: 0, y: 0, code: "function listChanged() { return hasChanged(list); }" }];
+        chart.states[0].during = "list.push(1);";
+        chart.transitions = [{ id: "t1", source: "off", target: "on", label: "[listChanged()]" }];
+        const host = createHost({ "test.0.motion": false });
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        expect(host.active).to.deep.equal(["Off"]);
+        runtime.handleInput("test.0.motion", false);
+        expect(host.active).to.deep.equal(["Off", "On"]);
+    });
+
+    it("rejects values which are no variables", async () => {
+        const chart = createLightChart();
+        chart.states[0].entry = "hasChanged(1 + 1);";
+        const host = createHost();
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        expect(host.warnings.join(" ")).to.include("Off/entry: hasChanged() needs a variable of the chart");
+    });
+});
+
 describe("chart-runtime => triggers of inputs", () => {
     let runtime: ChartRuntime | undefined;
     afterEach(() => runtime?.stop());

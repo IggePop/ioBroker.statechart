@@ -5,7 +5,7 @@
 
 import * as acorn from "acorn";
 import * as walk from "acorn-walk";
-import { HELPERS } from "./chart-helpers";
+import { CHANGE_HELPERS, HELPERS } from "./chart-helpers";
 import { LabelSyntaxError, formatMessage, parseTransitionLabelWithRanges } from "./chart-model";
 import type { Chart, ChartSymbol } from "./chart-model";
 
@@ -139,8 +139,40 @@ export function validateCode(
     });
 
     const inputs = new Set(symbols.filter(s => s.scope === "input").map(s => s.name));
-    const known = new Set([...symbols.map(s => s.name), ...functionNames]);
+    const symbolNames = new Set(symbols.map(s => s.name));
+    const known = new Set([...symbolNames, ...functionNames]);
     const diagnostics: Diagnostic[] = [];
+
+    // the change detection needs a variable of the chart, not any value
+    walk.simple(parsed.ast, {
+        CallExpression(node) {
+            if (node.callee.type !== "Identifier" || !CHANGE_HELPERS.has(node.callee.name)) {
+                return;
+            }
+            const arg = node.arguments[0];
+            let valid;
+            if (arg?.type === "Identifier") {
+                // an unknown name is already reported as unknown variable
+                valid =
+                    symbolNames.has(arg.name) ||
+                    !(known.has(arg.name) || declared.has(arg.name) || GLOBALS.has(arg.name));
+            } else {
+                valid = arg?.type === "Literal" && typeof arg.value === "string" && symbolNames.has(arg.value);
+            }
+            if (!valid) {
+                const { start, end } = arg ?? node;
+                diagnostics.push(
+                    createDiagnostic(
+                        start + offset,
+                        end + offset,
+                        "error",
+                        "%s() needs a variable of the chart as first argument",
+                        [node.callee.name],
+                    ),
+                );
+            }
+        },
+    });
     for (const { node, write } of references) {
         const from = node.start + offset;
         const to = node.end + offset;
@@ -253,6 +285,42 @@ export function getDeclarations(code: string | undefined): Declaration[] {
  */
 export function getFunctionNames(chart: Chart): string[] {
     return (chart.functions || []).flatMap(fn => getDeclarations(fn.code).map(d => d.name));
+}
+
+/**
+ * Replaces the variable in the first argument of hasChanged(), hasChangedFrom() and hasChangedTo() by its name
+ * in quotes: these helpers need the name of the variable, not its value
+ *
+ * @param code The code
+ * @param kind Expression or statements
+ * @returns the changed code and the names of the variables, the unchanged code if it has syntax errors
+ */
+export function quoteChangeArguments(code: string, kind: CodeKind): { code: string; names: string[] } {
+    const parsed = code.trim() ? parseCode(code, kind) : null;
+    if (!parsed || "diagnostic" in parsed) {
+        return { code, names: [] };
+    }
+    const names = new Set<string>();
+    const replacements: acorn.Identifier[] = [];
+    walk.simple(parsed.ast, {
+        CallExpression(node) {
+            const arg = node.arguments[0];
+            if (node.callee.type !== "Identifier" || !CHANGE_HELPERS.has(node.callee.name)) {
+                return;
+            }
+            if (arg?.type === "Identifier") {
+                replacements.push(arg);
+                names.add(arg.name);
+            } else if (arg?.type === "Literal" && typeof arg.value === "string") {
+                names.add(arg.value);
+            }
+        },
+    });
+    let result = code;
+    for (const { start, end, name } of replacements.sort((a, b) => b.start - a.start)) {
+        result = result.substring(0, start) + JSON.stringify(name) + result.substring(end);
+    }
+    return { code: result, names: [...names] };
 }
 
 export interface ChartProblem {

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import vm from "node:vm";
 import SunCalc from "suncalc";
 import type { SunTimes } from "suncalc";
@@ -8,7 +9,8 @@ import { isTimeBetween } from "./chart-helpers";
 import { MAX_SUPER_STEPS, parseTransitionLabel } from "./chart-model";
 import type { Chart, ChartState, ChartSymbol, ChartTransition } from "./chart-model";
 import { ChartStructure } from "./chart-structure";
-import { getDeclarations, validateChart } from "./chart-validation";
+import { getDeclarations, quoteChangeArguments, validateChart } from "./chart-validation";
+import type { CodeKind } from "./chart-validation";
 
 /** Maximum run time of a single condition or action */
 const SCRIPT_TIMEOUT_MS = 1000;
@@ -194,6 +196,14 @@ export class ChartRuntime {
     wakeupCause: WakeupCause = "input";
     /** name of the input which caused the current wakeup, for the history */
     wakeupInput: string | null = null;
+    /** the code of conditions, actions and function blocks prepared for the change detection, by kind and code */
+    readonly preparedCode = new Map<string, string>();
+    /** the variables used by hasChanged() etc. */
+    readonly changeVariables = new Set<string>();
+    /** their values at the start of the previous wakeup, null before the second wakeup */
+    previousValues: Map<string, any> | null = null;
+    /** their values at the start of the current wakeup, null before the first one */
+    currentValues: Map<string, any> | null = null;
     readonly hash: string;
     actor: AnyActor | null = null;
     /** the current time, can be replaced in tests */
@@ -208,6 +218,52 @@ export class ChartRuntime {
         this.statesById = this.structure.statesById;
         this.sandbox = vm.createContext(this.createHelpers());
         this.hash = getChartHash(chart);
+        this.prepareAllCode();
+    }
+
+    /**
+     * Prepares all code of the chart for the change detection, so its variables are known from the first wakeup on
+     */
+    prepareAllCode(): void {
+        for (const state of this.chart.states) {
+            for (const code of [state.entry, state.during, state.exit]) {
+                this.prepareCode(code, "statements");
+            }
+        }
+        for (const transition of this.chart.transitions) {
+            try {
+                const label = parseTransitionLabel(transition.label);
+                this.prepareCode(label.condition, "expression");
+                this.prepareCode(label.action, "statements");
+            } catch {
+                // the transition is ignored, see buildTransition()
+            }
+        }
+        for (const fn of this.chart.functions || []) {
+            this.prepareCode(fn.code, "statements");
+        }
+    }
+
+    /**
+     * @param code A condition, action or function block
+     * @param kind Expression or statements
+     * @returns the code with the names of the variables in hasChanged() etc., see quoteChangeArguments()
+     */
+    prepareCode(code: string | undefined, kind: CodeKind): string {
+        if (!code) {
+            return "";
+        }
+        const key = `${kind}:${code}`;
+        let prepared = this.preparedCode.get(key);
+        if (prepared === undefined) {
+            const quoted = quoteChangeArguments(code, kind);
+            prepared = quoted.code;
+            for (const name of quoted.names) {
+                this.changeVariables.add(name);
+            }
+            this.preparedCode.set(key, prepared);
+        }
+        return prepared;
     }
 
     /**
@@ -241,7 +297,7 @@ export class ChartRuntime {
             const where = `function block ${getDeclarations(fn.code)
                 .map(d => d.name)
                 .join(", ")}`;
-            this.run(this.compile(fn.code, where), where);
+            this.run(this.compile(this.prepareCode(fn.code, "statements"), where), where);
         }
         this.writeChangedOutputs();
 
@@ -520,6 +576,15 @@ export class ChartRuntime {
                 }
                 return new Date(time.getTime() + (Number(offsetMinutes) || 0) * 60_000);
             },
+            hasChanged: (name: string) => this.getChange(name, "hasChanged").changed,
+            hasChangedFrom: (name: string, value: any) => {
+                const { changed, previous } = this.getChange(name, "hasChangedFrom");
+                return changed && isDeepStrictEqual(previous, value);
+            },
+            hasChangedTo: (name: string, value: any) => {
+                const { changed, current } = this.getChange(name, "hasChangedTo");
+                return changed && isDeepStrictEqual(current, value);
+            },
         };
     }
 
@@ -597,6 +662,7 @@ export class ChartRuntime {
         }
         this.wakeupCause = cause;
         this.wakeupInput = input;
+        this.rememberValues();
         if (!this.chart.superStep) {
             this.step(input);
         } else {
@@ -618,6 +684,47 @@ export class ChartRuntime {
         this.writeChangedOutputs();
         this.persist();
         this.publishLive();
+    }
+
+    /**
+     * Stores the values of the variables used by the change detection at the start of a wakeup
+     */
+    rememberValues(): void {
+        if (!this.changeVariables.size) {
+            return;
+        }
+        this.previousValues = this.currentValues;
+        this.currentValues = new Map();
+        for (const name of this.changeVariables) {
+            const value = this.sandbox[name];
+            let copy;
+            try {
+                // a copy, so a change of an object or array by an action is detected as well
+                copy = structuredClone(value);
+            } catch {
+                copy = value;
+            }
+            this.currentValues.set(name, copy);
+        }
+    }
+
+    /**
+     * @param name Name of the variable
+     * @param helper Name of the helper, for the error message
+     * @returns whether the variable has changed between the start of the previous and of the current wakeup
+     * @throws {Error} if the variable is unknown
+     */
+    getChange(name: string, helper: string): { changed: boolean; previous?: any; current?: any } {
+        if (!this.changeVariables.has(name) || !this.chart.symbols.some(s => s.name === name)) {
+            throw new Error(`${helper}() needs a variable of the chart as first argument`);
+        }
+        // nothing has changed before the second wakeup, as in Stateflow
+        if (!this.previousValues || !this.currentValues) {
+            return { changed: false };
+        }
+        const previous = this.previousValues.get(name);
+        const current = this.currentValues.get(name);
+        return { changed: !isDeepStrictEqual(previous, current), previous, current };
     }
 
     /**
@@ -827,7 +934,9 @@ export class ChartRuntime {
             return null;
         }
 
-        const condition = label.condition ? this.compile(`(${label.condition})`, `${where}/condition`) : null;
+        const condition = label.condition
+            ? this.compile(`(${this.prepareCode(label.condition, "expression")})`, `${where}/condition`)
+            : null;
         const { inner, reenter } = this.structure.getTransitionKind(transition);
         const config = {
             target: `#${target.id}`,
@@ -887,7 +996,7 @@ export class ChartRuntime {
      */
     runAction(code: string | undefined, where: string): void {
         // the block keeps "let" and "const" declarations local to this action
-        this.run(this.compile(`{\n${code}\n}`, where), where);
+        this.run(this.compile(`{\n${this.prepareCode(code, "statements")}\n}`, where), where);
         this.writeChangedOutputs();
     }
 

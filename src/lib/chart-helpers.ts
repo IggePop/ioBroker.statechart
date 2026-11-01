@@ -39,7 +39,27 @@ export const HELPERS: Record<string, HelperDescription> = {
         description:
             "Time of an astro event today: sunrise, sunset, dawn, dusk, solarNoon, nauticalDawn, nauticalDusk, goldenHour, goldenHourEnd, night, nightEnd",
     },
+    hasChanged: {
+        signature: "hasChanged(variable)",
+        description:
+            "true if the value of the variable at the start of this wakeup differs from the value at the start of the previous wakeup",
+    },
+    hasChangedFrom: {
+        signature: "hasChangedFrom(variable, value)",
+        description: "true if the variable has changed (see hasChanged) and its previous value was the given value",
+    },
+    hasChangedTo: {
+        signature: "hasChangedTo(variable, value)",
+        description:
+            "true if the variable has changed (see hasChanged) to the given value, e.g. hasChangedTo(button, true)",
+    },
 };
+
+/**
+ * The helpers of the change detection. Their first argument is a variable of the chart, the runtime passes its
+ * name instead of its value, see quoteChangeArguments().
+ */
+export const CHANGE_HELPERS = new Set(["hasChanged", "hasChangedFrom", "hasChangedTo"]);
 
 /**
  * @param time "HH:mm" or "HH:mm:ss"

@@ -37,7 +37,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Import and export of charts as JSON files
 - Comments on states, transitions and function blocks, and notes on the canvas
 - Per input: wake up on every update or only on changes, filter by ack, debounce
-- Helper functions: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime
+- Helper functions: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
 - Undo/redo (Ctrl+Z, Ctrl+Y), copy/cut/paste of states and function blocks (Ctrl+C, Ctrl+X, Ctrl+V), also between charts, and a warning about unsaved changes
 - **Show code**: the JavaScript generated from the chart, showing exactly how the adapter executes it
 
@@ -160,10 +160,20 @@ In conditions, actions and function blocks:
 | `isTimeBetween("22:00", "06:00")` | true if the current time is in the range, also over midnight |
 | `isDaytime()` | true between sunrise and sunset |
 | `astroTime("sunset", offsetMinutes)` | time of an astro event today as `Date`: `sunrise`, `sunset`, `dawn`, `dusk`, `solarNoon`, ... |
+| `hasChanged(variable)` | true if the variable has changed, see below |
+| `hasChangedFrom(variable, value)` | true if the variable has changed and its previous value was `value` |
+| `hasChangedTo(variable, value)` | true if the variable has changed to `value`, e.g. `hasChangedTo(button, true)` for a rising edge |
 
 `isDaytime()` and `astroTime()` use the location of the ioBroker system settings. To read other states, add
 them as inputs: their variables are always up to date and wake up the chart. Time based functions do not wake up
 the chart by themselves, they are evaluated when it wakes up.
+
+**Change detection** works like in Stateflow: it compares the value of the variable at the start of the current
+wakeup with its value at the start of the previous wakeup. Inputs, outputs and locals can be checked. An update
+with the same value is no change, neither is a wakeup by another input or a timer, so `[hasChangedTo(button, true)]`
+is only true once per press of the button. On the wakeup after the start nothing has changed yet. A change of a
+local by an action is seen on the next wakeup, also in a super step. Objects and arrays are compared by their
+contents.
 
 ### Function blocks
 
@@ -295,7 +305,7 @@ Adapter ausgeführt.
 - Import und Export von Charts als JSON-Dateien
 - Kommentare zu Zuständen, Übergängen und Funktionsblöcken sowie Notizen auf der Zeichenfläche
 - Pro Eingang: Aufwecken bei jeder Aktualisierung oder nur bei Änderung, Filter nach ack, Entprellen
-- Hilfsfunktionen: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime
+- Hilfsfunktionen: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, Änderungserkennung (hasChanged...)
 - Rückgängig/Wiederholen (Strg+Z, Strg+Y), Kopieren/Ausschneiden/Einfügen von Zuständen und Funktionsblöcken (Strg+C, Strg+X, Strg+V), auch zwischen Charts, und eine Warnung bei ungespeicherten Änderungen
 - **Code anzeigen**: das aus dem Chart generierte JavaScript, das genau zeigt, wie der Adapter es ausführt
 
@@ -422,10 +432,20 @@ In Bedingungen, Aktionen und Funktionsblöcken:
 | `isTimeBetween("22:00", "06:00")` | wahr, wenn die aktuelle Uhrzeit im Bereich liegt, auch über Mitternacht |
 | `isDaytime()` | wahr zwischen Sonnenaufgang und Sonnenuntergang |
 | `astroTime("sunset", minuten)` | Zeitpunkt eines Astro-Ereignisses heute als `Date`: `sunrise`, `sunset`, `dawn`, `dusk`, `solarNoon`, ... |
+| `hasChanged(variable)` | wahr, wenn sich die Variable geändert hat, siehe unten |
+| `hasChangedFrom(variable, wert)` | wahr, wenn sich die Variable geändert hat und vorher `wert` war |
+| `hasChangedTo(variable, wert)` | wahr, wenn sich die Variable auf `wert` geändert hat, z.B. `hasChangedTo(taster, true)` für eine steigende Flanke |
 
 `isDaytime()` und `astroTime()` nutzen den Standort aus den ioBroker-Systemeinstellungen. Andere Datenpunkte liest
 man über Eingänge: Ihre Variablen sind immer aktuell und wecken das Chart. Zeitabhängige Funktionen wecken das
 Chart nicht von selbst, sie werden beim Aufwecken ausgewertet.
+
+Die **Änderungserkennung** funktioniert wie in Stateflow: Sie vergleicht den Wert der Variablen zu Beginn des
+aktuellen Aufweckens mit ihrem Wert zu Beginn des vorherigen. Eingänge, Ausgänge und lokale Variablen lassen sich
+prüfen. Eine Aktualisierung mit demselben Wert ist keine Änderung, ebenso wenig ein Aufwecken durch einen anderen
+Eingang oder einen Timer. `[hasChangedTo(taster, true)]` ist also nur einmal pro Tastendruck wahr. Beim Aufwecken
+nach dem Start hat sich noch nichts geändert. Ändert eine Aktion eine lokale Variable, sieht man das erst beim
+nächsten Aufwecken, auch im Super-Step. Objekte und Arrays werden nach ihrem Inhalt verglichen.
 
 ### Funktionsblöcke
 
@@ -608,6 +628,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) a chart wakes up once right after the start, so transitions without label are taken without waiting for a change of an input
 * (Igge) chart option "super step": take transitions until none is valid anymore
 * (Igge) the arrows of transitions start and end where the states face each other (floating edges), their ends can be dragged along the border of the states or onto another state to move the transition there
+* (Igge) change detection: `hasChanged`, `hasChangedFrom` and `hasChangedTo`, e.g. `hasChangedTo(button, true)` for edges
 * (Igge) suncalc 2: `isDaytime()` is true all day during the midnight sun, `astroTime()` reports events which do not happen on a day (polar regions)
 
 ### 0.1.1 (2026-10-25)

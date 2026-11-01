@@ -39,6 +39,7 @@
     "Select state": "Select state",
     "Add variable": "Add variable",
     "Unknown variable \"%s\"": "Unknown variable \"%s\"",
+    "%s() needs a variable of the chart as first argument": "%s() needs a variable of the chart as first argument",
     "Unknown event \"%s\", use the name of an input": "Unknown event \"%s\", use the name of an input",
     "Input \"%s\" is overwritten on its next change": "Input \"%s\" is overwritten on its next change",
     "Syntax error: %s": "Syntax error: %s",

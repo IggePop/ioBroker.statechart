@@ -18,6 +18,7 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var chart_helpers_exports = {};
 __export(chart_helpers_exports, {
+  CHANGE_HELPERS: () => CHANGE_HELPERS,
   HELPERS: () => HELPERS,
   isTimeBetween: () => isTimeBetween,
   parseTime: () => parseTime
@@ -51,8 +52,21 @@ const HELPERS = {
   astroTime: {
     signature: 'astroTime("sunset", offsetMinutes = 0)',
     description: "Time of an astro event today: sunrise, sunset, dawn, dusk, solarNoon, nauticalDawn, nauticalDusk, goldenHour, goldenHourEnd, night, nightEnd"
+  },
+  hasChanged: {
+    signature: "hasChanged(variable)",
+    description: "true if the value of the variable at the start of this wakeup differs from the value at the start of the previous wakeup"
+  },
+  hasChangedFrom: {
+    signature: "hasChangedFrom(variable, value)",
+    description: "true if the variable has changed (see hasChanged) and its previous value was the given value"
+  },
+  hasChangedTo: {
+    signature: "hasChangedTo(variable, value)",
+    description: "true if the variable has changed (see hasChanged) to the given value, e.g. hasChangedTo(button, true)"
   }
 };
+const CHANGE_HELPERS = /* @__PURE__ */ new Set(["hasChanged", "hasChangedFrom", "hasChangedTo"]);
 function parseTime(time) {
   const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(String(time).trim());
   if (!match || Number(match[1]) > 23 || Number(match[2]) > 59 || Number(match[3] ?? 0) > 59) {
@@ -68,6 +82,7 @@ function isTimeBetween(start, end, now = /* @__PURE__ */ new Date()) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  CHANGE_HELPERS,
   HELPERS,
   isTimeBetween,
   parseTime

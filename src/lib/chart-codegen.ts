@@ -418,6 +418,8 @@ export function generateChartCode(chart: Chart, chartId: string): string {
         "// isActive(stateId)   true if the state of the chart is active",
         "// elapsed(stateId)    milliseconds since the state was entered; when it reaches the delay of an",
         "//                     after(...) of the state, a timer calls wakeup(null)",
+        "// At the start of each wakeup, the adapter stores the values of the variables used in hasChanged(),",
+        "// hasChangedFrom() and hasChangedTo(), these compare them with the values of the previous wakeup.",
         "//",
         "// Helper functions for conditions, actions and function blocks:",
         ...Object.values(HELPERS).map(helper => `// ${helper.signature}\n//     ${helper.description}`),
