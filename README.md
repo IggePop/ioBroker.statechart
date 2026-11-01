@@ -620,7 +620,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.2.0 (2026-11-01)
 * (Igge) the adapter and the editor are written in TypeScript now, no changes of the behavior
 * (Igge) live values of the variables in the editor
 * (Igge) taken transitions light up in the editor

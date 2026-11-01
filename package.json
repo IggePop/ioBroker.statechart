@@ -1,6 +1,6 @@
 {
   "name": "iobroker.statechart",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Statecharts (hierarchical state machines) with a graphical editor for ioBroker",
   "author": {
     "name": "Igge",
