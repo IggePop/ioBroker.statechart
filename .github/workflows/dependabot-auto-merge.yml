@@ -33,8 +33,14 @@ jobs:
           (steps.metadata.outputs.dependency-type == 'direct:development' &&
            (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
             steps.metadata.outputs.update-type == 'version-update:semver-minor'))
-        run: gh pr merge --auto --squash "$PR_URL"
+        # Not "gh pr merge --auto": it merges right away if GitHub reports the pull request as mergeable,
+        # which may happen before the checks of a new commit have started. This only enables auto-merge.
+        run: |
+          gh api graphql \
+            -f query='mutation($id: ID!) { enablePullRequestAutoMerge(input: { pullRequestId: $id, mergeMethod: SQUASH }) { clientMutationId } }' \
+            -f id="$PR_ID"
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          # a personal access token (permission "public_repo"), so the merge triggers the workflows on main
+          PR_ID: ${{ github.event.pull_request.node_id }}
+          # a personal access token (Contents and Pull requests: read and write), so the merge triggers the
+          # workflows on main, which rebuild the committed build
           GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}

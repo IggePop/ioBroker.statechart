@@ -575,7 +575,8 @@ committed.
 merged automatically when the checks pass, which are required for `main`. Dependabot cannot rebuild the
 committed build, so `check-build` does not compare it in Dependabot pull requests. Instead, after every push to
 `main`, it rebuilds `build` and `admin/build` and commits them if they changed. The workflows need the secret
-`AUTO_MERGE_TOKEN`, a personal access token with the permission `public_repo`. Major updates of MUI, React and
+`AUTO_MERGE_TOKEN`, a fine-grained personal access token for this repository with the permissions
+"Contents" and "Pull requests" (read and write). Major updates of MUI, React and
 `@types/node` are ignored: `@iobroker/adapter-react-v5` requires MUI 6 and React 18, and the adapter supports
 Node.js 22.
 
