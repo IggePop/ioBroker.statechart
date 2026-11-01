@@ -27,7 +27,7 @@
     "@iobroker/adapter-core": "^3.4.3",
     "acorn": "^8.19.0",
     "acorn-walk": "^8.3.5",
-    "suncalc": "^1.9.0",
+    "suncalc": "^2.1.1",
     "xstate": "^5.33.3"
   },
   "devDependencies": {
