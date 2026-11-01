@@ -26,6 +26,9 @@ updates:
       # The adapter supports Node.js 22: the types must not contain APIs of newer versions
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      # @typescript-eslint (from @iobroker/eslint-config) does not support TypeScript 7 yet
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
