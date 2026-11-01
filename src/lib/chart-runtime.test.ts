@@ -599,7 +599,7 @@ describe("chart-runtime => helper functions", () => {
         );
         const [sunrise, later, daytime] = r.sandbox.result;
         expect(later - sunrise).to.equal(30 * 60_000);
-        const sunset = r.getSunTimes(new Date()).sunset.getTime();
+        const sunset = r.getSunTimes(new Date()).sunset!.getTime();
         const now = Date.now();
         expect(daytime).to.equal(now >= sunrise && now < sunset);
     });
@@ -612,6 +612,27 @@ describe("chart-runtime => helper functions", () => {
             h => (h.location = { latitude: 52.52, longitude: 13.4 }),
         );
         expect(second.host.warnings.join()).to.match(/Unknown astro event "teatime"/);
+    });
+
+    it("handles days without sunrise in polar regions", async () => {
+        const chart = createLightChart();
+        chart.symbols.push({ name: "result", scope: "local", initial: null });
+        chart.states[0].entry = 'result = isDaytime(); astroTime("sunrise");';
+        const host = createHost();
+        // Tromsø in the polar night
+        host.location = { latitude: 69.65, longitude: 18.96 };
+        runtime = new ChartRuntime("light", chart, host);
+        runtime.now = () => new Date("2026-12-21T11:00:00Z").getTime();
+        await runtime.start();
+        expect(runtime.sandbox.result).to.equal(false);
+        expect(host.warnings.join()).to.match(/There is no "sunrise" today/);
+        runtime.stop();
+
+        // the midnight sun: it is daytime all day
+        runtime = new ChartRuntime("light", chart, host);
+        runtime.now = () => new Date("2026-06-21T23:00:00Z").getTime();
+        await runtime.start();
+        expect(runtime.sandbox.result).to.equal(true);
     });
 
     it("knows the helper functions in the validation", () => {

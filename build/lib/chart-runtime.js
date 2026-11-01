@@ -375,13 +375,20 @@ class ChartRuntime {
       isTimeBetween: (start, end) => (0, import_chart_helpers.isTimeBetween)(start, end, new Date(this.now())),
       isDaytime: () => {
         const now = new Date(this.now());
-        const times = this.getSunTimes(now);
-        return now >= times.sunrise && now < times.sunset;
+        const { sunrise, sunset, alwaysUp } = this.getSunTimes(now);
+        if (!sunrise || !sunset) {
+          return !!alwaysUp;
+        }
+        return now >= sunrise && now < sunset;
       },
       astroTime: (name, offsetMinutes = 0) => {
-        const time = this.getSunTimes(new Date(this.now()))[name];
+        const times = this.getSunTimes(new Date(this.now()));
+        const time = times[name];
         if (!(time instanceof Date)) {
-          throw new Error(`Unknown astro event "${name}"`);
+          const known = name in times && name !== "alwaysUp" && name !== "alwaysDown";
+          throw new Error(
+            known ? `There is no "${name}" today at the location of the system settings` : `Unknown astro event "${name}"`
+          );
         }
         return new Date(time.getTime() + (Number(offsetMinutes) || 0) * 6e4);
       }
@@ -389,7 +396,7 @@ class ChartRuntime {
   }
   /**
    * @param date The day
-   * @returns the astro events of the day
+   * @returns the astro events of the day, null for events which do not happen on that day (polar regions)
    * @throws {Error} if no location is configured
    */
   getSunTimes(date) {

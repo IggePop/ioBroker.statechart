@@ -608,6 +608,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) a chart wakes up once right after the start, so transitions without label are taken without waiting for a change of an input
 * (Igge) chart option "super step": take transitions until none is valid anymore
 * (Igge) the arrows of transitions start and end where the states face each other (floating edges), their ends can be dragged along the border of the states or onto another state to move the transition there
+* (Igge) suncalc 2: `isDaytime()` is true all day during the midnight sun, `astroTime()` reports events which do not happen on a day (polar regions)
 
 ### 0.1.1 (2026-10-25)
 * (Igge) renamed from "state-machine" to "statechart", because npm does not accept the old name (too similar to an existing package)

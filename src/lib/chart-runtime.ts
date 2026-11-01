@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import vm from "node:vm";
 import SunCalc from "suncalc";
+import type { SunTimes } from "suncalc";
 import { createActor, createMachine } from "xstate";
 import type { AnyActor, AnyStateMachine } from "xstate";
 import { isTimeBetween } from "./chart-helpers";
@@ -498,14 +499,24 @@ export class ChartRuntime {
             isTimeBetween: (start: string, end: string) => isTimeBetween(start, end, new Date(this.now())),
             isDaytime: () => {
                 const now = new Date(this.now());
-                const times = this.getSunTimes(now);
-                // in polar regions there may be no sunrise or sunset, the comparisons are false then
-                return now >= times.sunrise && now < times.sunset;
+                const { sunrise, sunset, alwaysUp } = this.getSunTimes(now);
+                // in polar regions there may be no sunrise or sunset: the sun is up or down all day
+                if (!sunrise || !sunset) {
+                    return !!alwaysUp;
+                }
+                return now >= sunrise && now < sunset;
             },
             astroTime: (name: string, offsetMinutes = 0) => {
-                const time = this.getSunTimes(new Date(this.now()))[name];
+                const times = this.getSunTimes(new Date(this.now()));
+                const time = times[name];
                 if (!(time instanceof Date)) {
-                    throw new Error(`Unknown astro event "${name}"`);
+                    // the events are null if they do not happen on that day, the flags are no events
+                    const known = name in times && name !== "alwaysUp" && name !== "alwaysDown";
+                    throw new Error(
+                        known
+                            ? `There is no "${name}" today at the location of the system settings`
+                            : `Unknown astro event "${name}"`,
+                    );
                 }
                 return new Date(time.getTime() + (Number(offsetMinutes) || 0) * 60_000);
             },
@@ -514,15 +525,15 @@ export class ChartRuntime {
 
     /**
      * @param date The day
-     * @returns the astro events of the day
+     * @returns the astro events of the day, null for events which do not happen on that day (polar regions)
      * @throws {Error} if no location is configured
      */
-    getSunTimes(date: Date): Record<string, Date> {
+    getSunTimes(date: Date): SunTimes {
         const location = this.host.getLocation?.();
         if (!location) {
             throw new Error("No location (latitude/longitude) configured in the ioBroker system settings");
         }
-        return SunCalc.getTimes(date, location.latitude, location.longitude) as unknown as Record<string, Date>;
+        return SunCalc.getTimes(date, location.latitude, location.longitude);
     }
 
     /**
