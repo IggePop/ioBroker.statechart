@@ -179,6 +179,26 @@ While a chart runs, the editor shows what it does:
 The live values and the history come from the running chart, so they refer to the saved chart, not to unsaved
 changes in the editor.
 
+## Simulation
+
+The button with the flask in the toolbar starts a **simulation**: the chart runs as shown in the editor, including
+unsaved changes, but nothing is switched in the house.
+
+- The real chart is stopped while the simulation runs.
+- The inputs start with their current values. Then they only change when you set them in the panel on the top left:
+  booleans with a switch, other values in the text field with Enter (a number, `true`/`false`, or text). The flash
+  next to an input wakes up the chart with its event, without changing its value. Real changes of the inputs are
+  ignored.
+- Outputs, `setState()`, `setStateDelayed()` and `sendTo()` are not executed. The history shows them as
+  **Not executed: …**, the live values show the simulated values of the outputs. `getState()` reads the real
+  states.
+- Timers and the temporal logic run in real time.
+- The active states, the live values and the history work as for the real chart, the events of the simulation are
+  marked in the history. The stored state of the real chart is not changed.
+- **Stop simulation** ends it, then the real chart continues where it was before. The simulation also ends when the
+  chart is saved, when the adapter restarts, when another chart is selected, and after two minutes if the editor was
+  closed.
+
 ## Import and export
 
 - **Export chart** (last icon in the toolbar of the editor) saves the chart as JSON file, including unsaved changes.
@@ -200,6 +220,7 @@ For every chart, the adapter creates below `statechart.<instance>.charts.<chart>
 | `snapshot` | Stored state of the chart (active states, when they were entered, locals), see below |
 | `values` | Current values of all variables as JSON, `{}` if the chart does not run |
 | `history` | The last 200 events (starts and transitions taken) as JSON. Writing it without ack clears it |
+| `simulation` | `true` while the chart runs as simulation from the editor |
 
 The chart itself is stored in the object `statechart.<instance>.charts.<chart>`.
 

@@ -12,6 +12,9 @@ import type { HistoryEntry, Location } from "./lib/chart-runtime";
 /** Maximum number of entries in the history of a chart (state charts.<chart>.history) */
 const HISTORY_LENGTH = 200;
 
+/** A simulation ends when the editor did not send a message for this time, e.g. because it was closed */
+const SIMULATION_TIMEOUT_MS = 2 * 60 * 1000;
+
 /** States of each chart which control it, written by vis, scripts etc. (without ack) */
 const CONTROLS = ["enabled", "reset", "event"] as const;
 type Control = (typeof CONTROLS)[number];
@@ -27,6 +30,8 @@ class Statechart extends utils.Adapter {
     private location: Location | null = null;
     /** the last events of each chart by chart ID, newest last, also stored in charts.<chart>.history */
     private histories = new Map<string, HistoryEntry[]>();
+    /** charts which run as simulation (their runtime is in runtimes), with the timer which ends the simulation */
+    private simulations = new Map<string, NodeJS.Timeout>();
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -36,6 +41,7 @@ class Statechart extends utils.Adapter {
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("objectChange", this.onObjectChange.bind(this));
+        this.on("message", this.onMessage.bind(this));
         this.on("unload", this.onUnload.bind(this));
     }
 
@@ -122,6 +128,7 @@ class Statechart extends utils.Adapter {
         await this.createChartStates(chartId);
         await this.loadHistory(chartId);
         await this.setState(`charts.${chartId}.enabled`, chart.enabled !== false, true);
+        await this.setState(`charts.${chartId}.simulation`, false, true);
         // e.g. a new chart, which was just created in the editor: nothing to execute, but no error either
         const empty = !chart.states?.length;
         if (!chart.enabled || empty) {
@@ -138,31 +145,7 @@ class Statechart extends utils.Adapter {
             return;
         }
 
-        const runtime = new ChartRuntime(chartId, chart, {
-            readState: async id => (await this.getForeignStateAsync(id))?.val ?? null,
-            getState: id => this.getForeignStateAsync(id),
-            writeState: async (id, val, ack = false) => {
-                await this.setForeignStateAsync(id, val, ack);
-            },
-            sendTo: (instance, command, message) => this.sendTo(instance, command, message),
-            getLocation: () => this.location,
-            onActiveChange: ({ names, ids }) => {
-                void this.setState(`charts.${chartId}.activeState`, names, true);
-                void this.setState(`charts.${chartId}.activeStateIds`, JSON.stringify(ids), true);
-            },
-            persist: data => {
-                void this.setState(`charts.${chartId}.snapshot`, JSON.stringify(data), true);
-            },
-            onValues: values => {
-                void this.setState(`charts.${chartId}.values`, JSON.stringify(values), true);
-            },
-            onHistory: entries => this.addHistory(chartId, entries),
-            loadPersisted: async () => {
-                const state = await this.getStateAsync(`charts.${chartId}.snapshot`);
-                return typeof state?.val === "string" && state.val ? JSON.parse(state.val) : null;
-            },
-            log: this.log,
-        });
+        const runtime = this.createRuntime(chartId, chart);
         try {
             await runtime.start({ restore });
         } catch (err) {
@@ -172,6 +155,183 @@ class Statechart extends utils.Adapter {
         this.runtimes.set(chartId, runtime);
         this.updateSubscriptions();
         this.log.info(`Chart "${chart.name}" started`);
+    }
+
+    /**
+     * @param chartId Chart ID
+     * @param chart The chart
+     * @param simulated Run it as simulation, see ChartRuntime
+     */
+    private createRuntime(chartId: string, chart: Chart, simulated = false): ChartRuntime {
+        return new ChartRuntime(
+            chartId,
+            chart,
+            {
+                readState: async id => (await this.getForeignStateAsync(id))?.val ?? null,
+                getState: id => this.getForeignStateAsync(id),
+                writeState: async (id, val, ack = false) => {
+                    await this.setForeignStateAsync(id, val, ack);
+                },
+                sendTo: (instance, command, message) => this.sendTo(instance, command, message),
+                getLocation: () => this.location,
+                onActiveChange: ({ names, ids }) => {
+                    void this.setState(`charts.${chartId}.activeState`, names, true);
+                    void this.setState(`charts.${chartId}.activeStateIds`, JSON.stringify(ids), true);
+                },
+                persist: data => {
+                    void this.setState(`charts.${chartId}.snapshot`, JSON.stringify(data), true);
+                },
+                onValues: values => {
+                    void this.setState(`charts.${chartId}.values`, JSON.stringify(values), true);
+                },
+                onHistory: entries => this.addHistory(chartId, entries),
+                loadPersisted: async () => {
+                    const state = await this.getStateAsync(`charts.${chartId}.snapshot`);
+                    return typeof state?.val === "string" && state.val ? JSON.parse(state.val) : null;
+                },
+                log: this.log,
+            },
+            simulated,
+        );
+    }
+
+    /**
+     * Stops the chart and runs the given version of it as simulation, see ChartRuntime
+     *
+     * @param chartId Chart ID
+     * @param chart The chart as shown in the editor, may have unsaved changes
+     */
+    private async startSimulation(chartId: string, chart: Chart): Promise<void> {
+        if (!chart?.states?.length) {
+            throw new Error("The chart has no states");
+        }
+        this.stopChart(chartId);
+        this.endSimulationTimer(chartId);
+        const runtime = this.createRuntime(chartId, chart, true);
+        // registered before the start, so the start can be cancelled like a running simulation
+        this.simulations.set(
+            chartId,
+            setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS),
+        );
+        try {
+            await runtime.start();
+        } catch (err) {
+            this.endSimulationTimer(chartId);
+            await this.restartChart(chartId);
+            throw err;
+        }
+        this.runtimes.set(chartId, runtime);
+        this.updateSubscriptions();
+        await this.setState(`charts.${chartId}.simulation`, true, true);
+        this.log.info(`Chart "${chart.name}" runs as simulation, its outputs are not written`);
+    }
+
+    /**
+     * Ends the simulation of a chart, the real chart continues where it was before
+     *
+     * @param chartId Chart ID
+     */
+    private async stopSimulation(chartId: string): Promise<void> {
+        if (!this.simulations.has(chartId)) {
+            return;
+        }
+        this.endSimulationTimer(chartId);
+        this.stopChart(chartId);
+        this.log.info(`Simulation of chart ${chartId} ended`);
+        await this.restartChart(chartId, true);
+    }
+
+    /**
+     * @param chartId Chart ID
+     */
+    private endSimulationTimer(chartId: string): void {
+        clearTimeout(this.simulations.get(chartId));
+        this.simulations.delete(chartId);
+    }
+
+    /**
+     * @param chartId Chart ID
+     */
+    private onSimulationTimeout(chartId: string): void {
+        this.log.info(`Simulation of chart ${chartId} ended, the editor did not answer anymore`);
+        this.chartQueue = this.chartQueue
+            .then(() => this.stopSimulation(chartId))
+            .catch(err => this.log.error(`Cannot end the simulation of chart ${chartId}: ${err.message}`));
+    }
+
+    /**
+     * Starts a chart with the stored version
+     *
+     * @param chartId Chart ID
+     * @param restore Continue with the persisted state instead of the initial state
+     */
+    private async restartChart(chartId: string, restore = false): Promise<void> {
+        await this.startChart(chartId, await this.getObjectAsync(`charts.${chartId}`), restore);
+    }
+
+    /**
+     * Messages of the editor, for the simulation
+     *
+     * @param obj The message
+     */
+    private onMessage(obj: ioBroker.Message): void {
+        if (typeof obj !== "object" || !obj.command) {
+            return;
+        }
+        const message = (obj.message || {}) as { chartId?: string; chart?: Chart; name?: string; value?: any };
+        const chartId = String(message.chartId || "");
+        const reply = (response: Record<string, any>): void => {
+            if (obj.callback) {
+                this.sendTo(obj.from, obj.command, response, obj.callback);
+            }
+        };
+        const simulating = this.simulations.has(chartId);
+        if (simulating) {
+            // every message of the editor keeps the simulation alive
+            clearTimeout(this.simulations.get(chartId));
+            this.simulations.set(
+                chartId,
+                setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS),
+            );
+        }
+        const runtime = this.runtimes.get(chartId);
+        switch (obj.command) {
+            case "simulationStart":
+                this.chartQueue = this.chartQueue
+                    .then(() => this.startSimulation(chartId, message.chart as Chart))
+                    .then(() => reply({ ok: true }))
+                    .catch(err => reply({ error: err.message }));
+                return;
+            case "simulationStop":
+                this.chartQueue = this.chartQueue
+                    .then(() => this.stopSimulation(chartId))
+                    .then(() => reply({ ok: true }))
+                    .catch(err => reply({ error: err.message }));
+                return;
+            case "simulationInput":
+                if (!simulating || !runtime) {
+                    reply({ error: "No simulation is running" });
+                } else if (!runtime.simulateInput(String(message.name), message.value)) {
+                    reply({ error: `Unknown input "${message.name}"` });
+                } else {
+                    reply({ ok: true });
+                }
+                return;
+            case "simulationEvent":
+                if (!simulating || !runtime) {
+                    reply({ error: "No simulation is running" });
+                } else if (!runtime.handleEvent(String(message.name))) {
+                    reply({ error: `Unknown input "${message.name}"` });
+                } else {
+                    reply({ ok: true });
+                }
+                return;
+            case "simulationPing":
+                reply({ ok: simulating });
+                return;
+            default:
+                reply({ error: `Unknown command "${obj.command}"` });
+        }
     }
 
     /**
@@ -301,6 +461,17 @@ class Statechart extends utils.Adapter {
             },
             native: {},
         });
+        await this.setObjectNotExistsAsync(`charts.${chartId}.simulation`, {
+            type: "state",
+            common: {
+                name: "The chart runs as simulation from the editor, its outputs are not written",
+                type: "boolean",
+                role: "indicator",
+                read: true,
+                write: false,
+            },
+            native: {},
+        });
         await this.setObjectNotExistsAsync(`charts.${chartId}.event`, {
             type: "state",
             common: {
@@ -341,7 +512,9 @@ class Statechart extends utils.Adapter {
         }
         const runtime = this.runtimes.get(chartId);
         if (control === "reset") {
-            if (runtime) {
+            if (this.simulations.has(chartId)) {
+                this.log.info(`Chart "${chart.name}" is not reset, it runs as simulation`);
+            } else if (runtime) {
                 this.log.info(`Chart "${chart.name}" is reset`);
                 this.chartQueue = this.chartQueue
                     .then(async () => {
@@ -391,6 +564,10 @@ class Statechart extends utils.Adapter {
      */
     private onUnload(callback: () => void): void {
         try {
+            for (const timer of this.simulations.values()) {
+                clearTimeout(timer);
+            }
+            this.simulations.clear();
             for (const runtime of this.runtimes.values()) {
                 runtime.stop();
             }
@@ -415,6 +592,8 @@ class Statechart extends utils.Adapter {
         }
         this.chartQueue = this.chartQueue
             .then(async () => {
+                // e.g. saved in the editor: a simulation ends, the new version starts
+                this.endSimulationTimer(chartId);
                 this.stopChart(chartId);
                 await this.startChart(chartId, obj);
             })

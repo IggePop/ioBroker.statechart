@@ -20,6 +20,7 @@ Adapter ausgeführt.
 - Eingänge und Ausgänge, die mit beliebigen ioBroker-Datenpunkten verbunden sind
 - Live-Ansicht: Der aktive Zustand wird im Editor hervorgehoben, die aktuellen Werte der Variablen werden angezeigt,
   genommene Übergänge leuchten auf, und ein Verlauf zeigt, wann welcher Übergang genommen wurde und warum
+- Simulation: das Chart aus dem Editor laufen lassen, ohne dass etwas geschaltet wird, Eingänge von Hand setzen
 - Code-Editor mit Syntax-Hervorhebung, Fehlerprüfung (z.B. unbekannte Variablen) und Autovervollständigung
 - Mehrere unabhängige Charts pro Instanz, die sich über Datenpunkte anhalten, zurücksetzen und wecken lassen (z.B. aus vis)
 - Import und Export von Charts als JSON-Dateien
@@ -89,8 +90,8 @@ Das Licht geht bei Bewegung an und nach 2 Minuten ohne Bewegung aus: `after(2, m
 ### Dokumentation
 
 - [Referenz](reference.md): Beschriftung von Übergängen und Zeitlogik, wann Eingänge das Chart aufwecken, Aktionen,
-  verschachtelte und parallele Zustände, Hilfsfunktionen, Funktionsblöcke, ein laufendes Chart beobachten, Import und
-  Export, vom Adapter angelegte Datenpunkte, Neustart, Ausführung und Einschränkungen
+  verschachtelte und parallele Zustände, Hilfsfunktionen, Funktionsblöcke, ein laufendes Chart beobachten,
+  Simulation, Import und Export, vom Adapter angelegte Datenpunkte, Neustart, Ausführung und Einschränkungen
 - [Entwicklung](../development.md) (Englisch): Build, Dev-Server, Tests und Aufbau des Projekts
 
 ### Hinweis

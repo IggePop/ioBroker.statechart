@@ -185,6 +185,26 @@ Während ein Chart läuft, zeigt der Editor, was es tut:
 Live-Werte und Verlauf kommen vom laufenden Chart. Sie beziehen sich also auf das gespeicherte Chart, nicht auf
 ungespeicherte Änderungen im Editor.
 
+## Simulation
+
+Der Knopf mit dem Kolben in der Werkzeugleiste startet eine **Simulation**: Das Chart läuft so, wie es im Editor zu
+sehen ist, auch mit ungespeicherten Änderungen, aber im Haus wird nichts geschaltet.
+
+- Das echte Chart wird angehalten, solange die Simulation läuft.
+- Die Eingänge beginnen mit ihren aktuellen Werten. Danach ändern sie sich nur, wenn du sie in der Tafel oben links
+  setzt: Wahrheitswerte mit einem Schalter, andere Werte im Textfeld mit Enter (eine Zahl, `true`/`false` oder Text).
+  Der Blitz neben einem Eingang weckt das Chart mit seinem Event, ohne seinen Wert zu ändern. Echte Änderungen der
+  Eingänge werden ignoriert.
+- Ausgänge, `setState()`, `setStateDelayed()` und `sendTo()` werden nicht ausgeführt. Der Verlauf zeigt sie als
+  **Nicht ausgeführt: …**, die Live-Werte zeigen die simulierten Werte der Ausgänge. `getState()` liest die echten
+  Datenpunkte.
+- Timer und Zeitlogik laufen in Echtzeit.
+- Aktive Zustände, Live-Werte und Verlauf funktionieren wie beim echten Chart, die Ereignisse der Simulation sind im
+  Verlauf markiert. Der gespeicherte Zustand des echten Charts wird nicht verändert.
+- **Simulation beenden** beendet sie, danach macht das echte Chart dort weiter, wo es vorher war. Die Simulation endet
+  auch beim Speichern des Charts, bei einem Neustart des Adapters, bei der Auswahl eines anderen Charts und nach zwei
+  Minuten, wenn der Editor geschlossen wurde.
+
 ## Import und Export
 
 - **Chart exportieren** (letztes Symbol in der Werkzeugleiste des Editors) speichert das Chart als JSON-Datei, mit
@@ -208,6 +228,7 @@ Für jedes Chart legt der Adapter unter `statechart.<instanz>.charts.<chart>` an
 | `snapshot` | Gespeicherter Zustand des Charts (aktive Zustände, wann sie betreten wurden, lokale Variablen), siehe unten |
 | `values` | Aktuelle Werte aller Variablen als JSON, `{}` wenn das Chart nicht läuft |
 | `history` | Die letzten 200 Ereignisse (Starts und genommene Übergänge) als JSON. Schreiben ohne ack leert ihn |
+| `simulation` | `true`, solange das Chart als Simulation aus dem Editor läuft |
 
 Das Chart selbst ist im Objekt `statechart.<instanz>.charts.<chart>` gespeichert.
 

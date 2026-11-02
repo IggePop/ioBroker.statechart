@@ -1,5 +1,6 @@
-import React from "react";
-import { Box, Typography } from "@mui/material";
+import React, { useState } from "react";
+import { Box, IconButton, InputBase, Switch, Tooltip, Typography } from "@mui/material";
+import { Bolt as EventIcon } from "@mui/icons-material";
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartSymbol } from "../../../src/lib/chart-model";
 
@@ -15,18 +16,87 @@ export function formatValue(value: any): string {
 }
 
 /**
- * The current values of the variables of the running chart, shown on the canvas
+ * @param text An entered value: JSON (number, boolean, string in quotes, object), anything else is a string
+ */
+function parseValue(text: string): any {
+    try {
+        return JSON.parse(text);
+    } catch {
+        return text;
+    }
+}
+
+/**
+ * The value of an input in a simulation, which can be changed: a switch for booleans, otherwise a text field
+ * which sets the value with Enter
+ *
+ * @param props Component properties
+ * @param props.value The current value
+ * @param props.onChange Sets the value
+ */
+function SimulatedValue({ value, onChange }: { value: any; onChange: (value: any) => void }): React.JSX.Element {
+    const [text, setText] = useState<string | null>(null);
+    if (typeof value === "boolean") {
+        return (
+            <Switch
+                size="small"
+                checked={value}
+                onChange={e => onChange(e.target.checked)}
+            />
+        );
+    }
+    return (
+        <Tooltip title={I18n.t("simulatedValueHelp")}>
+            <InputBase
+                // the typed text is kept until it is set, then the value from the adapter is shown again
+                value={text ?? formatValue(value)}
+                onChange={e => setText(e.target.value)}
+                onKeyDown={e => {
+                    if (e.key === "Enter" && text !== null) {
+                        onChange(parseValue(text));
+                        setText(null);
+                    } else if (e.key === "Escape") {
+                        setText(null);
+                    }
+                }}
+                onBlur={() => setText(null)}
+                sx={{
+                    fontFamily: "monospace",
+                    fontSize: 12,
+                    px: 0.5,
+                    border: 1,
+                    borderColor: text === null ? "divider" : "warning.main",
+                    borderRadius: 0.5,
+                    width: 140,
+                }}
+            />
+        </Tooltip>
+    );
+}
+
+/**
+ * The current values of the variables of the running chart, shown on the canvas. In a simulation, the values of the
+ * inputs can be changed.
  *
  * @param props Component properties
  * @param props.symbols The variables of the chart in the editor
  * @param props.values The values published by the adapter, empty if the chart does not run
+ * @param props.simulating If the chart runs as simulation
+ * @param props.onSetInput Simulation: sets the value of an input
+ * @param props.onEvent Simulation: wakes up the chart with the event of an input, without changing its value
  */
 export default function LiveValuesPanel({
     symbols,
     values,
+    simulating = false,
+    onSetInput,
+    onEvent,
 }: {
     symbols: ChartSymbol[];
     values: Record<string, any>;
+    simulating?: boolean;
+    onSetInput?: (name: string, value: any) => void;
+    onEvent?: (name: string) => void;
 }): React.JSX.Element {
     const running = Object.keys(values).length > 0;
     return (
@@ -51,7 +121,7 @@ export default function LiveValuesPanel({
                 color="text.secondary"
                 component="div"
             >
-                {I18n.t("Live values")}
+                {I18n.t(simulating ? "Simulation: set the inputs" : "Live values")}
             </Typography>
             {!running ? (
                 <Typography
@@ -68,6 +138,7 @@ export default function LiveValuesPanel({
                     <tbody>
                         {symbols.map(symbol => {
                             const text = symbol.name in values ? formatValue(values[symbol.name]) : "-";
+                            const editable = simulating && symbol.scope === "input";
                             return (
                                 <tr key={symbol.name}>
                                     <Box
@@ -83,13 +154,33 @@ export default function LiveValuesPanel({
                                     >
                                         {symbol.name}
                                     </Box>
-                                    <Box
-                                        component="td"
-                                        sx={{ whiteSpace: "nowrap" }}
-                                        title={text.length > MAX_LENGTH ? text : undefined}
-                                    >
-                                        {text.length > MAX_LENGTH ? `${text.substring(0, MAX_LENGTH)}…` : text}
-                                    </Box>
+                                    {editable ? (
+                                        <Box
+                                            component="td"
+                                            sx={{ whiteSpace: "nowrap" }}
+                                        >
+                                            <SimulatedValue
+                                                value={values[symbol.name]}
+                                                onChange={value => onSetInput?.(symbol.name, value)}
+                                            />
+                                            <Tooltip title={I18n.t("simulatedEventHelp")}>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => onEvent?.(symbol.name)}
+                                                >
+                                                    <EventIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
+                                    ) : (
+                                        <Box
+                                            component="td"
+                                            sx={{ whiteSpace: "nowrap" }}
+                                            title={text.length > MAX_LENGTH ? text : undefined}
+                                        >
+                                            {text.length > MAX_LENGTH ? `${text.substring(0, MAX_LENGTH)}…` : text}
+                                        </Box>
+                                    )}
                                 </tr>
                             );
                         })}

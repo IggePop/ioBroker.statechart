@@ -16,7 +16,13 @@ function formatTime(ts: number): string {
 
 function describeEntry(entry: HistoryEntry): { primary: string; secondary: string } {
     const active = I18n.t("activeAfter", entry.active || "-");
+    if (entry.kind === "effect") {
+        return { primary: I18n.t("notExecuted", entry.text ?? ""), secondary: I18n.t("Simulation") };
+    }
     if (entry.kind === "start") {
+        if (entry.simulated) {
+            return { primary: I18n.t("Simulation started"), secondary: active };
+        }
         return { primary: I18n.t(entry.restored ? "Chart restored" : "Chart started"), secondary: active };
     }
     // entries of older versions have no cause: an input if the trigger is set, otherwise a timer
@@ -29,7 +35,10 @@ function describeEntry(entry: HistoryEntry): { primary: string; secondary: strin
     } else {
         trigger = I18n.t("triggeredByTimer");
     }
-    return { primary: `${entry.from} → ${entry.to}`, secondary: `${trigger} · ${active}` };
+    return {
+        primary: `${entry.from} → ${entry.to}`,
+        secondary: `${entry.simulated ? `${I18n.t("Simulation")} · ` : ""}${trigger} · ${active}`,
+    };
 }
 
 interface HistoryPanelProps {
@@ -89,7 +98,15 @@ export default function HistoryPanel(props: HistoryPanelProps): React.JSX.Elemen
                             key={entries.length - i}
                             disabled={!selectable && entry.kind === "transition"}
                             onClick={() => entry.transition && selectable && onSelectTransition(entry.transition)}
-                            sx={{ px: 1, borderBottom: 1, borderColor: "divider", alignItems: "flex-start" }}
+                            sx={{
+                                px: 1,
+                                borderBottom: 1,
+                                borderColor: "divider",
+                                alignItems: "flex-start",
+                                // events of a simulation are marked at the side
+                                borderLeft: entry.simulated ? 3 : 0,
+                                borderLeftColor: "warning.main",
+                            }}
                         >
                             <Typography
                                 variant="caption"

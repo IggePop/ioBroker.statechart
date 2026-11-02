@@ -69,10 +69,18 @@ function toSnapshot(state) {
   return state ? { val: state.val, ack: !!state.ack, ts: state.ts, lc: state.lc } : null;
 }
 class ChartRuntime {
-  constructor(chartId, chart, host) {
+  /**
+   * @param chartId ID of the chart object
+   * @param chart The chart
+   * @param host The connection to the outside world
+   * @param simulated Simulation: the inputs are only changed by simulateInput(), outputs, setState() etc. are not
+   * written but recorded in the history, nothing is persisted
+   */
+  constructor(chartId, chart, host, simulated = false) {
     this.chartId = chartId;
     this.chart = chart;
     this.host = host;
+    this.simulated = simulated;
     this.structure = new import_chart_structure.ChartStructure(chart);
     this.statesById = this.structure.statesById;
     this.sandbox = import_node_vm.default.createContext({ ...this.createHelpers(), ...import_chart_model.TIME_UNITS });
@@ -145,6 +153,8 @@ class ChartRuntime {
   currentValues = null;
   hash;
   actor = null;
+  /** true while a wakeup is processed, effects outside of wakeups are published right away */
+  wakingUp = false;
   /** the current time, can be replaced in tests */
   now = () => Date.now();
   /**
@@ -205,7 +215,7 @@ class ChartRuntime {
    * getState()
    */
   get subscribedStateIds() {
-    return [.../* @__PURE__ */ new Set([...this.inputStateIds, ...this.readStateIds])];
+    return [.../* @__PURE__ */ new Set([...this.simulated ? [] : this.inputStateIds, ...this.readStateIds])];
   }
   /**
    * @param options Start options
@@ -244,6 +254,7 @@ class ChartRuntime {
       this.run(this.compile(this.prepareCode(fn.code, "statements"), where), where);
     }
     this.writeChangedOutputs();
+    this.wakingUp = true;
     const machine = (0, import_xstate.createMachine)(this.buildMachineConfig());
     const persisted = options.restore && this.chart.restoreState !== false ? await this.loadPersisted() : null;
     let restored = false;
@@ -260,7 +271,8 @@ class ChartRuntime {
     } else {
       this.startActor(machine);
     }
-    this.pendingHistory.push({ ts: this.now(), kind: "start", restored, active: this.activeNames });
+    this.pendingHistory.unshift({ ts: this.now(), kind: "start", restored, active: this.activeNames });
+    this.wakingUp = false;
     this.wakeup(null, "start");
   }
   /**
@@ -340,7 +352,7 @@ class ChartRuntime {
    * Stores the current state of the chart, if it changed since the last time
    */
   persist() {
-    if (!this.actor || !this.host.persist) {
+    if (!this.actor || !this.host.persist || this.simulated) {
       return;
     }
     const data = {
@@ -589,18 +601,27 @@ class ChartRuntime {
   createHelpers() {
     const prefix = `[${this.chart.name}]`;
     const write = (id, value, ack) => this.host.writeState(String(id), value, !!ack).catch((err) => this.host.log.warn(`${prefix} Cannot write ${id}: ${err}`));
+    const describe = (name, args) => `${name}(${args.map((arg) => arg === void 0 ? "undefined" : JSON.stringify(arg)).join(", ")})`;
     return {
       log: (message, level = "info") => {
         const method = ["debug", "info", "warn", "error"].includes(level) ? level : "info";
         this.host.log[method](`${prefix} ${message}`);
       },
       setState: (id, value, ack = false) => {
+        if (this.simulated) {
+          this.recordEffect(describe("setState", [id, value, ...ack ? [true] : []]));
+          return;
+        }
         void write(id, value, ack);
       },
       setStateDelayed: (id, value, delayMs, ack = false) => {
         const timer = setTimeout(
           () => {
             this.delayedWrites.delete(timer);
+            if (this.simulated) {
+              this.recordEffect(describe("setState", [id, value, ...ack ? [true] : []]));
+              return;
+            }
             void write(id, value, ack);
           },
           Math.min(Math.max(Number(delayMs) || 0, 0), MAX_TIMEOUT_MS)
@@ -608,6 +629,10 @@ class ChartRuntime {
         this.delayedWrites.add(timer);
       },
       sendTo: (instance, command, message) => {
+        if (this.simulated) {
+          this.recordEffect(describe("sendTo", [instance, command, message]));
+          return;
+        }
         if (!this.host.sendTo) {
           throw new Error("sendTo() is not available");
         }
@@ -693,7 +718,35 @@ class ChartRuntime {
     if (this.readStateIds.has(stateId)) {
       this.stateCache.set(stateId, toSnapshot(state));
     }
-    this.handleInput(stateId, state.val, { ack: state.ack });
+    if (!this.simulated) {
+      this.handleInput(stateId, state.val, { ack: state.ack });
+    }
+  }
+  /**
+   * Simulation: sets the value of an input and wakes up the chart, like a change of the input
+   *
+   * @param name Name of the input
+   * @param val The new value
+   * @returns false if the chart has no input with this name
+   */
+  simulateInput(name, val) {
+    const symbol = this.chart.symbols.find((s) => s.scope === "input" && s.name === name);
+    if (!symbol || !this.actor) {
+      return false;
+    }
+    this.applyInput(symbol, val);
+    return true;
+  }
+  /**
+   * Simulation: records something which was not executed, shown in the history
+   *
+   * @param text What was not executed
+   */
+  recordEffect(text) {
+    this.pendingHistory.push({ ts: this.now(), kind: "effect", text, active: this.activeNames });
+    if (!this.wakingUp) {
+      this.publishLive();
+    }
   }
   /**
    * Must be called when an input state is updated
@@ -766,6 +819,20 @@ class ChartRuntime {
     }
     this.wakeupCause = cause;
     this.wakeupInput = input;
+    this.wakingUp = true;
+    try {
+      this.processWakeup(input);
+      this.writeChangedOutputs();
+    } finally {
+      this.wakingUp = false;
+    }
+    this.persist();
+    this.publishLive();
+  }
+  /**
+   * @param input Name of the input which caused the wakeup, null for timers and the start
+   */
+  processWakeup(input) {
     this.rememberValues();
     if (input !== null) {
       for (const [id, counts] of this.inputCounts) {
@@ -791,9 +858,6 @@ class ChartRuntime {
       }
     }
     this.updateDurations();
-    this.writeChangedOutputs();
-    this.persist();
-    this.publishLive();
   }
   /**
    * Checks the conditions of after(n, unit, condition) of the active states, and starts a timer which wakes up the
@@ -874,7 +938,7 @@ class ChartRuntime {
    */
   publishLive() {
     if (this.pendingHistory.length) {
-      const entries = this.pendingHistory;
+      const entries = this.simulated ? this.pendingHistory.map((entry) => ({ ...entry, simulated: true })) : this.pendingHistory;
       this.pendingHistory = [];
       this.host.onHistory?.(entries);
     }
@@ -970,8 +1034,9 @@ class ChartRuntime {
       if (transition.condition && !this.run(transition.condition, `${transition.where}/condition`, transition.source)) {
         continue;
       }
+      const at = this.pendingHistory.length;
       this.actor?.send({ type: `T.${transition.id}` });
-      this.pendingHistory.push({
+      this.pendingHistory.splice(at, 0, {
         ts: this.now(),
         kind: "transition",
         transition: transition.id,
@@ -1181,6 +1246,10 @@ ${this.prepareCode(code, "statements")}
       const val = this.sandbox[symbol.name];
       if (val !== this.outputValues.get(symbol.name)) {
         this.outputValues.set(symbol.name, val);
+        if (this.simulated) {
+          this.recordEffect(`${symbol.name} = ${val === void 0 ? "undefined" : JSON.stringify(val)}`);
+          continue;
+        }
         this.host.writeState(symbol.stateId, val).catch((err) => this.host.log.warn(`[${this.chart.name}] Cannot write ${symbol.stateId}: ${err}`));
       }
     }

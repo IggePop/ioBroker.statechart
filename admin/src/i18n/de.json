@@ -139,5 +139,14 @@
     "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unbekannter Eingang \"%s\", verwende eine Zeiteinheit (msec, sec, min) oder den Namen eines Eingangs",
     "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "Ungültiger Zeitausdruck \"%s\", erwartet z.B. after(5, sec), every(10, min), after(3, taster), after(5, min, bedingung) oder at(\"sunset\", -30)",
     "Unknown time \"%s\", use a time like \"22:30\" or one of: %s": "Unbekannte Zeit \"%s\", verwende eine Uhrzeit wie \"22:30\" oder eins von: %s",
-    "getState() needs the ID of the state as text, e.g. getState(\"0_userdata.0.temperature\")": "getState() braucht die ID des Datenpunkts als Text, z.B. getState(\"0_userdata.0.temperatur\")"
+    "getState() needs the ID of the state as text, e.g. getState(\"0_userdata.0.temperature\")": "getState() braucht die ID des Datenpunkts als Text, z.B. getState(\"0_userdata.0.temperatur\")",
+    "simulationStartTitle": "Simulation starten: Das Chart läuft so, wie es hier zu sehen ist, ohne Ausgänge zu schreiben, die Eingänge werden von Hand gesetzt",
+    "Stop simulation": "Simulation beenden",
+    "simulationBanner": "Simulation: Ausgänge, setState() und sendTo() werden nicht ausgeführt. Die Eingänge werden in der Tafel links gesetzt.",
+    "Simulation: set the inputs": "Simulation: Eingänge setzen",
+    "simulatedValueHelp": "Neuer Wert, mit Enter setzen: eine Zahl, true/false oder Text",
+    "simulatedEventHelp": "Chart mit dem Event dieses Eingangs wecken, ohne seinen Wert zu ändern",
+    "notExecuted": "Nicht ausgeführt: %s",
+    "Simulation": "Simulation",
+    "Simulation started": "Simulation gestartet"
 }

@@ -139,5 +139,14 @@
     "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input",
     "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)",
     "Unknown time \"%s\", use a time like \"22:30\" or one of: %s": "Unknown time \"%s\", use a time like \"22:30\" or one of: %s",
-    "getState() needs the ID of the state as text, e.g. getState(\"0_userdata.0.temperature\")": "getState() needs the ID of the state as text, e.g. getState(\"0_userdata.0.temperature\")"
+    "getState() needs the ID of the state as text, e.g. getState(\"0_userdata.0.temperature\")": "getState() needs the ID of the state as text, e.g. getState(\"0_userdata.0.temperature\")",
+    "simulationStartTitle": "Start simulation: the chart as shown here runs without writing outputs, the inputs are set by hand",
+    "Stop simulation": "Stop simulation",
+    "simulationBanner": "Simulation: outputs, setState() and sendTo() are not executed. Set the inputs in the panel on the left.",
+    "Simulation: set the inputs": "Simulation: set the inputs",
+    "simulatedValueHelp": "New value, set with Enter: a number, true/false, or text",
+    "simulatedEventHelp": "Wake up the chart with the event of this input, without changing its value",
+    "notExecuted": "Not executed: %s",
+    "Simulation": "Simulation",
+    "Simulation started": "Simulation started"
 }

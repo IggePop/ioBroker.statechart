@@ -28,6 +28,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Inputs and outputs mapped to any ioBroker states
 - Live view: the active state is highlighted in the editor, the current values of the variables are shown, taken
   transitions light up, and a history shows when which transition was taken and why
+- Simulation: run the chart from the editor without switching anything, set the inputs by hand
 - Code editor with syntax highlighting, error checking (e.g. unknown variables) and completion
 - Several independent charts per instance, which can be paused, reset and woken up by states (e.g. from vis)
 - Import and export of charts as JSON files
@@ -95,8 +96,8 @@ The light goes on with motion and off after 2 minutes without motion: `after(2, 
 ### Documentation
 
 - [Reference](docs/en/reference.md): transition labels and temporal logic, when inputs wake up the chart, actions,
-  nested and parallel states, helper functions, function blocks, watching a running chart, import and export,
-  states created by the adapter, restart, execution model and limitations
+  nested and parallel states, helper functions, function blocks, watching a running chart, simulation, import and
+  export, states created by the adapter, restart, execution model and limitations
 - [Development](docs/development.md): build, dev-server, tests and the structure of the project
 
 ## Disclaimer
@@ -110,6 +111,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) simulation: the chart runs as shown in the editor without writing outputs, the inputs are set by hand
 * (Igge) `getState("id")` reads any state in conditions and actions, `at("sunset", -30)` and `at("22:30")` are valid every day at an astro event or a time of day
 * (Igge) control states per chart: `enabled` pauses and starts it, `reset` restarts it in its initial state, `event` wakes it up with the event of an input
 * (Igge) more temporal logic: `before`, `at` and `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)` for conditions which are true for a time, and the helpers `elapsed()` and `duration()`

@@ -55,6 +55,8 @@ interface TabAppState extends GenericAppState {
     liveValues: Record<string, any>;
     /** events of the selected chart, null until they are loaded */
     history: HistoryEntry[] | null;
+    /** if the selected chart runs as simulation */
+    simulating: boolean;
     newChartName: string | null;
     deleteChart: string | null;
     /** if the editor has unsaved changes */
@@ -71,6 +73,8 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
     private readonly importInput = React.createRef<HTMLInputElement>();
     /** object ID of the chart whose live states (active states, values, history) are subscribed */
     private liveChart: string | null = null;
+    /** keeps the simulation of the selected chart alive, the adapter ends it if the editor is closed */
+    private simulationPing: ReturnType<typeof setInterval> | null = null;
 
     public constructor(props: GenericAppProps) {
         const extendedProps = {
@@ -88,6 +92,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             activeIds: [],
             liveValues: {},
             history: null,
+            simulating: false,
             newChartName: null,
             deleteChart: null,
             changed: false,
@@ -111,6 +116,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
     public override componentWillUnmount(): void {
         void this.socket.unsubscribeObject(`${this.chartPrefix}*`, this.onObjectChange);
         this.unsubscribeLive();
+        this.setSimulationPing(null);
         super.componentWillUnmount();
     }
 
@@ -129,7 +135,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
     };
 
     /** the states of a running chart which the editor shows, see subscribeLive() */
-    private static readonly LIVE_STATES = ["activeStateIds", "values", "history"];
+    private static readonly LIVE_STATES = ["activeStateIds", "values", "history", "simulation"];
 
     private onLiveStateChange = (id: string, state: ioBroker.State | null | undefined): void => {
         if (!this.liveChart || !id.startsWith(`${this.liveChart}.`)) {
@@ -148,6 +154,59 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             this.setState({ liveValues: value && typeof value === "object" ? value : {} });
         } else if (name === "history") {
             this.setState({ history: Array.isArray(value) ? value : [] });
+        } else if (name === "simulation") {
+            const simulating = value === true;
+            this.setState({ simulating });
+            this.setSimulationPing(simulating ? this.liveChart : null);
+        }
+    };
+
+    /**
+     * Sends a message about the simulation to the adapter
+     *
+     * @param command The command, e.g. "simulationStart"
+     * @param message Its data, the chart ID is added
+     * @param id Object ID of the chart
+     */
+    private async sendSimulation(command: string, message: Record<string, any>, id: string): Promise<void> {
+        const response = await this.socket.sendTo(`${this.adapterName}.${this.instance}`, command, {
+            ...message,
+            chartId: id.substring(this.chartPrefix.length),
+        });
+        if (response?.error) {
+            throw new Error(response.error);
+        }
+    }
+
+    /**
+     * Sends a sign of life for the simulation of a chart regularly, or stops sending it
+     *
+     * @param id Object ID of the simulated chart, null to stop
+     */
+    private setSimulationPing(id: string | null): void {
+        if (this.simulationPing) {
+            clearInterval(this.simulationPing);
+            this.simulationPing = null;
+        }
+        if (id) {
+            this.simulationPing = setInterval(() => {
+                this.sendSimulation("simulationPing", {}, id).catch(() => {
+                    // the next ping tries again, the state "simulation" shows if it ended
+                });
+            }, 30_000);
+        }
+    }
+
+    /**
+     * Starts or stops the simulation of the selected chart, or sets an input
+     *
+     * @param command The command, e.g. "simulationStart"
+     * @param message Its data
+     */
+    private simulate = (command: string, message: Record<string, any> = {}): void => {
+        const id = this.state.selectedChart;
+        if (id) {
+            this.sendSimulation(command, message, id).catch(err => this.showError(String(err.message || err)));
         }
     };
 
@@ -200,8 +259,23 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
      * @param id Object ID of the chart
      */
     private showChart(id: string | null): void {
+        const previous = this.state.selectedChart;
+        if (previous && this.state.simulating) {
+            // the simulation belongs to the editor of the chart
+            this.sendSimulation("simulationStop", {}, previous).catch(err =>
+                this.showError(String(err.message || err)),
+            );
+        }
+        this.setSimulationPing(null);
         this.unsubscribeLive();
-        this.setState({ selectedChart: id, activeIds: [], liveValues: {}, history: null, changed: false });
+        this.setState({
+            selectedChart: id,
+            activeIds: [],
+            liveValues: {},
+            history: null,
+            simulating: false,
+            changed: false,
+        });
         if (id) {
             this.subscribeLive(id);
         }
@@ -581,6 +655,8 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                             activeIds={this.state.activeIds}
                             liveValues={this.state.liveValues}
                             chartHistory={this.state.history}
+                            simulating={this.state.simulating}
+                            onSimulate={this.simulate}
                             onClearHistory={() => this.clearHistory(selected)}
                             onSave={newChart => this.saveChart(selected, newChart)}
                             onChangedChange={this.onChangedChange}

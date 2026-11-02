@@ -85,8 +85,15 @@ export type WakeupCause = "input" | "timer" | "start";
 export interface HistoryEntry {
     /** Time of the event (ms since 1970) */
     ts: number;
-    /** "start": the chart was started, "transition": a transition was taken */
-    kind: "start" | "transition";
+    /**
+     * "start": the chart was started, "transition": a transition was taken,
+     * "effect": a simulation did not write an output or did not execute setState() etc.
+     */
+    kind: "start" | "transition" | "effect";
+    /** The chart runs as simulation */
+    simulated?: boolean;
+    /** Effect only: what was not executed, e.g. 'light = true' or 'setState("x", 1)' */
+    text?: string;
     /** Start only: the chart continued with the state from before the restart of the adapter */
     restored?: boolean;
     /** Transition only: ID of the transition */
@@ -266,13 +273,23 @@ export class ChartRuntime {
     currentValues: Map<string, any> | null = null;
     readonly hash: string;
     actor: AnyActor | null = null;
+    /** true while a wakeup is processed, effects outside of wakeups are published right away */
+    wakingUp = false;
     /** the current time, can be replaced in tests */
     now = (): number => Date.now();
 
+    /**
+     * @param chartId ID of the chart object
+     * @param chart The chart
+     * @param host The connection to the outside world
+     * @param simulated Simulation: the inputs are only changed by simulateInput(), outputs, setState() etc. are not
+     * written but recorded in the history, nothing is persisted
+     */
     constructor(
         readonly chartId: string,
         readonly chart: Chart,
         readonly host: RuntimeHost,
+        readonly simulated = false,
     ) {
         this.structure = new ChartStructure(chart);
         this.statesById = this.structure.statesById;
@@ -344,7 +361,8 @@ export class ChartRuntime {
      * getState()
      */
     get subscribedStateIds(): string[] {
-        return [...new Set([...this.inputStateIds, ...this.readStateIds])];
+        // a simulation does not react on the real inputs
+        return [...new Set([...(this.simulated ? [] : this.inputStateIds), ...this.readStateIds])];
     }
 
     /**
@@ -394,6 +412,8 @@ export class ChartRuntime {
         }
         this.writeChangedOutputs();
 
+        // effects of the entry actions are published together with the start, see recordEffect()
+        this.wakingUp = true;
         const machine = createMachine(this.buildMachineConfig());
         const persisted = options.restore && this.chart.restoreState !== false ? await this.loadPersisted() : null;
         let restored = false;
@@ -410,7 +430,9 @@ export class ChartRuntime {
         } else {
             this.startActor(machine);
         }
-        this.pendingHistory.push({ ts: this.now(), kind: "start", restored, active: this.activeNames });
+        // before the effects of the entry actions
+        this.pendingHistory.unshift({ ts: this.now(), kind: "start", restored, active: this.activeNames });
+        this.wakingUp = false;
         // like the first time step in Stateflow: transitions without event, whose condition is already true,
         // are taken right away instead of on the next change of an input
         this.wakeup(null, "start");
@@ -498,7 +520,8 @@ export class ChartRuntime {
      * Stores the current state of the chart, if it changed since the last time
      */
     persist(): void {
-        if (!this.actor || !this.host.persist) {
+        // a simulation does not change the stored state of the real chart
+        if (!this.actor || !this.host.persist || this.simulated) {
             return;
         }
         const data: PersistedChart = {
@@ -771,6 +794,8 @@ export class ChartRuntime {
             this.host
                 .writeState(String(id), value, !!ack)
                 .catch(err => this.host.log.warn(`${prefix} Cannot write ${id}: ${err}`));
+        const describe = (name: string, args: any[]): string =>
+            `${name}(${args.map(arg => (arg === undefined ? "undefined" : JSON.stringify(arg))).join(", ")})`;
         return {
             log: (message: string, level = "info") => {
                 const method: LogLevel = ["debug", "info", "warn", "error"].includes(level)
@@ -779,12 +804,20 @@ export class ChartRuntime {
                 this.host.log[method](`${prefix} ${message}`);
             },
             setState: (id: string, value: any, ack = false) => {
+                if (this.simulated) {
+                    this.recordEffect(describe("setState", [id, value, ...(ack ? [true] : [])]));
+                    return;
+                }
                 void write(id, value, ack);
             },
             setStateDelayed: (id: string, value: any, delayMs: number, ack = false) => {
                 const timer = setTimeout(
                     () => {
                         this.delayedWrites.delete(timer);
+                        if (this.simulated) {
+                            this.recordEffect(describe("setState", [id, value, ...(ack ? [true] : [])]));
+                            return;
+                        }
                         void write(id, value, ack);
                     },
                     Math.min(Math.max(Number(delayMs) || 0, 0), MAX_TIMEOUT_MS),
@@ -792,6 +825,10 @@ export class ChartRuntime {
                 this.delayedWrites.add(timer);
             },
             sendTo: (instance: string, command: string, message: any) => {
+                if (this.simulated) {
+                    this.recordEffect(describe("sendTo", [instance, command, message]));
+                    return;
+                }
                 if (!this.host.sendTo) {
                     throw new Error("sendTo() is not available");
                 }
@@ -884,7 +921,39 @@ export class ChartRuntime {
         if (this.readStateIds.has(stateId)) {
             this.stateCache.set(stateId, toSnapshot(state));
         }
-        this.handleInput(stateId, state.val, { ack: state.ack });
+        if (!this.simulated) {
+            this.handleInput(stateId, state.val, { ack: state.ack });
+        }
+    }
+
+    /**
+     * Simulation: sets the value of an input and wakes up the chart, like a change of the input
+     *
+     * @param name Name of the input
+     * @param val The new value
+     * @returns false if the chart has no input with this name
+     */
+    simulateInput(name: string, val: any): boolean {
+        const symbol = this.chart.symbols.find(s => s.scope === "input" && s.name === name);
+        if (!symbol || !this.actor) {
+            return false;
+        }
+        // the filters by ack and the debounce do not apply to values set by hand
+        this.applyInput(symbol, val);
+        return true;
+    }
+
+    /**
+     * Simulation: records something which was not executed, shown in the history
+     *
+     * @param text What was not executed
+     */
+    recordEffect(text: string): void {
+        this.pendingHistory.push({ ts: this.now(), kind: "effect", text, active: this.activeNames });
+        // e.g. setStateDelayed(): its time came without a wakeup
+        if (!this.wakingUp) {
+            this.publishLive();
+        }
     }
 
     /**
@@ -963,6 +1032,22 @@ export class ChartRuntime {
         }
         this.wakeupCause = cause;
         this.wakeupInput = input;
+        this.wakingUp = true;
+        try {
+            this.processWakeup(input);
+            // functions called in conditions may have changed outputs as well
+            this.writeChangedOutputs();
+        } finally {
+            this.wakingUp = false;
+        }
+        this.persist();
+        this.publishLive();
+    }
+
+    /**
+     * @param input Name of the input which caused the wakeup, null for timers and the start
+     */
+    processWakeup(input: string | null): void {
         this.rememberValues();
         if (input !== null) {
             for (const [id, counts] of this.inputCounts) {
@@ -992,10 +1077,6 @@ export class ChartRuntime {
         }
         // the states entered by this wakeup start measuring their after(n, unit, condition)
         this.updateDurations();
-        // functions called in conditions may have changed outputs as well
-        this.writeChangedOutputs();
-        this.persist();
-        this.publishLive();
     }
 
     /**
@@ -1083,7 +1164,9 @@ export class ChartRuntime {
      */
     publishLive(): void {
         if (this.pendingHistory.length) {
-            const entries = this.pendingHistory;
+            const entries = this.simulated
+                ? this.pendingHistory.map(entry => ({ ...entry, simulated: true }))
+                : this.pendingHistory;
             this.pendingHistory = [];
             this.host.onHistory?.(entries);
         }
@@ -1188,9 +1271,11 @@ export class ChartRuntime {
             ) {
                 continue;
             }
+            // the transition is listed before the effects of its actions
+            const at = this.pendingHistory.length;
             this.actor?.send({ type: `T.${transition.id}` });
             // XState has executed the transition synchronously, so the active states are the new ones
-            this.pendingHistory.push({
+            this.pendingHistory.splice(at, 0, {
                 ts: this.now(),
                 kind: "transition",
                 transition: transition.id,
@@ -1424,6 +1509,10 @@ export class ChartRuntime {
             const val = this.sandbox[symbol.name];
             if (val !== this.outputValues.get(symbol.name)) {
                 this.outputValues.set(symbol.name, val);
+                if (this.simulated) {
+                    this.recordEffect(`${symbol.name} = ${val === undefined ? "undefined" : JSON.stringify(val)}`);
+                    continue;
+                }
                 this.host
                     .writeState(symbol.stateId, val)
                     .catch(err => this.host.log.warn(`[${this.chart.name}] Cannot write ${symbol.stateId}: ${err}`));

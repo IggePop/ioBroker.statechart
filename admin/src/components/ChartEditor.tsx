@@ -13,7 +13,7 @@ import {
     useReactFlow,
 } from "@xyflow/react";
 import type { OnConnect, OnEdgesChange, OnNodeDrag, OnNodesChange } from "@xyflow/react";
-import { Box, Divider, GlobalStyles, IconButton, Tab, Tabs, Toolbar, Tooltip } from "@mui/material";
+import { Alert, Box, Button, Divider, GlobalStyles, IconButton, Tab, Tabs, Toolbar, Tooltip } from "@mui/material";
 import {
     Add as AddIcon,
     Code as CodeIcon,
@@ -25,6 +25,7 @@ import {
     StickyNote2Outlined as NoteIcon,
     Redo as RedoIcon,
     Save as SaveIcon,
+    Science as SimulationIcon,
     Undo as UndoIcon,
 } from "@mui/icons-material";
 import { I18n } from "@iobroker/adapter-react-v5";
@@ -133,7 +134,7 @@ function ToolButton({
     icon: React.ReactNode;
     onClick: () => void;
     disabled?: boolean;
-    color?: "default" | "primary";
+    color?: "default" | "primary" | "warning";
 }): React.JSX.Element {
     return (
         <Tooltip title={title}>
@@ -179,6 +180,10 @@ interface ChartEditorProps {
     liveValues: Record<string, any>;
     /** Starts and transitions of the running chart, null while they are loaded */
     chartHistory: HistoryEntry[] | null;
+    /** If the chart runs as simulation */
+    simulating: boolean;
+    /** Sends a command of the simulation to the adapter, e.g. "simulationStart" */
+    onSimulate: (command: string, message?: Record<string, any>) => void;
     onClearHistory: () => void;
     onSave: (chart: Chart) => Promise<void>;
     /** Called when the editor gets or loses unsaved changes */
@@ -197,6 +202,8 @@ function ChartEditorInner({
     activeIds,
     liveValues,
     chartHistory,
+    simulating,
+    onSimulate,
     onClearHistory,
     onSave,
     onChangedChange,
@@ -838,10 +845,23 @@ function ChartEditorInner({
                         title={I18n.t(showLive ? "Hide live values" : "Show live values")}
                         icon={<LiveIcon />}
                         color={showLive ? "primary" : "default"}
+                        // the live values are needed to set the inputs of a simulation
+                        disabled={simulating}
                         onClick={() => {
                             saveShowLive(!showLive);
                             setShowLive(!showLive);
                         }}
+                    />
+                    <ToolButton
+                        title={I18n.t(simulating ? "Stop simulation" : "simulationStartTitle")}
+                        icon={<SimulationIcon />}
+                        color={simulating ? "warning" : "default"}
+                        // the simulation runs the chart as shown, including unsaved changes
+                        onClick={() =>
+                            simulating
+                                ? onSimulate("simulationStop")
+                                : onSimulate("simulationStart", { chart: getCurrentChart() })
+                        }
                     />
                 </Toolbar>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
@@ -875,12 +895,35 @@ function ChartEditorInner({
                             pannable
                             zoomable
                         />
-                        {showLive && (
+                        {(showLive || simulating) && (
                             <Panel position="top-left">
                                 <LiveValuesPanel
                                     symbols={chart.symbols}
                                     values={liveValues}
+                                    simulating={simulating}
+                                    onSetInput={(name, value) => onSimulate("simulationInput", { name, value })}
+                                    onEvent={name => onSimulate("simulationEvent", { name })}
                                 />
+                            </Panel>
+                        )}
+                        {simulating && (
+                            <Panel position="top-center">
+                                <Alert
+                                    severity="warning"
+                                    variant="filled"
+                                    icon={<SimulationIcon />}
+                                    action={
+                                        <Button
+                                            color="inherit"
+                                            size="small"
+                                            onClick={() => onSimulate("simulationStop")}
+                                        >
+                                            {I18n.t("Stop simulation")}
+                                        </Button>
+                                    }
+                                >
+                                    {I18n.t("simulationBanner")}
+                                </Alert>
                             </Panel>
                         )}
                     </ReactFlow>

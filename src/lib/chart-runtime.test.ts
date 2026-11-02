@@ -802,6 +802,66 @@ describe("chart-runtime => getState() and at() every day", () => {
     });
 });
 
+describe("chart-runtime => simulation", () => {
+    let runtime: ChartRuntime | undefined;
+    afterEach(() => runtime?.stop());
+
+    /**
+     * Starts the light chart as simulation, On also calls setState() and sendTo()
+     */
+    async function simulate(): Promise<ReturnType<typeof createHost>> {
+        const chart = createLightChart();
+        chart.states[1].entry += ' setState("test.0.other", 5); sendTo("telegram.0", "send", { text: "on" });';
+        const host = createHost({ "test.0.motion": false, "test.0.light": false });
+        runtime = new ChartRuntime("light", chart, host, true);
+        await runtime.start();
+        return host;
+    }
+
+    it("does not react on the real inputs, only on simulated values", async () => {
+        const host = await simulate();
+        expect(runtime?.subscribedStateIds).to.deep.equal([]);
+        runtime?.handleStateChange("test.0.motion", { val: true, ack: true, ts: 1, lc: 1, from: "", q: 0 });
+        expect(host.active.at(-1)).to.equal("Off");
+        expect(runtime?.simulateInput("motion", true)).to.equal(true);
+        expect(host.active.at(-1)).to.equal("On");
+        expect(runtime?.simulateInput("light", true)).to.equal(false);
+    });
+
+    it("records outputs, setState() and sendTo() instead of executing them", async () => {
+        const host = await simulate();
+        runtime?.simulateInput("motion", true);
+        expect(host.writes).to.deep.equal([]);
+        expect(host.messages).to.deep.equal([]);
+        // the transition first, then what its actions did not execute
+        expect(host.history.map(e => e.kind)).to.deep.equal(["start", "transition", "effect", "effect", "effect"]);
+        expect(host.history.filter(e => e.kind === "effect").map(e => e.text)).to.deep.equal([
+            'setState("test.0.other", 5)',
+            'sendTo("telegram.0", "send", {"text":"on"})',
+            "light = true",
+        ]);
+        expect(host.history.every(e => e.simulated)).to.equal(true);
+        // the values show the simulated output
+        expect(host.values.at(-1)?.light).to.equal(true);
+    });
+
+    it("records the effects of the initial state after the start", async () => {
+        const chart = createLightChart();
+        chart.initial = "on";
+        const host = createHost({ "test.0.motion": true, "test.0.light": false });
+        runtime = new ChartRuntime("light", chart, host, true);
+        await runtime.start();
+        expect(host.history.map(e => e.kind)).to.deep.equal(["start", "effect"]);
+        expect(host.historyCalls).to.equal(1);
+    });
+
+    it("does not persist its state", async () => {
+        const host = await simulate();
+        runtime?.simulateInput("motion", true);
+        expect(host.persistCount).to.equal(0);
+    });
+});
+
 describe("chart-runtime => helper functions", () => {
     let runtime: ChartRuntime | undefined;
     afterEach(() => runtime?.stop());
