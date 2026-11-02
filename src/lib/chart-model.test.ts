@@ -116,13 +116,13 @@ describe("chart-model => export and import", () => {
         expect(importError(c => (c.states[1].order = "first"))).to.match(/state on: "order" is no number/);
     });
 
-    it("keeps parallel states and does not store the default", () => {
+    it("keeps parallel states and history junctions and does not store the defaults", () => {
         const [chart] = parseExport(
             JSON.stringify({
                 parallel: true,
                 states: [
-                    { id: "a", parallel: true },
-                    { id: "b", parent: "a", order: 2, parallel: false },
+                    { id: "a", parallel: true, history: "yes" },
+                    { id: "b", parent: "a", order: 2, parallel: false, history: true },
                 ],
                 transitions: [],
                 symbols: [],
@@ -134,6 +134,8 @@ describe("chart-model => export and import", () => {
             [undefined, 2],
         ]);
         expect(chart.states[1]).to.not.have.property("parallel");
+        expect(chart.states.map(s => s.history)).to.deep.equal([undefined, true]);
+        expect(chart.states[0]).to.not.have.property("history");
         const [exclusive] = parseExport(JSON.stringify({ parallel: false, states: [], transitions: [], symbols: [] }));
         expect(exclusive).to.not.have.property("parallel");
     });

@@ -15,6 +15,9 @@ export function sortByOrder<T extends { order?: number }>(states: T[]): T[] {
     return [...states].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
 }
 
+/** Appended to the ID of a state with history for the ID of its XState history node */
+export const HISTORY_SUFFIX = "$history";
+
 export interface TransitionKind {
     /** checked after the during action of the source, the source stays active */
     inner: boolean;
@@ -77,6 +80,27 @@ export class ChartStructure {
         const children = this.getChildren(parentId);
         const configured = parentId ? this.statesById.get(parentId)?.initial : this.chart.initial;
         return children.some(s => s.id === configured) ? configured : children[0]?.id;
+    }
+
+    /**
+     * @param stateId ID of the state
+     * @returns true if the state has a history junction which is used: it has exclusive children
+     */
+    hasHistory(stateId: string): boolean {
+        return (
+            !!this.statesById.get(stateId)?.history && this.getChildren(stateId).length > 0 && !this.isParallel(stateId)
+        );
+    }
+
+    /**
+     * The XState target of a transition. Like in Stateflow, all transitions ending at a state with history junction
+     * enter it through the history junction, also its self transitions and those from its children.
+     *
+     * @param transition The transition
+     * @returns the ID of the target state or of its history node
+     */
+    getTargetId(transition: ChartTransition): string {
+        return this.hasHistory(transition.target) ? `${transition.target}${HISTORY_SUFFIX}` : transition.target;
     }
 
     /**

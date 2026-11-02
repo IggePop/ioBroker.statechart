@@ -1326,6 +1326,9 @@ class ChartRuntime {
           node.initial = structure.getInitialChild(state.id);
         }
         node.states = Object.fromEntries(subStates.map((s) => [s.id, buildState(s)]));
+        if (structure.hasHistory(state.id)) {
+          node.states[import_chart_structure.HISTORY_SUFFIX] = { id: `${state.id}${import_chart_structure.HISTORY_SUFFIX}`, type: "history" };
+        }
       }
       return node;
     };
@@ -1364,7 +1367,7 @@ class ChartRuntime {
     const temporalCondition = label.temporal?.condition ? this.compile(`(${this.prepareCode(label.temporal.condition, "expression")})`, `${where}/after condition`) : null;
     const { inner, reenter } = this.structure.getTransitionKind(transition);
     const config = {
-      target: `#${target.id}`,
+      target: `#${this.structure.getTargetId(transition)}`,
       reenter,
       actions: label.action ? [() => this.runAction(label.action, `${where}/action`, source.id)] : []
     };

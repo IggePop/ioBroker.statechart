@@ -8,7 +8,7 @@ import type { AnyActor, AnyStateMachine } from "xstate";
 import { isTimeBetween } from "./chart-helpers";
 import { MAX_SUPER_STEPS, TIME_OF_DAY, TIME_UNITS, parseTransitionLabel } from "./chart-model";
 import type { Chart, ChartState, ChartSymbol, ChartTransition, TemporalExpression } from "./chart-model";
-import { ChartStructure } from "./chart-structure";
+import { ChartStructure, HISTORY_SUFFIX } from "./chart-structure";
 import { getDeclarations, prepareHelperCalls, validateChart } from "./chart-validation";
 import type { CodeKind } from "./chart-validation";
 
@@ -1618,6 +1618,10 @@ export class ChartRuntime {
                     node.initial = structure.getInitialChild(state.id);
                 }
                 node.states = Object.fromEntries(subStates.map(s => [s.id, buildState(s)]));
+                if (structure.hasHistory(state.id)) {
+                    // without history yet, XState enters the initial state
+                    node.states[HISTORY_SUFFIX] = { id: `${state.id}${HISTORY_SUFFIX}`, type: "history" };
+                }
             }
             return node;
         };
@@ -1668,7 +1672,7 @@ export class ChartRuntime {
             : null;
         const { inner, reenter } = this.structure.getTransitionKind(transition);
         const config = {
-            target: `#${target.id}`,
+            target: `#${this.structure.getTargetId(transition)}`,
             reenter,
             actions: label.action ? [() => this.runAction(label.action, `${where}/action`, source.id)] : [],
         };

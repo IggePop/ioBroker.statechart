@@ -19,12 +19,14 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var chart_structure_exports = {};
 __export(chart_structure_exports, {
   ChartStructure: () => ChartStructure,
+  HISTORY_SUFFIX: () => HISTORY_SUFFIX,
   sortByOrder: () => sortByOrder
 });
 module.exports = __toCommonJS(chart_structure_exports);
 function sortByOrder(states) {
   return [...states].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
 }
+const HISTORY_SUFFIX = "$history";
 class ChartStructure {
   constructor(chart) {
     this.chart = chart;
@@ -75,6 +77,23 @@ class ChartStructure {
     const children = this.getChildren(parentId);
     const configured = parentId ? this.statesById.get(parentId)?.initial : this.chart.initial;
     return children.some((s) => s.id === configured) ? configured : children[0]?.id;
+  }
+  /**
+   * @param stateId ID of the state
+   * @returns true if the state has a history junction which is used: it has exclusive children
+   */
+  hasHistory(stateId) {
+    return !!this.statesById.get(stateId)?.history && this.getChildren(stateId).length > 0 && !this.isParallel(stateId);
+  }
+  /**
+   * The XState target of a transition. Like in Stateflow, all transitions ending at a state with history junction
+   * enter it through the history junction, also its self transitions and those from its children.
+   *
+   * @param transition The transition
+   * @returns the ID of the target state or of its history node
+   */
+  getTargetId(transition) {
+    return this.hasHistory(transition.target) ? `${transition.target}${HISTORY_SUFFIX}` : transition.target;
   }
   /**
    * @param stateId ID of the source state
@@ -143,6 +162,7 @@ class ChartStructure {
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ChartStructure,
+  HISTORY_SUFFIX,
   sortByOrder
 });
 //# sourceMappingURL=chart-structure.js.map

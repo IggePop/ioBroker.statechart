@@ -899,7 +899,8 @@ describe("chart-runtime => simulation: time, breakpoints and steps", () => {
         expect(runtime?.advanceToNextTimer()).to.equal(true);
         expect(host.active.at(-1)).to.equal("Off");
         // elapsed() in the condition sees the simulated time
-        expect(runtime?.timeOffset).to.be.at.least(120_000);
+        // the timer was started a moment before, so the time advances by a little less than 2 min
+        expect(runtime?.timeOffset).to.be.closeTo(120_000, 1000);
         expect(runtime?.advanceToNextTimer()).to.equal(false);
     });
 
@@ -1471,6 +1472,107 @@ describe("chart-runtime => parallel states", () => {
         runtime = new ChartRuntime("top", chart, host);
         await runtime.start({ restore: true });
         expect(runtime.activeIds).to.deep.equal(["b", "b2", "a"]);
+    });
+});
+
+describe("chart-runtime => history junction", () => {
+    let runtime: ChartRuntime | undefined;
+    afterEach(() => runtime?.stop());
+
+    /**
+     * Auto (Eco, Comfort) and Manual, the entry actions write to the local "trace"
+     *
+     * @param history If Auto has a history junction
+     */
+    function createModeChart(history: boolean): Chart {
+        const traced = (id: string, name: string, parent: string | null, extra: Partial<ChartState> = {}) => ({
+            id,
+            name,
+            parent,
+            x: 0,
+            y: 0,
+            entry: `trace.push("enter ${name}");`,
+            ...extra,
+        });
+        return {
+            version: 1,
+            name: "Mode",
+            enabled: true,
+            initial: "auto",
+            symbols: [
+                { name: "comfort", scope: "input", stateId: "test.0.comfort" },
+                { name: "manual", scope: "input", stateId: "test.0.manual" },
+                { name: "trace", scope: "local", initial: [] },
+            ],
+            states: [
+                traced("auto", "Auto", null, history ? { history } : {}),
+                traced("eco", "Eco", "auto"),
+                traced("comfortState", "Comfort", "auto"),
+                traced("manualState", "Manual", null),
+            ],
+            transitions: [
+                { id: "t1", source: "eco", target: "comfortState", label: "[comfort]" },
+                { id: "t2", source: "auto", target: "manualState", label: "[manual]" },
+                { id: "t3", source: "manualState", target: "auto", label: "[!manual]" },
+            ],
+        };
+    }
+
+    async function start(history: boolean): Promise<ReturnType<typeof createHost>> {
+        const host = createHost({ "test.0.comfort": false, "test.0.manual": false });
+        runtime = new ChartRuntime("mode", createModeChart(history), host);
+        await runtime.start();
+        return host;
+    }
+
+    it("returns to the last active sub state", async () => {
+        const host = await start(true);
+        expect(host.active.at(-1)).to.equal("Auto.Eco");
+        runtime?.handleInput("test.0.comfort", true);
+        runtime?.handleInput("test.0.manual", true);
+        expect(host.active.at(-1)).to.equal("Manual");
+        runtime!.sandbox.trace = [];
+        runtime?.handleInput("test.0.manual", false);
+        expect(host.active.at(-1)).to.equal("Auto.Comfort");
+        expect(runtime?.sandbox.trace).to.deep.equal(["enter Auto", "enter Comfort"]);
+        expect(host.history.at(-1)).to.include({ kind: "transition", transition: "t3", to: "Auto" });
+    });
+
+    it("enters the initial sub state without history junction", async () => {
+        const host = await start(false);
+        runtime?.handleInput("test.0.comfort", true);
+        runtime?.handleInput("test.0.manual", true);
+        runtime?.handleInput("test.0.manual", false);
+        expect(host.active.at(-1)).to.equal("Auto.Eco");
+    });
+
+    it("keeps the history after a restart", async () => {
+        const host = await start(true);
+        runtime?.handleInput("test.0.comfort", true);
+        runtime?.handleInput("test.0.manual", true);
+        runtime?.stop();
+
+        // read again after the restart
+        host.states["test.0.manual"] = true;
+        runtime = new ChartRuntime("mode", createModeChart(true), host);
+        await runtime.start({ restore: true });
+        expect(host.active.at(-1)).to.equal("Manual");
+        runtime.handleInput("test.0.manual", false);
+        expect(host.active.at(-1)).to.equal("Auto.Comfort");
+    });
+
+    it("starts without history after a reset", async () => {
+        const host = await start(true);
+        runtime?.handleInput("test.0.comfort", true);
+        runtime?.handleInput("test.0.comfort", false);
+        runtime?.handleInput("test.0.manual", true);
+        runtime?.stop();
+
+        runtime = new ChartRuntime("mode", createModeChart(true), host);
+        await runtime.start();
+        runtime.handleInput("test.0.manual", true);
+        runtime.handleInput("test.0.manual", false);
+        expect(host.active.at(-1)).to.equal("Auto.Eco");
     });
 });
 

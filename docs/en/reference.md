@@ -89,6 +89,21 @@ the state it would be moved into is highlighted. Every level has its own initial
   the state stays active, only its active sub state is left, its own `entry`/`exit` are not executed.
   With the option **Leave and enter the parent state again**, it is left and entered again instead.
 
+### History junction
+
+With the option **Return to the last active sub state (history)** of a state with sub states, entering it returns to
+the sub state which was active when it was left last, instead of its initial state. Like in Stateflow, the state
+shows a circle with an **H**. Example: a state "Auto" with the sub states "Eco" and "Comfort", and a state "Manual".
+After "Manual", the chart returns to "Comfort" if that was active before.
+
+- The initial state is only used when the state is entered the first time, and after a start without the stored
+  state (e.g. after `reset` or a changed chart).
+- It applies to all transitions ending at the state, also its self transitions and those from its sub states.
+  A transition to one of its sub states enters that sub state as usual.
+- Only the direct sub state is remembered (shallow history): its own sub states are entered at their initial state,
+  unless it has a history junction itself.
+- The history is kept when the adapter restarts, like the active states.
+
 ## Parallel states
 
 With the option **Sub states are parallel (AND)** of a state, all its sub states are active at the same time

@@ -55,6 +55,11 @@ export interface ChartState {
     parallel?: boolean;
     /** Children of a parallel state only: execution order among the siblings, lower is first */
     order?: number;
+    /**
+     * History junction, only for states with exclusive children: entering the state returns to the child which was
+     * active when the state was left last. The initial state is only used when the state is entered the first time.
+     */
+    history?: boolean;
     /** Action executed when the state is entered */
     entry?: string;
     /** Action executed on every wakeup while the state is active and no transition is taken */
@@ -663,11 +668,12 @@ function normalizeChart(data: any, where: string): Chart {
         if (state.order !== undefined && !Number.isFinite(state.order)) {
             fail(`${at}: "order" is no number`);
         }
-        const { parallel, ...rest } = state;
+        const { parallel, history, ...rest } = state;
         return {
             ...rest,
-            // the default (exclusive) is not stored, like in the editor
+            // the defaults (exclusive, no history) are not stored, like in the editor
             ...(parallel === true ? { parallel } : {}),
+            ...(history === true ? { history } : {}),
             name: typeof state.name === "string" && state.name ? state.name : state.id,
             parent: state.parent || null,
             x: Number.isFinite(state.x) ? state.x : 0,

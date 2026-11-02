@@ -69,6 +69,7 @@ import {
     DEFAULT_STATE_WIDTH,
     findDropParent,
     flowToChart,
+    getExclusiveParentIds,
     getExecutionOrder,
     getInitialStateIds,
     isDescendantNode,
@@ -719,6 +720,7 @@ function ChartEditorInner({
         [nodes, chart.initial, chart.parallel],
     );
     const executionOrder = useMemo(() => getExecutionOrder(nodes, chart.parallel), [nodes, chart.parallel]);
+    const exclusiveParents = useMemo(() => getExclusiveParentIds(nodes), [nodes]);
 
     const displayNodes = useMemo(
         () =>
@@ -732,10 +734,12 @@ function ChartEditorInner({
                     isDropTarget: n.id === dropTarget,
                     problems: problems.get(n.id),
                     order: executionOrder.get(n.id),
+                    // like the runtime, the history junction is only used with exclusive sub states
+                    history: n.type === "state" && !!n.data.state.history && exclusiveParents.has(n.id),
                     breakpoint: breakpoints.has(n.id),
                 } as any,
             })),
-        [nodes, initialIds, executionOrder, activeIds, dropTarget, problems, breakpoints],
+        [nodes, initialIds, executionOrder, exclusiveParents, activeIds, dropTarget, problems, breakpoints],
     );
     const displayEdges = useMemo(() => {
         const outgoing: Record<string, number> = {};
@@ -980,6 +984,7 @@ function ChartEditorInner({
                             onNoteChange={updateNote}
                             isInitial={!!selectedState && initialIds.has(selectedState.id)}
                             executionOrder={selectedState ? executionOrder.get(selectedState.id) : undefined}
+                            canHaveHistory={!!selectedState && exclusiveParents.has(selectedState.id)}
                             breakpoints={breakpoints}
                             onToggleBreakpoint={toggleBreakpoint}
                             toChild={

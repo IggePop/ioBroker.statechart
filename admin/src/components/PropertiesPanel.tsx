@@ -213,6 +213,7 @@ function StateProperties({
     tools,
     isInitial,
     executionOrder,
+    canHaveHistory,
     breakpoint,
     onToggleBreakpoint,
     onChange,
@@ -224,6 +225,8 @@ function StateProperties({
     isInitial: boolean;
     /** Position in the execution order if the state is parallel, i.e. its parent is parallel */
     executionOrder: number | undefined;
+    /** The state has exclusive sub states, so a history junction is possible */
+    canHaveHistory: boolean;
     breakpoint: boolean;
     onToggleBreakpoint: () => void;
     onChange: (patch: Partial<ChartState>) => void;
@@ -269,6 +272,27 @@ function StateProperties({
                 parallel={state.parallel}
                 onChange={parallel => onChange({ parallel })}
             />
+            {canHaveHistory && (
+                <Box>
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={!!state.history}
+                                // the default is stored as undefined, so it does not appear in the chart
+                                onChange={e => onChange({ history: e.target.checked || undefined })}
+                            />
+                        }
+                        label={I18n.t("Return to the last active sub state (history)")}
+                    />
+                    <Typography
+                        variant="caption"
+                        component="div"
+                        color="text.secondary"
+                    >
+                        {I18n.t("historyJunctionHelp")}
+                    </Typography>
+                </Box>
+            )}
             {(["entry", "during", "exit"] as const).map(action => (
                 <CodeEditor
                     key={action}
@@ -538,6 +562,8 @@ interface PropertiesPanelProps {
     isInitial: boolean;
     /** Position of the selected state in the execution order, if it is parallel */
     executionOrder: number | undefined;
+    /** The selected state has exclusive sub states, so a history junction is possible */
+    canHaveHistory: boolean;
     /** IDs of the states and transitions with a breakpoint of the simulation */
     breakpoints: ReadonlySet<string>;
     onToggleBreakpoint: (id: string) => void;
@@ -574,6 +600,7 @@ export default function PropertiesPanel(props: PropertiesPanelProps): React.JSX.
                 tools={tools}
                 isInitial={props.isInitial}
                 executionOrder={props.executionOrder}
+                canHaveHistory={props.canHaveHistory}
                 breakpoint={props.breakpoints.has(selectedState.id)}
                 onToggleBreakpoint={() => props.onToggleBreakpoint(selectedState.id)}
                 onChange={patch => props.onStateChange(selectedState.id, patch)}

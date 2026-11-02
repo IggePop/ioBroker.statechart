@@ -91,6 +91,22 @@ würde. Jede Ebene hat ihren eigenen Startzustand (Punkt mit Pfeil).
   eigenen `entry`/`exit` laufen nicht. Mit der Option **Elternzustand verlassen und neu betreten** wird
   er stattdessen verlassen und neu betreten.
 
+### History-Junction
+
+Mit der Option **Zum zuletzt aktiven Unterzustand zurückkehren (History)** eines Zustands mit Unterzuständen geht es
+beim Betreten in den Unterzustand zurück, der beim letzten Verlassen aktiv war, statt in seinen Startzustand. Wie bei
+Stateflow zeigt der Zustand einen Kreis mit einem **H**. Beispiel: ein Zustand „Auto“ mit den Unterzuständen „Eco“
+und „Komfort“ und ein Zustand „Manuell“. Nach „Manuell“ kehrt das Chart nach „Komfort“ zurück, wenn das vorher aktiv
+war.
+
+- Der Startzustand gilt nur beim ersten Betreten des Zustands und nach einem Start ohne gespeicherten Zustand
+  (z.B. nach `reset` oder einem geänderten Chart).
+- Sie gilt für alle Übergänge, die am Zustand enden, auch für seine Selbstübergänge und die aus seinen
+  Unterzuständen. Ein Übergang zu einem seiner Unterzustände betritt wie gewohnt diesen Unterzustand.
+- Gemerkt wird nur der direkte Unterzustand (flache History): Dessen eigene Unterzustände starten in ihrem
+  Startzustand, außer er hat selbst eine History-Junction.
+- Die History bleibt bei einem Neustart des Adapters erhalten, wie die aktiven Zustände.
+
 ## Parallele Zustände
 
 Mit der Option **Unterzustände sind parallel (UND)** eines Zustands sind alle seine Unterzustände gleichzeitig aktiv

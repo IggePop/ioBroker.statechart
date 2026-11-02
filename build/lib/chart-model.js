@@ -316,11 +316,12 @@ function normalizeChart(data, where) {
     if (state.order !== void 0 && !Number.isFinite(state.order)) {
       fail(`${at}: "order" is no number`);
     }
-    const { parallel, ...rest } = state;
+    const { parallel, history, ...rest } = state;
     return {
       ...rest,
-      // the default (exclusive) is not stored, like in the editor
+      // the defaults (exclusive, no history) are not stored, like in the editor
       ...parallel === true ? { parallel } : {},
+      ...history === true ? { history } : {},
       name: typeof state.name === "string" && state.name ? state.name : state.id,
       parent: state.parent || null,
       x: Number.isFinite(state.x) ? state.x : 0,

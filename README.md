@@ -21,7 +21,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 ### Features
 
 - Graphical editor as its own entry in the admin side bar
-- States with `entry`, `during` and `exit` actions, nested and parallel states (AND)
+- States with `entry`, `during` and `exit` actions, nested and parallel states (AND), history junction
 - Transitions with labels in the well-known syntax `event[condition]{action}`
 - Temporal logic like in Stateflow: `after(5, sec)`, `before`, `at`, `every`, counting inputs, `after(5, min, condition)`, `elapsed()`, `duration()`, and every day at a time or an astro event: `at("sunset", -30)`
 - Function blocks with your own JavaScript functions, usable in all conditions and actions
@@ -118,6 +118,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) control states per chart: `enabled` pauses and starts it, `reset` restarts it in its initial state, `event` wakes it up with the event of an input
 * (Igge) more temporal logic: `before`, `at` and `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)` for conditions which are true for a time, and the helpers `elapsed()` and `duration()`
 * (Igge) the variables are grouped by kind and shown as compact lines, a click shows the settings of a variable, a search appears with many variables
+* (Igge) history junction: entering a state returns to its last active sub state
 * (Igge) parallel states (AND): all sub states of a state, or all top level states, are active at the same time and are processed in their execution order
 
 ### 0.2.0 (2026-11-01)

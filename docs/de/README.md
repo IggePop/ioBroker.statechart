@@ -13,7 +13,7 @@ Adapter ausgeführt.
 ### Funktionen
 
 - Grafischer Editor als eigener Eintrag in der Seitenleiste des Admins
-- Zustände mit `entry`-, `during`- und `exit`-Aktionen, verschachtelte und parallele Zustände (UND)
+- Zustände mit `entry`-, `during`- und `exit`-Aktionen, verschachtelte und parallele Zustände (UND), History-Junction
 - Übergänge mit Beschriftungen in der bekannten Syntax `event[bedingung]{aktion}`
 - Zeitlogik wie bei Stateflow: `after(5, sec)`, `before`, `at`, `every`, Zählen von Eingängen, `after(5, min, bedingung)`, `elapsed()`, `duration()`, und jeden Tag zu einer Uhrzeit oder einem Astro-Ereignis: `at("sunset", -30)`
 - Funktionsblöcke mit eigenen JavaScript-Funktionen, nutzbar in allen Bedingungen und Aktionen

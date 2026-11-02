@@ -135,6 +135,20 @@ describe("chart-codegen => generateChartCode", () => {
         );
     });
 
+    it("shows the history junction and enters through it", () => {
+        const chart = createChart();
+        chart.states[0].history = true;
+        // no effect without exclusive sub states
+        chart.states[3].history = true;
+        const code = generateChartCode(chart, "heating");
+        acorn.parse(code, { ecmaVersion: "latest" });
+        expect(code).to.include('"$history": { id: "auto$history", type: "history" },');
+        expect(code).not.to.include("manualState$history");
+        expect(code).to.include('"T.toAuto": { target: "#auto$history" }');
+        // a transition to a sub state does not use the history
+        expect(code).to.include('"T.restart": { target: "#idle" }');
+    });
+
     it("indents multi line actions", () => {
         const code = generateChartCode(createChart(), "heating");
         expect(code).to.include(

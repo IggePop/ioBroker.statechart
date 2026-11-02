@@ -312,6 +312,21 @@ function getParallelLevels(nodes: ChartFlowNode[], chartParallel: boolean): Set<
 }
 
 /**
+ * @param nodes All nodes
+ * @returns IDs of the states with exclusive (OR) sub states, only they can have a history junction
+ */
+export function getExclusiveParentIds(nodes: ChartFlowNode[]): Set<string> {
+    const parallel = getParallelLevels(nodes, false);
+    const result = new Set<string>();
+    for (const node of nodes) {
+        if (node.type === "state" && node.parentId && !parallel.has(node.parentId)) {
+            result.add(node.parentId);
+        }
+    }
+    return result;
+}
+
+/**
  * The execution order of the parallel states, as the runtime uses it
  *
  * @param nodes All nodes

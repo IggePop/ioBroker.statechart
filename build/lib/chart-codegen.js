@@ -126,7 +126,7 @@ function generateChartCode(chart, chartId) {
     `${INDENT}id: ${JSON.stringify(`chart_${chartId}`)},`
   );
   const transitionConfig = (transition, kind, label, level) => {
-    const parts = [`target: ${JSON.stringify(`#${transition.target}`)}`];
+    const parts = [`target: ${JSON.stringify(`#${structure.getTargetId(transition)}`)}`];
     if (kind.reenter) {
       parts.push("reenter: true");
     }
@@ -182,6 +182,13 @@ function generateChartCode(chart, chartId) {
       );
       for (const child of children) {
         buildState(child, level + 2);
+      }
+      if (structure.hasHistory(state.id)) {
+        const id = `${state.id}${import_chart_structure.HISTORY_SUFFIX}`;
+        lines.push(
+          `${i3}// history junction: returns to the last active sub state, the first time to the initial one`,
+          `${i3}${JSON.stringify(import_chart_structure.HISTORY_SUFFIX)}: { id: ${JSON.stringify(id)}, type: "history" },`
+        );
       }
       lines.push(`${i2}},`);
     }

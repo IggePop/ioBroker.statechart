@@ -60,11 +60,13 @@ type StateNodeProps = NodeProps<
         order?: number;
         /** The simulation stops when the state is entered */
         breakpoint?: boolean;
+        /** The state has a history junction which is used, i.e. it has exclusive sub states */
+        history?: boolean;
     }>
 >;
 
 function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
-    const { state, isInitial, isActive, isDropTarget, problems, order, breakpoint } = data;
+    const { state, isInitial, isActive, isDropTarget, problems, order, breakpoint, history } = data;
     let borderColor = "text.secondary";
     if (isDropTarget) {
         borderColor = "primary.main";
@@ -127,6 +129,26 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                         {state.name}
                     </Typography>
                     <CommentBadge comment={state.comment} />
+                    {history && (
+                        // the history junction of Stateflow: a circle with an H
+                        <Box
+                            title={I18n.t("historyJunctionTitle")}
+                            sx={{
+                                width: 18,
+                                height: 18,
+                                flexShrink: 0,
+                                borderRadius: "50%",
+                                border: 1.5,
+                                borderColor: "text.primary",
+                                fontSize: 11,
+                                fontWeight: "bold",
+                                lineHeight: "15px",
+                                textAlign: "center",
+                            }}
+                        >
+                            H
+                        </Box>
+                    )}
                     {order !== undefined && (
                         <Typography
                             variant="caption"
