@@ -34,7 +34,7 @@ import ResizablePanel from "./components/ResizablePanel";
 import { downloadJson } from "./download";
 import { createChart, createExport, nameToId, parseExport } from "../../src/lib/chart-model";
 import type { Chart } from "../../src/lib/chart-model";
-import type { HistoryEntry } from "../../src/lib/chart-runtime";
+import type { HistoryEntry, SimulationStatus } from "../../src/lib/chart-runtime";
 import en from "./i18n/en.json";
 import de from "./i18n/de.json";
 import ru from "./i18n/ru.json";
@@ -57,6 +57,8 @@ interface TabAppState extends GenericAppState {
     history: HistoryEntry[] | null;
     /** if the selected chart runs as simulation */
     simulating: boolean;
+    /** status of the simulation of the selected chart, null if none runs */
+    simulationStatus: SimulationStatus | null;
     newChartName: string | null;
     deleteChart: string | null;
     /** if the editor has unsaved changes */
@@ -93,6 +95,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             liveValues: {},
             history: null,
             simulating: false,
+            simulationStatus: null,
             newChartName: null,
             deleteChart: null,
             changed: false,
@@ -135,7 +138,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
     };
 
     /** the states of a running chart which the editor shows, see subscribeLive() */
-    private static readonly LIVE_STATES = ["activeStateIds", "values", "history", "simulation"];
+    private static readonly LIVE_STATES = ["activeStateIds", "values", "history", "simulation", "simulationStatus"];
 
     private onLiveStateChange = (id: string, state: ioBroker.State | null | undefined): void => {
         if (!this.liveChart || !id.startsWith(`${this.liveChart}.`)) {
@@ -154,6 +157,8 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             this.setState({ liveValues: value && typeof value === "object" ? value : {} });
         } else if (name === "history") {
             this.setState({ history: Array.isArray(value) ? value : [] });
+        } else if (name === "simulationStatus") {
+            this.setState({ simulationStatus: value && typeof value === "object" ? value : null });
         } else if (name === "simulation") {
             const simulating = value === true;
             this.setState({ simulating });
@@ -274,6 +279,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             liveValues: {},
             history: null,
             simulating: false,
+            simulationStatus: null,
             changed: false,
         });
         if (id) {
@@ -656,6 +662,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                             liveValues={this.state.liveValues}
                             chartHistory={this.state.history}
                             simulating={this.state.simulating}
+                            simulationStatus={this.state.simulationStatus}
                             onSimulate={this.simulate}
                             onClearHistory={() => this.clearHistory(selected)}
                             onSave={newChart => this.saveChart(selected, newChart)}

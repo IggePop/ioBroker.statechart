@@ -177,11 +177,44 @@ function ParallelCheckbox({
     );
 }
 
+/**
+ * A breakpoint of the simulation on a state or transition, it is not stored in the chart
+ *
+ * @param props Component properties
+ * @param props.label Label of the checkbox
+ * @param props.checked If the breakpoint is set
+ * @param props.onToggle Sets or removes it
+ */
+function BreakpointCheckbox({
+    label,
+    checked,
+    onToggle,
+}: {
+    label: string;
+    checked: boolean;
+    onToggle: () => void;
+}): React.JSX.Element {
+    return (
+        <FormControlLabel
+            control={
+                <Checkbox
+                    checked={checked}
+                    color="error"
+                    onChange={onToggle}
+                />
+            }
+            label={label}
+        />
+    );
+}
+
 function StateProperties({
     state,
     tools,
     isInitial,
     executionOrder,
+    breakpoint,
+    onToggleBreakpoint,
     onChange,
     onSetInitial,
     onDelete,
@@ -191,6 +224,8 @@ function StateProperties({
     isInitial: boolean;
     /** Position in the execution order if the state is parallel, i.e. its parent is parallel */
     executionOrder: number | undefined;
+    breakpoint: boolean;
+    onToggleBreakpoint: () => void;
     onChange: (patch: Partial<ChartState>) => void;
     onSetInitial: () => void;
     onDelete: () => void;
@@ -255,6 +290,11 @@ function StateProperties({
                 value={state.comment}
                 onChange={comment => onChange({ comment })}
             />
+            <BreakpointCheckbox
+                label={I18n.t("Breakpoint: the simulation stops when the state is entered")}
+                checked={breakpoint}
+                onToggle={onToggleBreakpoint}
+            />
             <Button
                 color="error"
                 variant="outlined"
@@ -279,12 +319,16 @@ function TransitionProperties({
     transition,
     toChild,
     tools,
+    breakpoint,
+    onToggleBreakpoint,
     onChange,
     onDelete,
 }: {
     transition: ChartTransition;
     toChild: boolean;
     tools: CodeTools;
+    breakpoint: boolean;
+    onToggleBreakpoint: () => void;
     onChange: (patch: Partial<ChartTransition>) => void;
     onDelete: () => void;
 }): React.JSX.Element {
@@ -332,6 +376,11 @@ function TransitionProperties({
             <CommentField
                 value={transition.comment}
                 onChange={comment => onChange({ comment })}
+            />
+            <BreakpointCheckbox
+                label={I18n.t("Breakpoint: the simulation stops when the transition is taken")}
+                checked={breakpoint}
+                onToggle={onToggleBreakpoint}
             />
             <Box>
                 <Button
@@ -489,6 +538,9 @@ interface PropertiesPanelProps {
     isInitial: boolean;
     /** Position of the selected state in the execution order, if it is parallel */
     executionOrder: number | undefined;
+    /** IDs of the states and transitions with a breakpoint of the simulation */
+    breakpoints: ReadonlySet<string>;
+    onToggleBreakpoint: (id: string) => void;
     /** If the target of the selected transition is a child of its source */
     toChild: boolean;
     /** Makes a state the initial state of its level */
@@ -522,6 +574,8 @@ export default function PropertiesPanel(props: PropertiesPanelProps): React.JSX.
                 tools={tools}
                 isInitial={props.isInitial}
                 executionOrder={props.executionOrder}
+                breakpoint={props.breakpoints.has(selectedState.id)}
+                onToggleBreakpoint={() => props.onToggleBreakpoint(selectedState.id)}
                 onChange={patch => props.onStateChange(selectedState.id, patch)}
                 onSetInitial={() => props.onSetInitial(selectedState.id)}
                 onDelete={() => props.onDeleteNode(selectedState.id)}
@@ -533,6 +587,8 @@ export default function PropertiesPanel(props: PropertiesPanelProps): React.JSX.
                 transition={selectedTransition}
                 toChild={props.toChild}
                 tools={tools}
+                breakpoint={props.breakpoints.has(selectedTransition.id)}
+                onToggleBreakpoint={() => props.onToggleBreakpoint(selectedTransition.id)}
                 onChange={patch => props.onTransitionChange(selectedTransition.id, patch)}
                 onDelete={() => props.onDeleteTransition(selectedTransition.id)}
             />

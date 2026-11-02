@@ -58,11 +58,13 @@ type StateNodeProps = NodeProps<
         problems?: string[];
         /** Position in the execution order, only for parallel states (whose parent is parallel) */
         order?: number;
+        /** The simulation stops when the state is entered */
+        breakpoint?: boolean;
     }>
 >;
 
 function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
-    const { state, isInitial, isActive, isDropTarget, problems, order } = data;
+    const { state, isInitial, isActive, isDropTarget, problems, order, breakpoint } = data;
     let borderColor = "text.secondary";
     if (isDropTarget) {
         borderColor = "primary.main";
@@ -81,6 +83,23 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                 minHeight={50}
             />
             {isInitial && <InitialMarker />}
+            {breakpoint && (
+                <Box
+                    title={I18n.t("Breakpoint")}
+                    sx={{
+                        position: "absolute",
+                        left: -6,
+                        top: -6,
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        bgcolor: "error.main",
+                        border: 2,
+                        borderColor: "background.paper",
+                        zIndex: 1,
+                    }}
+                />
+            )}
             <Box
                 title={problems?.join("\n")}
                 sx={{

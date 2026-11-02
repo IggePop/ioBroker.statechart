@@ -20,6 +20,9 @@ const MAX_TIMEOUT_MS = 2 ** 31 - 1;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** advanceTime() fires at most this many timers, e.g. every(1, msec) over a day would never end */
+const MAX_ADVANCE_TIMERS = 10_000;
+
 /** Version of the persisted data, increase on incompatible changes */
 const PERSISTED_VERSION = 1;
 
@@ -87,12 +90,13 @@ export interface HistoryEntry {
     ts: number;
     /**
      * "start": the chart was started, "transition": a transition was taken,
-     * "effect": a simulation did not write an output or did not execute setState() etc.
+     * "effect": a simulation did not write an output or did not execute setState() etc.,
+     * "break": a simulation stopped at a breakpoint
      */
-    kind: "start" | "transition" | "effect";
+    kind: "start" | "transition" | "effect" | "break";
     /** The chart runs as simulation */
     simulated?: boolean;
-    /** Effect only: what was not executed, e.g. 'light = true' or 'setState("x", 1)' */
+    /** Effect: what was not executed, e.g. 'light = true' or 'setState("x", 1)'. Break: where it stopped */
     text?: string;
     /** Start only: the chart continued with the state from before the restart of the adapter */
     restored?: boolean;
@@ -134,6 +138,8 @@ export interface RuntimeHost {
     onValues?: (values: Record<string, any>) => void;
     /** Called with the events of a start or a wakeup, in the order they happened */
     onHistory?: (entries: HistoryEntry[]) => void;
+    /** Simulation: called when the status changes */
+    onSimulationStatus?: (status: SimulationStatus) => void;
     log: Pick<ioBroker.Logger, LogLevel>;
 }
 
@@ -182,6 +188,33 @@ function toSnapshot(state: ioBroker.State | null | undefined): StateSnapshot | n
 /** A timer which may be re-armed, see ChartRuntime.scheduleAt() */
 interface Timer {
     handle?: NodeJS.Timeout;
+    /** When it fires (ms since 1970, in the time of the chart, see ChartRuntime.now()) */
+    due?: number;
+    callback?: () => void;
+    /** What the timer is for, shown in the simulation, e.g. "Off -> On" */
+    label?: string;
+}
+
+/** Simulation: a wakeup which waits while the simulation is paused */
+type QueuedWakeup =
+    | { kind: "input"; name: string; value: any }
+    | { kind: "event"; name: string }
+    | { kind: "timer"; fired: string | null }
+    /** the rest of a super step which was stopped at a breakpoint */
+    | { kind: "continue" };
+
+/** The status of a simulation, shown in the editor */
+export interface SimulationStatus {
+    /** Paused: the wakeups wait in a queue for the next step */
+    paused: boolean;
+    /** Added to the real time: the time of the simulation is Date.now() + timeOffset */
+    timeOffset: number;
+    /** Number of wakeups waiting while paused */
+    queued: number;
+    /** The next timer, null if there is none */
+    nextTimer: { due: number; label: string } | null;
+    /** Where the simulation stopped at a breakpoint, null if it was not stopped by one */
+    breakpoint: string | null;
 }
 
 /**
@@ -210,7 +243,7 @@ export class ChartRuntime {
     readonly structure: ChartStructure;
     readonly statesById: Map<string, ChartState>;
     /** timers of setStateDelayed() */
-    readonly delayedWrites = new Set<NodeJS.Timeout>();
+    readonly delayedWrites = new Set<Timer>();
     /** values of all symbols, this is also the global scope of conditions and actions */
     readonly sandbox: vm.Context;
     /** last value written to (or read from) each output */
@@ -275,8 +308,24 @@ export class ChartRuntime {
     actor: AnyActor | null = null;
     /** true while a wakeup is processed, effects outside of wakeups are published right away */
     wakingUp = false;
-    /** the current time, can be replaced in tests */
-    now = (): number => Date.now();
+    /** all running timers, to fire them early when the time of a simulation is advanced */
+    readonly scheduled = new Set<Timer>();
+    /** simulation: added to the real time, see advanceTime() */
+    timeOffset = 0;
+    /** simulation: paused, the wakeups wait in the queue */
+    paused = false;
+    /** simulation: the wakeups which wait while paused */
+    readonly queue: QueuedWakeup[] = [];
+    /** simulation: IDs of the states and transitions with a breakpoint */
+    breakpoints = new Set<string>();
+    /** simulation: set when a breakpoint is reached during a wakeup, it pauses after the step */
+    pendingBreak: string | null = null;
+    /** simulation: where it stopped at a breakpoint, until it continues */
+    breakpointHit: string | null = null;
+    /** JSON of the last status passed to host.onSimulationStatus() */
+    lastStatus = "";
+    /** the current time, can be replaced in tests. A simulation can be ahead of the real time. */
+    now = (): number => Date.now() + this.timeOffset;
 
     /**
      * @param chartId ID of the chart object
@@ -558,6 +607,9 @@ export class ChartRuntime {
      * @param id ID of the state
      */
     onEnter(id: string): void {
+        if (this.simulated && this.breakpoints.has(id)) {
+            this.pendingBreak ??= this.statesById.get(id)?.name ?? id;
+        }
         this.enteredAt.set(id, this.now());
         this.entryCount.set(id, (this.entryCount.get(id) ?? 0) + 1);
         this.inputCounts.set(id, new Map());
@@ -572,7 +624,7 @@ export class ChartRuntime {
     onExit(id: string): void {
         this.enteredAt.delete(id);
         for (const timer of this.timers.get(id) || []) {
-            clearTimeout(timer.handle);
+            this.cancelTimer(timer);
         }
         this.timers.delete(id);
         this.inputCounts.delete(id);
@@ -595,8 +647,41 @@ export class ChartRuntime {
      */
     stopDuration(id: string): void {
         this.trueSince.delete(id);
-        clearTimeout(this.durationTimers.get(id)?.handle);
+        this.cancelTimer(this.durationTimers.get(id));
         this.durationTimers.delete(id);
+    }
+
+    /**
+     * @param timer The timer to stop, may be undefined
+     */
+    cancelTimer(timer: Timer | undefined): void {
+        if (timer) {
+            clearTimeout(timer.handle);
+            this.scheduled.delete(timer);
+        }
+    }
+
+    /**
+     * Wakes up the chart for a timer. A paused simulation queues the wakeup.
+     *
+     * @param fired ID of the at() or every() transition whose timer fired, they are only valid in this wakeup
+     */
+    timerWakeup(fired: string | null): void {
+        if (this.simulated && this.paused) {
+            this.queue.push({ kind: "timer", fired });
+            this.publishLive();
+            return;
+        }
+        if (fired) {
+            this.firedTimers.add(fired);
+        }
+        try {
+            this.wakeup(null);
+        } finally {
+            if (fired) {
+                this.firedTimers.delete(fired);
+            }
+        }
     }
 
     /**
@@ -607,12 +692,17 @@ export class ChartRuntime {
      * @param callback Called at the time
      */
     scheduleAt(due: number, timer: Timer, callback: () => void): void {
+        clearTimeout(timer.handle);
+        timer.due = due;
+        timer.callback = callback;
+        this.scheduled.add(timer);
         const remaining = due - this.now();
         timer.handle = setTimeout(
             () => {
                 if (remaining > MAX_TIMEOUT_MS && due - this.now() > 0) {
                     this.scheduleAt(due, timer, callback);
                 } else {
+                    this.scheduled.delete(timer);
                     callback();
                 }
             },
@@ -632,7 +722,7 @@ export class ChartRuntime {
         for (const transition of this.temporalTransitions.get(id) || []) {
             const { operator, ms, condition, time } = transition.temporal as TemporalExpression;
             if (time !== undefined) {
-                const timer: Timer = {};
+                const timer: Timer = { label: transition.where };
                 timers.push(timer);
                 this.scheduleDaily(id, transition, timer, this.now());
                 continue;
@@ -642,20 +732,15 @@ export class ChartRuntime {
             if (ms === undefined || operator === "before" || condition !== undefined) {
                 continue;
             }
-            const timer: Timer = {};
+            const timer: Timer = { label: transition.where };
             timers.push(timer);
             const fire = (due: number): void => {
                 if (operator === "after") {
                     this.expired.add(transition.id);
-                    this.wakeup(null);
+                    this.timerWakeup(null);
                     return;
                 }
-                this.firedTimers.add(transition.id);
-                try {
-                    this.wakeup(null);
-                } finally {
-                    this.firedTimers.delete(transition.id);
-                }
+                this.timerWakeup(transition.id);
                 // unless the wakeup left the state
                 if (operator === "every" && this.timers.get(id)?.includes(timer)) {
                     this.scheduleAt(due + ms, timer, () => fire(due + ms));
@@ -694,12 +779,7 @@ export class ChartRuntime {
             return;
         }
         this.scheduleAt(due, timer, () => {
-            this.firedTimers.add(transition.id);
-            try {
-                this.wakeup(null);
-            } finally {
-                this.firedTimers.delete(transition.id);
-            }
+            this.timerWakeup(transition.id);
             // the next day, unless the wakeup left the state
             if (this.timers.get(stateId)?.includes(timer)) {
                 this.scheduleDaily(stateId, transition, timer, Math.max(due, this.now()));
@@ -764,24 +844,17 @@ export class ChartRuntime {
     stop(): void {
         this.actor?.stop();
         this.actor = null;
-        for (const timers of this.timers.values()) {
-            for (const timer of timers) {
-                clearTimeout(timer.handle);
-            }
-        }
-        this.timers.clear();
-        this.expired.clear();
-        for (const timer of this.durationTimers.values()) {
+        for (const timer of this.scheduled) {
             clearTimeout(timer.handle);
         }
+        this.scheduled.clear();
+        this.timers.clear();
+        this.expired.clear();
         this.durationTimers.clear();
         for (const timer of this.debounceTimers.values()) {
             clearTimeout(timer);
         }
         this.debounceTimers.clear();
-        for (const timer of this.delayedWrites) {
-            clearTimeout(timer);
-        }
         this.delayedWrites.clear();
     }
 
@@ -811,18 +884,16 @@ export class ChartRuntime {
                 void write(id, value, ack);
             },
             setStateDelayed: (id: string, value: any, delayMs: number, ack = false) => {
-                const timer = setTimeout(
-                    () => {
-                        this.delayedWrites.delete(timer);
-                        if (this.simulated) {
-                            this.recordEffect(describe("setState", [id, value, ...(ack ? [true] : [])]));
-                            return;
-                        }
-                        void write(id, value, ack);
-                    },
-                    Math.min(Math.max(Number(delayMs) || 0, 0), MAX_TIMEOUT_MS),
-                );
+                const timer: Timer = { label: describe("setStateDelayed", [id, value]) };
                 this.delayedWrites.add(timer);
+                this.scheduleAt(this.now() + Math.max(Number(delayMs) || 0, 0), timer, () => {
+                    this.delayedWrites.delete(timer);
+                    if (this.simulated) {
+                        this.recordEffect(describe("setState", [id, value, ...(ack ? [true] : [])]));
+                        return;
+                    }
+                    void write(id, value, ack);
+                });
             },
             sendTo: (instance: string, command: string, message: any) => {
                 if (this.simulated) {
@@ -938,9 +1009,134 @@ export class ChartRuntime {
         if (!symbol || !this.actor) {
             return false;
         }
+        if (this.paused) {
+            this.queue.push({ kind: "input", name, value: val });
+            this.publishLive();
+            return true;
+        }
         // the filters by ack and the debounce do not apply to values set by hand
         this.applyInput(symbol, val);
         return true;
+    }
+
+    /**
+     * Simulation: pauses, the following wakeups wait in a queue
+     */
+    pauseSimulation(): void {
+        this.paused = true;
+        this.publishLive();
+    }
+
+    /**
+     * Simulation: processes the queued wakeups until a breakpoint is reached, then continues normally
+     */
+    resumeSimulation(): void {
+        this.paused = false;
+        this.breakpointHit = null;
+        while (!this.paused && this.queue.length) {
+            this.processQueued(this.queue.shift() as QueuedWakeup);
+        }
+        this.publishLive();
+    }
+
+    /**
+     * Simulation: processes the next queued wakeup, and stays paused
+     *
+     * @returns false if no wakeup was queued
+     */
+    stepSimulation(): boolean {
+        const next = this.queue.shift();
+        if (!next) {
+            return false;
+        }
+        this.breakpointHit = null;
+        this.paused = false;
+        try {
+            this.processQueued(next);
+        } finally {
+            this.paused = true;
+        }
+        this.publishLive();
+        return true;
+    }
+
+    /**
+     * @param wakeup A wakeup which waited while the simulation was paused
+     */
+    processQueued(wakeup: QueuedWakeup): void {
+        if (wakeup.kind === "input") {
+            const symbol = this.chart.symbols.find(s => s.scope === "input" && s.name === wakeup.name);
+            if (symbol) {
+                this.applyInput(symbol, wakeup.value);
+            }
+        } else if (wakeup.kind === "event") {
+            this.wakeup(wakeup.name);
+        } else if (wakeup.kind === "timer") {
+            this.timerWakeup(wakeup.fired);
+        } else {
+            this.wakeup(null);
+        }
+    }
+
+    /**
+     * Simulation: lets time pass. The timers which are due meanwhile fire in the order of their time, a paused
+     * simulation queues their wakeups.
+     *
+     * @param ms The time to advance
+     */
+    advanceTime(ms: number): void {
+        const target = this.now() + Math.max(0, ms);
+        for (let fired = 0; ; fired++) {
+            let next: Timer | undefined;
+            for (const timer of this.scheduled) {
+                if ((timer.due as number) <= target && (!next || (timer.due as number) < (next.due as number))) {
+                    next = timer;
+                }
+            }
+            if (!next) {
+                break;
+            }
+            if (fired >= MAX_ADVANCE_TIMERS) {
+                this.host.log.warn(`[${this.chart.name}] Stopped advancing the time after ${fired} timers`);
+                return;
+            }
+            this.timeOffset += Math.max(0, (next.due as number) - this.now());
+            this.cancelTimer(next);
+            (next.callback as () => void)();
+        }
+        this.timeOffset += Math.max(0, target - this.now());
+        // the remaining timers wait for the new time
+        for (const timer of [...this.scheduled]) {
+            this.scheduleAt(timer.due as number, timer, timer.callback as () => void);
+        }
+        this.publishLive();
+    }
+
+    /**
+     * Simulation: advances the time to the next timer, see advanceTime()
+     *
+     * @returns false if there is no timer
+     */
+    advanceToNextTimer(): boolean {
+        const next = this.getNextTimer();
+        if (!next) {
+            return false;
+        }
+        this.advanceTime(next.due - this.now());
+        return true;
+    }
+
+    /**
+     * @returns the timer which fires next, null if there is none
+     */
+    getNextTimer(): { due: number; label: string } | null {
+        let next: Timer | undefined;
+        for (const timer of this.scheduled) {
+            if (!next || (timer.due as number) < (next.due as number)) {
+                next = timer;
+            }
+        }
+        return next ? { due: next.due as number, label: next.label ?? "" } : null;
     }
 
     /**
@@ -1004,7 +1200,12 @@ export class ChartRuntime {
         if (!this.chart.symbols.some(s => s.scope === "input" && s.name === name)) {
             return false;
         }
-        this.wakeup(name);
+        if (this.simulated && this.paused) {
+            this.queue.push({ kind: "event", name });
+            this.publishLive();
+        } else {
+            this.wakeup(name);
+        }
         return true;
     }
 
@@ -1040,6 +1241,18 @@ export class ChartRuntime {
         } finally {
             this.wakingUp = false;
         }
+        if (this.pendingBreak) {
+            // simulation: the following wakeups wait until the user continues
+            this.paused = true;
+            this.breakpointHit = this.pendingBreak;
+            this.pendingHistory.push({
+                ts: this.now(),
+                kind: "break",
+                text: this.pendingBreak,
+                active: this.activeNames,
+            });
+            this.pendingBreak = null;
+        }
         this.persist();
         this.publishLive();
     }
@@ -1068,6 +1281,11 @@ export class ChartRuntime {
             while (steps < MAX_SUPER_STEPS && this.step(stepInput)) {
                 steps++;
                 stepInput = null;
+                if (this.pendingBreak) {
+                    // simulation: the rest of the super step is the next step
+                    this.queue.unshift({ kind: "continue" });
+                    break;
+                }
             }
             if (steps >= MAX_SUPER_STEPS) {
                 this.host.log.warn(
@@ -1097,11 +1315,11 @@ export class ChartRuntime {
                 const since = this.trueSince.get(transition.id) ?? this.now();
                 this.trueSince.set(transition.id, since);
                 if (!this.durationTimers.has(transition.id)) {
-                    const timer: Timer = {};
+                    const timer: Timer = { label: transition.where };
                     this.durationTimers.set(transition.id, timer);
                     this.scheduleAt(since + (temporal.ms as number), timer, () => {
                         this.durationTimers.delete(transition.id);
-                        this.wakeup(null);
+                        this.timerWakeup(null);
                     });
                 }
             }
@@ -1169,6 +1387,20 @@ export class ChartRuntime {
                 : this.pendingHistory;
             this.pendingHistory = [];
             this.host.onHistory?.(entries);
+        }
+        if (this.simulated && this.host.onSimulationStatus) {
+            const status: SimulationStatus = {
+                paused: this.paused,
+                timeOffset: this.timeOffset,
+                queued: this.queue.length,
+                nextTimer: this.getNextTimer(),
+                breakpoint: this.breakpointHit,
+            };
+            const json = JSON.stringify(status);
+            if (json !== this.lastStatus) {
+                this.lastStatus = json;
+                this.host.onSimulationStatus(status);
+            }
         }
         if (!this.host.onValues) {
             return;
@@ -1273,6 +1505,9 @@ export class ChartRuntime {
             }
             // the transition is listed before the effects of its actions
             const at = this.pendingHistory.length;
+            if (this.simulated && this.breakpoints.has(transition.id)) {
+                this.pendingBreak ??= `${transition.from} → ${transition.to}`;
+            }
             this.actor?.send({ type: `T.${transition.id}` });
             // XState has executed the transition synchronously, so the active states are the new ones
             this.pendingHistory.splice(at, 0, {

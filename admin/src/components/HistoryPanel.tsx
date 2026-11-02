@@ -16,6 +16,12 @@ function formatTime(ts: number): string {
 
 function describeEntry(entry: HistoryEntry): { primary: string; secondary: string } {
     const active = I18n.t("activeAfter", entry.active || "-");
+    if (entry.kind === "break") {
+        return {
+            primary: I18n.t("breakpointReached", entry.text ?? ""),
+            secondary: `${I18n.t("Simulation")} · ${active}`,
+        };
+    }
     if (entry.kind === "effect") {
         return { primary: I18n.t("notExecuted", entry.text ?? ""), secondary: I18n.t("Simulation") };
     }

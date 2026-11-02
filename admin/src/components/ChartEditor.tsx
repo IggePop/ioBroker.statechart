@@ -13,7 +13,7 @@ import {
     useReactFlow,
 } from "@xyflow/react";
 import type { OnConnect, OnEdgesChange, OnNodeDrag, OnNodesChange } from "@xyflow/react";
-import { Alert, Box, Button, Divider, GlobalStyles, IconButton, Tab, Tabs, Toolbar, Tooltip } from "@mui/material";
+import { Box, Divider, GlobalStyles, IconButton, Tab, Tabs, Toolbar, Tooltip } from "@mui/material";
 import {
     Add as AddIcon,
     Code as CodeIcon,
@@ -42,7 +42,8 @@ import SymbolsEditor from "./SymbolsEditor";
 import GeneratedCodeDialog from "./GeneratedCodeDialog";
 import HistoryPanel from "./HistoryPanel";
 import LiveValuesPanel from "./LiveValuesPanel";
-import type { HistoryEntry } from "../../../src/lib/chart-runtime";
+import SimulationBar from "./SimulationBar";
+import type { HistoryEntry, SimulationStatus } from "../../../src/lib/chart-runtime";
 import { generateChartCode } from "../../../src/lib/chart-codegen";
 import { createExport } from "../../../src/lib/chart-model";
 import type {
@@ -182,6 +183,8 @@ interface ChartEditorProps {
     chartHistory: HistoryEntry[] | null;
     /** If the chart runs as simulation */
     simulating: boolean;
+    /** Status of the simulation, null if none runs or it is not known yet */
+    simulationStatus: SimulationStatus | null;
     /** Sends a command of the simulation to the adapter, e.g. "simulationStart" */
     onSimulate: (command: string, message?: Record<string, any>) => void;
     onClearHistory: () => void;
@@ -203,6 +206,7 @@ function ChartEditorInner({
     liveValues,
     chartHistory,
     simulating,
+    simulationStatus,
     onSimulate,
     onClearHistory,
     onSave,
@@ -234,6 +238,8 @@ function ChartEditorInner({
     /** state into which the dragged state would be moved when it is dropped */
     const [dropTarget, setDropTarget] = useState<string | null>(null);
     const [showLive, setShowLive] = useState(loadShowLive);
+    /** IDs of the states and transitions where the simulation stops, they are not stored in the chart */
+    const [breakpoints, setBreakpoints] = useState<ReadonlySet<string>>(new Set());
     /** transitions which were just taken by the running chart, they are highlighted for a moment */
     const [flashing, setFlashing] = useState<ReadonlySet<string>>(new Set());
     /** time of the newest history entry already seen, null until the history is loaded */
@@ -364,6 +370,22 @@ function ChartEditorInner({
         },
         [record],
     );
+
+    /**
+     * Sets or removes a breakpoint of the simulation
+     *
+     * @param id ID of the state or transition
+     */
+    const toggleBreakpoint = (id: string): void => {
+        const changed = new Set(breakpoints);
+        if (!changed.delete(id)) {
+            changed.add(id);
+        }
+        setBreakpoints(changed);
+        if (simulating) {
+            onSimulate("simulationBreakpoints", { breakpoints: [...changed] });
+        }
+    };
 
     // a double click selects the state/transition (first click) and shows its properties
     const showProperties = useCallback(() => setPanelTab("properties"), []);
@@ -710,9 +732,10 @@ function ChartEditorInner({
                     isDropTarget: n.id === dropTarget,
                     problems: problems.get(n.id),
                     order: executionOrder.get(n.id),
+                    breakpoint: breakpoints.has(n.id),
                 } as any,
             })),
-        [nodes, initialIds, executionOrder, activeIds, dropTarget, problems],
+        [nodes, initialIds, executionOrder, activeIds, dropTarget, problems, breakpoints],
     );
     const displayEdges = useMemo(() => {
         const outgoing: Record<string, number> = {};
@@ -735,13 +758,14 @@ function ChartEditorInner({
                     offset: offsets.get(e.id),
                     problems: problems.get(e.id),
                     flash: flashing.has(e.id),
+                    breakpoint: breakpoints.has(e.id),
                     onAnchorChange: changeAnchor,
                     onReconnect: reconnectTransition,
                     onReconnectPreview: setDropTarget,
                 },
             } as TransitionFlowEdge;
         });
-    }, [edges, nodes, problems, flashing, changeAnchor, reconnectTransition]);
+    }, [edges, nodes, problems, flashing, breakpoints, changeAnchor, reconnectTransition]);
 
     /**
      * Selects a transition, e.g. from the history
@@ -860,7 +884,10 @@ function ChartEditorInner({
                         onClick={() =>
                             simulating
                                 ? onSimulate("simulationStop")
-                                : onSimulate("simulationStart", { chart: getCurrentChart() })
+                                : onSimulate("simulationStart", {
+                                      chart: getCurrentChart(),
+                                      breakpoints: [...breakpoints],
+                                  })
                         }
                     />
                 </Toolbar>
@@ -908,22 +935,10 @@ function ChartEditorInner({
                         )}
                         {simulating && (
                             <Panel position="top-center">
-                                <Alert
-                                    severity="warning"
-                                    variant="filled"
-                                    icon={<SimulationIcon />}
-                                    action={
-                                        <Button
-                                            color="inherit"
-                                            size="small"
-                                            onClick={() => onSimulate("simulationStop")}
-                                        >
-                                            {I18n.t("Stop simulation")}
-                                        </Button>
-                                    }
-                                >
-                                    {I18n.t("simulationBanner")}
-                                </Alert>
+                                <SimulationBar
+                                    status={simulationStatus}
+                                    onCommand={onSimulate}
+                                />
                             </Panel>
                         )}
                     </ReactFlow>
@@ -965,6 +980,8 @@ function ChartEditorInner({
                             onNoteChange={updateNote}
                             isInitial={!!selectedState && initialIds.has(selectedState.id)}
                             executionOrder={selectedState ? executionOrder.get(selectedState.id) : undefined}
+                            breakpoints={breakpoints}
+                            onToggleBreakpoint={toggleBreakpoint}
                             toChild={
                                 !!selectedTransition &&
                                 isDescendantNode(nodes, selectedTransition.source, selectedTransition.target)

@@ -198,12 +198,26 @@ sehen ist, auch mit ungespeicherten Änderungen, aber im Haus wird nichts gescha
 - Ausgänge, `setState()`, `setStateDelayed()` und `sendTo()` werden nicht ausgeführt. Der Verlauf zeigt sie als
   **Nicht ausgeführt: …**, die Live-Werte zeigen die simulierten Werte der Ausgänge. `getState()` liest die echten
   Datenpunkte.
-- Timer und Zeitlogik laufen in Echtzeit.
+- Timer und Zeitlogik laufen in Echtzeit, außer du spulst die Zeit vor (siehe unten).
 - Aktive Zustände, Live-Werte und Verlauf funktionieren wie beim echten Chart, die Ereignisse der Simulation sind im
   Verlauf markiert. Der gespeicherte Zustand des echten Charts wird nicht verändert.
 - **Simulation beenden** beendet sie, danach macht das echte Chart dort weiter, wo es vorher war. Die Simulation endet
   auch beim Speichern des Charts, bei einem Neustart des Adapters, bei der Auswahl eines anderen Charts und nach zwei
   Minuten, wenn der Editor geschlossen wurde.
+
+Die Leiste oben auf der Zeichenfläche zeigt die simulierte Zeit, den nächsten Timer und den Zustand der Simulation:
+
+- **Zeit vorspulen:** Der Vorspul-Knopf springt zum nächsten Timer, z.B. ans Ende von `after(2, min)`, die Knöpfe
+  **+1 min**, **+10 min** und **+1 h** lassen Zeit vergehen. Die bis dahin fälligen Timer lösen in ihrer Reihenfolge
+  aus, `every(...)` so oft, wie es fällig ist. Alles, was von der Zeit abhängt, nutzt die simulierte Zeit: `elapsed()`,
+  `isTimeBetween()`, `at("22:30")`, Astro-Ereignisse und die Zeiten im Verlauf.
+- **Pause:** Die folgenden Ereignisse (von Hand gesetzte Eingänge, Events, Timer) warten, statt verarbeitet zu werden.
+  **Einzelschritt** verarbeitet das nächste wartende Ereignis, **Fortsetzen** verarbeitet alle und läuft weiter.
+- **Haltepunkte:** In den Eigenschaften eines Zustands oder Übergangs hält **Haltepunkt** die Simulation an, wenn der
+  Zustand betreten oder der Übergang genommen wird. Er wird als roter Punkt angezeigt und greift auch bei den
+  Startzuständen direkt nach dem Start. Die Simulation hält nach dem Schritt an, in dem der Haltepunkt erreicht wurde,
+  der Verlauf zeigt, wo. Mit Super-Step hält sie nach dem Übergang, der Rest der Kette ist der nächste Schritt.
+  Haltepunkte werden nicht im Chart gespeichert, sie gehen beim Neuladen des Editors verloren.
 
 ## Import und Export
 
@@ -229,6 +243,7 @@ Für jedes Chart legt der Adapter unter `statechart.<instanz>.charts.<chart>` an
 | `values` | Aktuelle Werte aller Variablen als JSON, `{}` wenn das Chart nicht läuft |
 | `history` | Die letzten 200 Ereignisse (Starts und genommene Übergänge) als JSON. Schreiben ohne ack leert ihn |
 | `simulation` | `true`, solange das Chart als Simulation aus dem Editor läuft |
+| `simulationStatus` | Status der Simulation als JSON: angehalten, Zeitversatz, wartende Ereignisse, nächster Timer, Haltepunkt |
 
 Das Chart selbst ist im Objekt `statechart.<instanz>.charts.<chart>` gespeichert.
 

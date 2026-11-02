@@ -129,6 +129,7 @@ class Statechart extends utils.Adapter {
         await this.loadHistory(chartId);
         await this.setState(`charts.${chartId}.enabled`, chart.enabled !== false, true);
         await this.setState(`charts.${chartId}.simulation`, false, true);
+        await this.setState(`charts.${chartId}.simulationStatus`, "", true);
         // e.g. a new chart, which was just created in the editor: nothing to execute, but no error either
         const empty = !chart.states?.length;
         if (!chart.enabled || empty) {
@@ -185,6 +186,9 @@ class Statechart extends utils.Adapter {
                     void this.setState(`charts.${chartId}.values`, JSON.stringify(values), true);
                 },
                 onHistory: entries => this.addHistory(chartId, entries),
+                onSimulationStatus: status => {
+                    void this.setState(`charts.${chartId}.simulationStatus`, JSON.stringify(status), true);
+                },
                 loadPersisted: async () => {
                     const state = await this.getStateAsync(`charts.${chartId}.snapshot`);
                     return typeof state?.val === "string" && state.val ? JSON.parse(state.val) : null;
@@ -200,14 +204,17 @@ class Statechart extends utils.Adapter {
      *
      * @param chartId Chart ID
      * @param chart The chart as shown in the editor, may have unsaved changes
+     * @param breakpoints IDs of the states and transitions with a breakpoint
      */
-    private async startSimulation(chartId: string, chart: Chart): Promise<void> {
+    private async startSimulation(chartId: string, chart: Chart, breakpoints: string[] = []): Promise<void> {
         if (!chart?.states?.length) {
             throw new Error("The chart has no states");
         }
         this.stopChart(chartId);
         this.endSimulationTimer(chartId);
         const runtime = this.createRuntime(chartId, chart, true);
+        // also for the initial states
+        runtime.breakpoints = new Set(breakpoints);
         // registered before the start, so the start can be cancelled like a running simulation
         this.simulations.set(
             chartId,
@@ -278,7 +285,14 @@ class Statechart extends utils.Adapter {
         if (typeof obj !== "object" || !obj.command) {
             return;
         }
-        const message = (obj.message || {}) as { chartId?: string; chart?: Chart; name?: string; value?: any };
+        const message = (obj.message || {}) as {
+            chartId?: string;
+            chart?: Chart;
+            name?: string;
+            value?: any;
+            breakpoints?: string[];
+            ms?: number;
+        };
         const chartId = String(message.chartId || "");
         const reply = (response: Record<string, any>): void => {
             if (obj.callback) {
@@ -298,7 +312,7 @@ class Statechart extends utils.Adapter {
         switch (obj.command) {
             case "simulationStart":
                 this.chartQueue = this.chartQueue
-                    .then(() => this.startSimulation(chartId, message.chart as Chart))
+                    .then(() => this.startSimulation(chartId, message.chart as Chart, message.breakpoints))
                     .then(() => reply({ ok: true }))
                     .catch(err => reply({ error: err.message }));
                 return;
@@ -328,6 +342,31 @@ class Statechart extends utils.Adapter {
                 return;
             case "simulationPing":
                 reply({ ok: simulating });
+                return;
+            case "simulationBreakpoints":
+            case "simulationPause":
+            case "simulationResume":
+            case "simulationStep":
+            case "simulationAdvance":
+                if (!simulating || !runtime) {
+                    reply({ error: "No simulation is running" });
+                    return;
+                }
+                if (obj.command === "simulationBreakpoints") {
+                    runtime.breakpoints = new Set(Array.isArray(message.breakpoints) ? message.breakpoints : []);
+                } else if (obj.command === "simulationPause") {
+                    runtime.pauseSimulation();
+                } else if (obj.command === "simulationResume") {
+                    runtime.resumeSimulation();
+                } else if (obj.command === "simulationStep") {
+                    runtime.stepSimulation();
+                } else if (typeof message.ms === "number" && message.ms > 0) {
+                    runtime.advanceTime(message.ms);
+                } else {
+                    // without a time: to the next timer
+                    runtime.advanceToNextTimer();
+                }
+                reply({ ok: true });
                 return;
             default:
                 reply({ error: `Unknown command "${obj.command}"` });
@@ -467,6 +506,17 @@ class Statechart extends utils.Adapter {
                 name: "The chart runs as simulation from the editor, its outputs are not written",
                 type: "boolean",
                 role: "indicator",
+                read: true,
+                write: false,
+            },
+            native: {},
+        });
+        await this.setObjectNotExistsAsync(`charts.${chartId}.simulationStatus`, {
+            type: "state",
+            common: {
+                name: "Status of the simulation as JSON: paused, time offset, queued wakeups, next timer, breakpoint",
+                type: "string",
+                role: "json",
                 read: true,
                 write: false,
             },

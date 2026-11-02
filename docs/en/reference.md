@@ -192,12 +192,26 @@ unsaved changes, but nothing is switched in the house.
 - Outputs, `setState()`, `setStateDelayed()` and `sendTo()` are not executed. The history shows them as
   **Not executed: …**, the live values show the simulated values of the outputs. `getState()` reads the real
   states.
-- Timers and the temporal logic run in real time.
+- Timers and the temporal logic run in real time, unless you advance the time (see below).
 - The active states, the live values and the history work as for the real chart, the events of the simulation are
   marked in the history. The stored state of the real chart is not changed.
 - **Stop simulation** ends it, then the real chart continues where it was before. The simulation also ends when the
   chart is saved, when the adapter restarts, when another chart is selected, and after two minutes if the editor was
   closed.
+
+The bar at the top of the canvas shows the simulated time, the next timer and the state of the simulation:
+
+- **Advance the time:** the fast forward button jumps to the next timer, e.g. to the end of `after(2, min)`, the
+  buttons **+1 min**, **+10 min** and **+1 h** let time pass. The timers which are due meanwhile fire in their order,
+  `every(...)` as often as it is due. Everything which depends on the time uses the simulated time: `elapsed()`,
+  `isTimeBetween()`, `at("22:30")`, astro events and the times in the history.
+- **Pause:** the following events (inputs set by hand, events, timers) wait instead of being processed. **Single
+  step** processes the next waiting event, **Continue** processes all of them and runs on.
+- **Breakpoints:** in the properties of a state or transition, **Breakpoint** stops the simulation when the state is
+  entered or the transition is taken. It is shown as red dot and also works for the initial states right after the
+  start. The simulation stops after the step in which the breakpoint was reached, the history shows where. With the
+  super step option, it stops after the transition, the rest of the chain is the next step. Breakpoints are not
+  stored in the chart, they are lost when the editor is reloaded.
 
 ## Import and export
 
@@ -221,6 +235,7 @@ For every chart, the adapter creates below `statechart.<instance>.charts.<chart>
 | `values` | Current values of all variables as JSON, `{}` if the chart does not run |
 | `history` | The last 200 events (starts and transitions taken) as JSON. Writing it without ack clears it |
 | `simulation` | `true` while the chart runs as simulation from the editor |
+| `simulationStatus` | Status of the simulation as JSON: paused, time offset, waiting events, next timer, breakpoint |
 
 The chart itself is stored in the object `statechart.<instance>.charts.<chart>`.
 

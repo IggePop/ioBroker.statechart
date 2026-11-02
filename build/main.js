@@ -123,6 +123,7 @@ class Statechart extends utils.Adapter {
     await this.loadHistory(chartId);
     await this.setState(`charts.${chartId}.enabled`, chart.enabled !== false, true);
     await this.setState(`charts.${chartId}.simulation`, false, true);
+    await this.setState(`charts.${chartId}.simulationStatus`, "", true);
     const empty = !chart.states?.length;
     if (!chart.enabled || empty) {
       if (empty) {
@@ -174,6 +175,9 @@ class Statechart extends utils.Adapter {
           void this.setState(`charts.${chartId}.values`, JSON.stringify(values), true);
         },
         onHistory: (entries) => this.addHistory(chartId, entries),
+        onSimulationStatus: (status) => {
+          void this.setState(`charts.${chartId}.simulationStatus`, JSON.stringify(status), true);
+        },
         loadPersisted: async () => {
           const state = await this.getStateAsync(`charts.${chartId}.snapshot`);
           return typeof state?.val === "string" && state.val ? JSON.parse(state.val) : null;
@@ -188,14 +192,16 @@ class Statechart extends utils.Adapter {
    *
    * @param chartId Chart ID
    * @param chart The chart as shown in the editor, may have unsaved changes
+   * @param breakpoints IDs of the states and transitions with a breakpoint
    */
-  async startSimulation(chartId, chart) {
+  async startSimulation(chartId, chart, breakpoints = []) {
     if (!chart?.states?.length) {
       throw new Error("The chart has no states");
     }
     this.stopChart(chartId);
     this.endSimulationTimer(chartId);
     const runtime = this.createRuntime(chartId, chart, true);
+    runtime.breakpoints = new Set(breakpoints);
     this.simulations.set(
       chartId,
       setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS)
@@ -276,7 +282,7 @@ class Statechart extends utils.Adapter {
     const runtime = this.runtimes.get(chartId);
     switch (obj.command) {
       case "simulationStart":
-        this.chartQueue = this.chartQueue.then(() => this.startSimulation(chartId, message.chart)).then(() => reply({ ok: true })).catch((err) => reply({ error: err.message }));
+        this.chartQueue = this.chartQueue.then(() => this.startSimulation(chartId, message.chart, message.breakpoints)).then(() => reply({ ok: true })).catch((err) => reply({ error: err.message }));
         return;
       case "simulationStop":
         this.chartQueue = this.chartQueue.then(() => this.stopSimulation(chartId)).then(() => reply({ ok: true })).catch((err) => reply({ error: err.message }));
@@ -301,6 +307,30 @@ class Statechart extends utils.Adapter {
         return;
       case "simulationPing":
         reply({ ok: simulating });
+        return;
+      case "simulationBreakpoints":
+      case "simulationPause":
+      case "simulationResume":
+      case "simulationStep":
+      case "simulationAdvance":
+        if (!simulating || !runtime) {
+          reply({ error: "No simulation is running" });
+          return;
+        }
+        if (obj.command === "simulationBreakpoints") {
+          runtime.breakpoints = new Set(Array.isArray(message.breakpoints) ? message.breakpoints : []);
+        } else if (obj.command === "simulationPause") {
+          runtime.pauseSimulation();
+        } else if (obj.command === "simulationResume") {
+          runtime.resumeSimulation();
+        } else if (obj.command === "simulationStep") {
+          runtime.stepSimulation();
+        } else if (typeof message.ms === "number" && message.ms > 0) {
+          runtime.advanceTime(message.ms);
+        } else {
+          runtime.advanceToNextTimer();
+        }
+        reply({ ok: true });
         return;
       default:
         reply({ error: `Unknown command "${obj.command}"` });
@@ -435,6 +465,17 @@ class Statechart extends utils.Adapter {
         name: "The chart runs as simulation from the editor, its outputs are not written",
         type: "boolean",
         role: "indicator",
+        read: true,
+        write: false
+      },
+      native: {}
+    });
+    await this.setObjectNotExistsAsync(`charts.${chartId}.simulationStatus`, {
+      type: "state",
+      common: {
+        name: "Status of the simulation as JSON: paused, time offset, queued wakeups, next timer, breakpoint",
+        type: "string",
+        role: "json",
         read: true,
         write: false
       },

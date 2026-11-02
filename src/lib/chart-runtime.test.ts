@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ChartRuntime, getChartHash } from "./chart-runtime";
 import { MAX_SUPER_STEPS } from "./chart-model";
-import type { HistoryEntry, PersistedChart } from "./chart-runtime";
+import type { HistoryEntry, PersistedChart, SimulationStatus } from "./chart-runtime";
 import type { Chart, ChartState, ChartSymbol } from "./chart-model";
 import { validateCode } from "./chart-validation";
 
@@ -859,6 +859,123 @@ describe("chart-runtime => simulation", () => {
         const host = await simulate();
         runtime?.simulateInput("motion", true);
         expect(host.persistCount).to.equal(0);
+    });
+});
+
+describe("chart-runtime => simulation: time, breakpoints and steps", () => {
+    let runtime: ChartRuntime | undefined;
+    afterEach(() => runtime?.stop());
+
+    /**
+     * Simulates the light chart with other labels
+     *
+     * @param labels Labels of the transitions Off -> On and On -> Off
+     * @param prepare Changes the chart before the start
+     */
+    async function simulate(
+        labels: [string, string],
+        prepare?: (chart: Chart) => void,
+    ): Promise<ReturnType<typeof createHost>> {
+        const chart = createLightChart();
+        chart.transitions = [
+            { id: "t1", source: "off", target: "on", label: labels[0] },
+            { id: "t2", source: "on", target: "off", label: labels[1] },
+        ];
+        prepare?.(chart);
+        const host = createHost({ "test.0.motion": false });
+        const statuses: SimulationStatus[] = [];
+        runtime = new ChartRuntime("light", chart, { ...host, onSimulationStatus: s => statuses.push(s) }, true);
+        Object.assign(host, { statuses });
+        await runtime.start();
+        return host;
+    }
+
+    it("advances the time to the next timer", async () => {
+        const host = await simulate(["motion", "after(2, min)[!motion && elapsed(sec) >= 120]"]);
+        runtime?.simulateInput("motion", true);
+        runtime?.simulateInput("motion", false);
+        expect(host.active.at(-1)).to.equal("On");
+        expect(runtime?.getNextTimer()?.label).to.equal("On -> Off");
+        expect(runtime?.advanceToNextTimer()).to.equal(true);
+        expect(host.active.at(-1)).to.equal("Off");
+        // elapsed() in the condition sees the simulated time
+        expect(runtime?.timeOffset).to.be.at.least(120_000);
+        expect(runtime?.advanceToNextTimer()).to.equal(false);
+    });
+
+    it("fires all timers which are due when the time advances, in their order", async () => {
+        await simulate(["every(1, min){count++;}", ""], chart => {
+            chart.transitions[0].target = "off";
+            chart.states[0].entry = 'setStateDelayed("test.0.x", 1, 150000);';
+        });
+        runtime?.advanceTime(5 * 60_000 + 10);
+        // the self transition enters Off again every minute, so the delayed write starts again as well
+        expect(runtime?.sandbox.count).to.equal(5);
+        // the delayed write of entering Off at 3:00 is due at 5:30
+        expect(runtime?.getNextTimer()?.due).to.be.closeTo(Date.now() + (runtime?.timeOffset ?? 0) + 30_000, 1000);
+    });
+
+    it("records setStateDelayed() when its time has come", async () => {
+        const host = await simulate(["", ""], chart => {
+            chart.transitions = [];
+            chart.states[0].entry = 'setStateDelayed("test.0.x", 1, 30000);';
+        });
+        runtime?.advanceTime(30_000);
+        expect(host.history.filter(e => e.kind === "effect").map(e => e.text)).to.deep.equal([
+            'setState("test.0.x", 1)',
+        ]);
+    });
+
+    it("stops at a breakpoint of a transition, queues the wakeups and processes them step by step", async () => {
+        const host = await simulate(["motion", "motion[!motion]"]);
+        runtime!.breakpoints = new Set(["t1"]);
+        runtime?.simulateInput("motion", true);
+        expect(host.active.at(-1)).to.equal("On");
+        expect(runtime?.paused).to.equal(true);
+        expect(host.history.at(-1)).to.include({ kind: "break", text: "Off → On" });
+        runtime?.simulateInput("motion", false);
+        expect(host.active.at(-1)).to.equal("On");
+        const statuses = (host as any).statuses as SimulationStatus[];
+        expect(statuses.at(-1)).to.include({ paused: true, queued: 1, breakpoint: "Off → On" });
+        expect(runtime?.stepSimulation()).to.equal(true);
+        expect(host.active.at(-1)).to.equal("Off");
+        expect(runtime?.paused).to.equal(true);
+        expect(runtime?.stepSimulation()).to.equal(false);
+        runtime?.resumeSimulation();
+        expect(statuses.at(-1)).to.include({ paused: false, queued: 0, breakpoint: null });
+    });
+
+    it("stops at a breakpoint of a state in the middle of a super step", async () => {
+        const host = await simulate(["motion", ""], chart => {
+            chart.superStep = true;
+            chart.states.push({ id: "end", name: "End", x: 0, y: 0 });
+            chart.transitions[1] = { id: "t2", source: "on", target: "end", label: "" };
+        });
+        runtime!.breakpoints = new Set(["on"]);
+        runtime?.simulateInput("motion", true);
+        expect(host.active.at(-1)).to.equal("On");
+        expect(host.history.at(-1)).to.include({ kind: "break", text: "On" });
+        runtime?.stepSimulation();
+        expect(host.active.at(-1)).to.equal("End");
+    });
+
+    it("queues inputs and timers while paused and processes them in their order", async () => {
+        const host = await simulate(["motion", "after(1, min)"], chart => {
+            chart.states[1].entry = "count++;";
+        });
+        runtime?.pauseSimulation();
+        runtime?.simulateInput("motion", true);
+        runtime?.handleEvent("motion");
+        expect(host.active.at(-1)).to.equal("Off");
+        expect(runtime?.queue.length).to.equal(2);
+        runtime?.resumeSimulation();
+        expect(host.active.at(-1)).to.equal("On");
+        // a timer which fires while paused waits as well
+        runtime?.pauseSimulation();
+        runtime?.advanceTime(60_000);
+        expect(host.active.at(-1)).to.equal("On");
+        runtime?.stepSimulation();
+        expect(host.active.at(-1)).to.equal("Off");
     });
 });
 

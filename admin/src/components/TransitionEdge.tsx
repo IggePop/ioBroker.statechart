@@ -65,6 +65,8 @@ type TransitionEdgeProps = EdgeProps<
         offset?: number;
         /** the transition was just taken by the running chart */
         flash?: boolean;
+        /** the simulation stops when the transition is taken */
+        breakpoint?: boolean;
         problems?: string[];
         /** Fixes an end on the border of its state, undefined makes it automatic again */
         onAnchorChange?: (id: string, end: EdgeEnd, anchor: EdgeAnchor | undefined) => void;
@@ -292,7 +294,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                     />
                 </>
             )}
-            {(text || transition?.comment?.trim()) && (
+            {(text || transition?.comment?.trim() || data?.breakpoint) && (
                 <EdgeLabelRenderer>
                     <Box
                         className="nodrag nopan"
@@ -315,6 +317,19 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                             gap: 0.5,
                         }}
                     >
+                        {data?.breakpoint && (
+                            <Box
+                                component="span"
+                                title={I18n.t("Breakpoint")}
+                                sx={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: "50%",
+                                    bgcolor: "error.main",
+                                    flexShrink: 0,
+                                }}
+                            />
+                        )}
                         {text}
                         <CommentBadge comment={transition?.comment} />
                     </Box>

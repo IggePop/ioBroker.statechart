@@ -28,7 +28,8 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Inputs and outputs mapped to any ioBroker states
 - Live view: the active state is highlighted in the editor, the current values of the variables are shown, taken
   transitions light up, and a history shows when which transition was taken and why
-- Simulation: run the chart from the editor without switching anything, set the inputs by hand
+- Simulation: run the chart from the editor without switching anything, set the inputs by hand, advance the time,
+  breakpoints and single steps
 - Code editor with syntax highlighting, error checking (e.g. unknown variables) and completion
 - Several independent charts per instance, which can be paused, reset and woken up by states (e.g. from vis)
 - Import and export of charts as JSON files
@@ -111,6 +112,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) simulation: advance the time (e.g. to the next timer), pause, single steps and breakpoints on states and transitions
 * (Igge) simulation: the chart runs as shown in the editor without writing outputs, the inputs are set by hand
 * (Igge) `getState("id")` reads any state in conditions and actions, `at("sunset", -30)` and `at("22:30")` are valid every day at an astro event or a time of day
 * (Igge) control states per chart: `enabled` pauses and starts it, `reset` restarts it in its initial state, `event` wakes it up with the event of an input
