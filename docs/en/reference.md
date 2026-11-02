@@ -178,6 +178,31 @@ Transition label: `[tooWarm(temperature)]{heating = false;}`
 Comments and notes have no influence on the execution. They are included in the generated code and in exported
 files, and changing them does not prevent restoring the state after a restart.
 
+## Checking the chart
+
+While you edit, the editor checks the chart. Errors are shown red, warnings orange, both at the state, transition,
+function block or variable, with the message as tooltip of the icon. Hints are only shown by a blue icon. When a
+chart starts, the adapter writes errors and warnings to the log, hints only with the log level debug.
+
+- **Code:** syntax errors, unknown variables and events, invalid temporal logic, writing an input (warning). They are
+  also underlined in the code editors.
+- **States which never become active** (warning): no transition leads to them, and they are not entered as initial
+  state. Only the topmost one is reported, its sub states are never active either.
+- **Transitions which are never taken** (warning): a transition before them (higher priority) is always valid, i.e. it
+  has no condition (or one which is always true) and no temporal logic, and no event or the same event. Or one before
+  them has the same event, temporal logic and condition. The transitions leaving a state are checked before its inner
+  transitions, like when the chart runs.
+- **Conditions which are never true** (warning, e.g. `[1 > 2]`) or always true (hint, e.g. `[true]`). Only conditions
+  which do not depend on variables or functions are evaluated.
+- **States which are never left** (hint): neither the state nor a state containing it has an outgoing transition. That
+  is often intended, e.g. for a state "Error". States with a `during` action are not reported, they work as long as
+  they are active.
+- **Variables:** an output which is never written (warning), an input which is not used and only wakes up the chart
+  (hint), a local variable which is not used or only written (hint).
+
+The check cannot know which values the states will have. Whether a condition with variables ever becomes true is
+shown by the [simulation](#simulation).
+
 ## Watching a running chart
 
 While a chart runs, the editor shows what it does:

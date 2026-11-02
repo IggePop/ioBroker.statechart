@@ -57,6 +57,8 @@ import type {
 import type { EdgeEnd } from "./TransitionEdge";
 import { downloadJson } from "../download";
 import { translateDiagnostic } from "./CodeEditor";
+import { addProblem } from "./ProblemBadge";
+import type { ProblemList } from "./ProblemBadge";
 import {
     chartToFlow,
     copySelection,
@@ -668,16 +670,24 @@ function ChartEditorInner({
 
     // add the information which is not stored in the nodes/edges themselves
     // only the code and the variables matter for the validation, not e.g. the positions which change while dragging
+    /** everything the validation and the analysis use, but not the positions */
     const codeSignature = JSON.stringify([
         chart.symbols,
+        chart.initial,
+        chart.parallel,
         nodes.map(n => {
             if (n.type === "function") {
                 return [n.id, n.data.fn.code];
             }
-            // notes have no code
-            return n.type === "state" ? [n.id, n.data.state.entry, n.data.state.during, n.data.state.exit] : null;
+            if (n.type !== "state") {
+                // notes have no code
+                return null;
+            }
+            const { entry, during, exit, initial, parallel, order } = n.data.state;
+            return [n.id, n.parentId, entry, during, exit, initial, parallel, order];
         }),
-        edges.map(e => [e.id, e.data?.transition.label]),
+        edges.map(e => [e.id, e.source, e.target, e.data?.transition.label, e.data?.transition.priority]),
+        edges.map(e => e.data?.transition.reenterParent),
     ]);
     const functionCodes = JSON.stringify(nodes.map(n => (n.type === "function" ? n.data.fn.code : null)));
     const { functions, declarations } = useMemo(() => {
@@ -690,14 +700,16 @@ function ChartEditorInner({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [functionCodes]);
 
-    /** translated problem messages by state/transition/function ID */
-    const problems = useMemo(() => {
-        const byId = new Map<string, string[]>();
-        for (const problem of validateChart(flowToChart(chart, nodes, edges))) {
-            const prefix = problem.kind === "state" ? `${problem.field}: ` : "";
-            byId.set(problem.id, [...(byId.get(problem.id) || []), prefix + translateDiagnostic(problem.diagnostic)]);
+    /** translated problems by state/transition/function ID, and of the variables by name */
+    const { problems, symbolProblems } = useMemo(() => {
+        const byId = new Map<string, ProblemList>();
+        const byName = new Map<string, ProblemList>();
+        for (const { kind, id, field, diagnostic } of validateChart(flowToChart(chart, nodes, edges))) {
+            const prefix = kind === "state" && field ? `${field}: ` : "";
+            const message = prefix + translateDiagnostic(diagnostic);
+            addProblem(kind === "symbol" ? byName : byId, id, message, diagnostic.severity);
         }
-        return byId;
+        return { problems: byId, symbolProblems: byName };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [codeSignature]);
 
@@ -1004,6 +1016,7 @@ function ChartEditorInner({
                     ) : panelTab === "symbols" ? (
                         <SymbolsEditor
                             symbols={chart.symbols}
+                            problems={symbolProblems}
                             onChange={symbols => updateChart({ symbols })}
                             liveValues={liveValues}
                             socket={socket}

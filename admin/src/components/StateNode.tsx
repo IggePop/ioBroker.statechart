@@ -5,6 +5,8 @@ import { Box, Typography } from "@mui/material";
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartState } from "../../../src/lib/chart-model";
 import CommentBadge from "./CommentBadge";
+import ProblemBadge, { getProblemColor } from "./ProblemBadge";
+import type { ProblemList } from "./ProblemBadge";
 
 /** One connection point per side, in loose connection mode each of them can start and end transitions */
 const SIDES: [string, Position][] = [
@@ -55,7 +57,7 @@ type StateNodeProps = NodeProps<
         isInitial?: boolean;
         isActive?: boolean;
         isDropTarget?: boolean;
-        problems?: string[];
+        problems?: ProblemList;
         /** Position in the execution order, only for parallel states (whose parent is parallel) */
         order?: number;
         /** The simulation stops when the state is entered */
@@ -72,8 +74,8 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
         borderColor = "primary.main";
     } else if (isActive) {
         borderColor = "success.main";
-    } else if (problems) {
-        borderColor = "error.main";
+    } else if (getProblemColor(problems)) {
+        borderColor = getProblemColor(problems)!;
     } else if (selected) {
         borderColor = "primary.main";
     }
@@ -103,7 +105,6 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                 />
             )}
             <Box
-                title={problems?.join("\n")}
                 sx={{
                     width: "100%",
                     height: "100%",
@@ -129,6 +130,7 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                         {state.name}
                     </Typography>
                     <CommentBadge comment={state.comment} />
+                    <ProblemBadge problems={problems} />
                     {history && (
                         // the history junction of Stateflow: a circle with an H
                         <Box

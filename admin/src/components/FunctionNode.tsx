@@ -6,11 +6,13 @@ import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartFunction } from "../../../src/lib/chart-model";
 import { getDeclarations } from "../../../src/lib/chart-validation";
 import CommentBadge from "./CommentBadge";
+import { getProblemColor } from "./ProblemBadge";
+import type { ProblemList } from "./ProblemBadge";
 
 type FunctionNodeProps = NodeProps<
     Node<{
         fn: ChartFunction;
-        problems?: string[];
+        problems?: ProblemList;
     }>
 >;
 
@@ -23,8 +25,8 @@ function FunctionNode({ data, selected }: FunctionNodeProps): React.JSX.Element 
         .filter(d => d.signature)
         .map(d => d.signature);
     let borderColor = "secondary.main";
-    if (problems) {
-        borderColor = "error.main";
+    if (getProblemColor(problems)) {
+        borderColor = getProblemColor(problems)!;
     } else if (selected) {
         borderColor = "primary.main";
     }
@@ -36,7 +38,7 @@ function FunctionNode({ data, selected }: FunctionNodeProps): React.JSX.Element 
                 minHeight={50}
             />
             <Box
-                title={problems?.join("\n")}
+                title={problems?.messages.join("\n")}
                 sx={{
                     width: "100%",
                     height: "100%",

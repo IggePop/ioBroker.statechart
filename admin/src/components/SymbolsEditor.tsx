@@ -16,6 +16,8 @@ import { DialogSelectID, I18n } from "@iobroker/adapter-react-v5";
 import type { AdminConnection, IobTheme } from "@iobroker/adapter-react-v5";
 import type { ChartSymbol, SymbolScope } from "../../../src/lib/chart-model";
 import { formatValue } from "./LiveValuesPanel";
+import ProblemBadge from "./ProblemBadge";
+import type { ProblemList } from "./ProblemBadge";
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 
@@ -159,6 +161,7 @@ const hasTriggerOptions = (symbol: ChartSymbol): boolean => !!(symbol.trigger ||
  * @param props.symbol The variable
  * @param props.open If its fields are shown
  * @param props.problem Its problem, empty if there is none
+ * @param props.hints Problems found by the analysis of the chart, e.g. that it is not used
  * @param props.liveValues Current values of the variables
  * @param props.onClick Opens or closes the fields
  */
@@ -166,12 +169,14 @@ function SymbolRow({
     symbol,
     open,
     problem,
+    hints,
     liveValues,
     onClick,
 }: {
     symbol: ChartSymbol;
     open: boolean;
     problem: string;
+    hints: ProblemList | undefined;
     liveValues: Record<string, any>;
     onClick: () => void;
 }): React.JSX.Element {
@@ -221,13 +226,18 @@ function SymbolRow({
                     {formatValue(liveValues[symbol.name])}
                 </Typography>
             )}
-            {problem && (
+            {problem ? (
                 <Tooltip title={problem}>
                     <ErrorIcon
                         fontSize="small"
                         color="error"
                     />
                 </Tooltip>
+            ) : (
+                <ProblemBadge
+                    problems={hints}
+                    sx={{ fontSize: 20 }}
+                />
             )}
         </ButtonBase>
     );
@@ -346,6 +356,8 @@ function SymbolDetails({
 
 interface SymbolsEditorProps {
     symbols: ChartSymbol[];
+    /** Problems found by the analysis of the chart, by name */
+    problems: Map<string, ProblemList>;
     onChange: (symbols: ChartSymbol[]) => void;
     /** Current values of the variables, empty if the chart does not run */
     liveValues: Record<string, any>;
@@ -358,6 +370,7 @@ interface SymbolsEditorProps {
  */
 export default function SymbolsEditor({
     symbols,
+    problems,
     onChange,
     liveValues,
     socket,
@@ -484,6 +497,7 @@ export default function SymbolsEditor({
                                             symbol={symbol}
                                             open={open === index}
                                             problem={problem}
+                                            hints={problems.get(symbol.name)}
                                             liveValues={liveValues}
                                             onClick={() => {
                                                 setOpen(open === index ? null : index);

@@ -1,10 +1,13 @@
 /*
  * Checks conditions and actions of a chart: JavaScript syntax, unknown variables and events.
  * Used by the editor (to underline errors) and by the runtime (to log them when a chart starts).
+ * validateChart() adds the logical problems found by the static analysis.
  */
 
 import * as acorn from "acorn";
 import * as walk from "acorn-walk";
+import { analyzeChart } from "./chart-analysis";
+import type { Severity } from "./chart-analysis";
 import { CHANGE_HELPERS, HELPERS } from "./chart-helpers";
 import { LabelSyntaxError, TIME_UNITS, formatMessage, parseTransitionLabelWithRanges } from "./chart-model";
 import type { Chart, ChartSymbol } from "./chart-model";
@@ -48,7 +51,7 @@ export interface Diagnostic {
     /** Position in the checked text */
     from: number;
     to: number;
-    severity: "error" | "warning";
+    severity: Severity;
     /** English message */
     message: string;
     /** Message with %s placeholders, used to translate it */
@@ -56,13 +59,7 @@ export interface Diagnostic {
     args: string[];
 }
 
-function createDiagnostic(
-    from: number,
-    to: number,
-    severity: "error" | "warning",
-    key: string,
-    args: string[] = [],
-): Diagnostic {
+function createDiagnostic(from: number, to: number, severity: Severity, key: string, args: string[] = []): Diagnostic {
     return { from, to, severity, key, args, message: formatMessage(key, args) };
 }
 
@@ -386,20 +383,22 @@ export function prepareHelperCalls(
 }
 
 export interface ChartProblem {
-    kind: "state" | "transition" | "function";
-    /** ID of the state, transition or function block */
+    kind: "state" | "transition" | "function" | "symbol";
+    /** ID of the state, transition or function block, name of the variable */
     id: string;
-    /** "entry", "during", "exit", "label" or "code" */
+    /** "entry", "during", "exit", "label" or "code", empty for problems of the state or variable as a whole */
     field: string;
     diagnostic: Diagnostic;
 }
 
 /**
- * Checks all actions, transition labels and function blocks of a chart
+ * Checks all actions, transition labels and function blocks of a chart, and analyzes its logic
  *
  * @param chart The chart
+ * @param options Options
+ * @param options.analyze false to check only the code, without the static analysis
  */
-export function validateChart(chart: Chart): ChartProblem[] {
+export function validateChart(chart: Chart, options: { analyze?: boolean } = {}): ChartProblem[] {
     const functionNames = getFunctionNames(chart);
     const problems: ChartProblem[] = [];
     for (const state of chart.states) {
@@ -449,6 +448,15 @@ export function validateChart(chart: Chart): ChartProblem[] {
             }
             seen.add(name);
         }
+    }
+
+    for (const { kind, id, severity, key, args } of options.analyze === false ? [] : analyzeChart(chart)) {
+        problems.push({
+            kind,
+            id,
+            field: kind === "transition" ? "label" : "",
+            diagnostic: createDiagnostic(0, 0, severity, key, args),
+        });
     }
     return problems;
 }

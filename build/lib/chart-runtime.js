@@ -604,7 +604,9 @@ class ChartRuntime {
     for (const { kind, id, field, diagnostic } of (0, import_chart_validation.validateChart)(this.chart)) {
       let where;
       if (kind === "state") {
-        where = `${this.statesById.get(id)?.name ?? id}/${field}`;
+        where = `${this.statesById.get(id)?.name ?? id}${field ? `/${field}` : ""}`;
+      } else if (kind === "symbol") {
+        where = `Variable ${id}`;
       } else if (kind === "function") {
         const fn = this.chart.functions?.find((f) => f.id === id);
         where = `Function block ${(0, import_chart_validation.getDeclarations)(fn?.code).map((d) => d.name).join(", ")}`;
@@ -614,7 +616,7 @@ class ChartRuntime {
         const target = this.statesById.get(transition?.target ?? "")?.name;
         where = `Transition ${source} -> ${target}`;
       }
-      const log = diagnostic.severity === "error" ? this.host.log.error : this.host.log.warn;
+      const log = { error: this.host.log.error, warning: this.host.log.warn, info: this.host.log.debug }[diagnostic.severity];
       log(`[${this.chart.name}] ${where}: ${diagnostic.message}`);
     }
   }

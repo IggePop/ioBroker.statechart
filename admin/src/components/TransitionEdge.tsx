@@ -14,6 +14,8 @@ import {
 } from "../floating-edges";
 import type { Box as Rect, Point } from "../floating-edges";
 import CommentBadge from "./CommentBadge";
+import ProblemBadge, { getProblemColor } from "./ProblemBadge";
+import type { ProblemList } from "./ProblemBadge";
 
 /**
  * @param node A node as React Flow shows it
@@ -67,7 +69,7 @@ type TransitionEdgeProps = EdgeProps<
         flash?: boolean;
         /** the simulation stops when the transition is taken */
         breakpoint?: boolean;
-        problems?: string[];
+        problems?: ProblemList;
         /** Fixes an end on the border of its state, undefined makes it automatic again */
         onAnchorChange?: (id: string, end: EdgeEnd, anchor: EdgeAnchor | undefined) => void;
         /** Moves an end to another state */
@@ -233,7 +235,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
         path = `M ${from.x} ${from.y} L ${preview.point.x} ${preview.point.y}`;
     }
 
-    const error = data?.problems?.join("\n");
+    const problemColor = getProblemColor(data?.problems);
     const text = `${data?.showPriority ? `${transition?.priority ?? "?"}: ` : ""}${transition?.label || ""}`;
     const showGrips = selected && !!data?.onAnchorChange && !!sourceBox && !!targetBox;
     /** the properties of the grip of one end */
@@ -294,19 +296,18 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                     />
                 </>
             )}
-            {(text || transition?.comment?.trim() || data?.breakpoint) && (
+            {(text || transition?.comment?.trim() || data?.breakpoint || data?.problems) && (
                 <EdgeLabelRenderer>
                     <Box
                         className="nodrag nopan"
-                        title={error || undefined}
                         sx={{
                             position: "absolute",
                             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
                             pointerEvents: "all",
                             bgcolor: "background.paper",
-                            color: error ? "error.main" : "text.primary",
+                            color: problemColor ?? "text.primary",
                             border: 1,
-                            borderColor: error ? "error.main" : "transparent",
+                            borderColor: problemColor ?? "transparent",
                             borderRadius: 1,
                             px: 0.5,
                             fontFamily: "monospace",
@@ -332,6 +333,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                         )}
                         {text}
                         <CommentBadge comment={transition?.comment} />
+                        <ProblemBadge problems={data?.problems} />
                     </Box>
                 </EdgeLabelRenderer>
             )}

@@ -185,6 +185,32 @@ Beschriftung eines Übergangs: `[zuWarm(temperatur)]{heizung = false;}`
 Kommentare und Notizen haben keinen Einfluss auf die Ausführung. Sie stehen im generierten Code und in exportierten
 Dateien, und wenn sie sich ändern, wird der Zustand nach einem Neustart trotzdem wiederhergestellt.
 
+## Prüfung des Charts
+
+Während du bearbeitest, prüft der Editor das Chart. Fehler erscheinen rot, Warnungen orange, beide am Zustand,
+Übergang, Funktionsblock oder an der Variablen, die Meldung steht im Tooltip des Symbols. Hinweise zeigt nur ein blaues
+Symbol. Beim Start eines Charts schreibt der Adapter Fehler und Warnungen ins Log, Hinweise nur mit der Log-Stufe
+debug.
+
+- **Code:** Syntaxfehler, unbekannte Variablen und Events, ungültige Zeitlogik, Schreiben eines Eingangs (Warnung).
+  Sie werden auch in den Code-Editoren unterstrichen.
+- **Zustände, die nie aktiv werden** (Warnung): Kein Übergang führt zu ihnen, und sie werden auch nicht als
+  Startzustand betreten. Gemeldet wird nur der oberste, seine Unterzustände werden ebenfalls nie aktiv.
+- **Übergänge, die nie genommen werden** (Warnung): Ein Übergang davor (mit höherer Priorität) gilt immer, d.h. er hat
+  keine Bedingung (oder eine, die immer erfüllt ist) und keine Zeitlogik, und kein Event oder dasselbe Event. Oder einer
+  davor hat dasselbe Event, dieselbe Zeitlogik und dieselbe Bedingung. Die Übergänge, die einen Zustand verlassen,
+  werden vor seinen inneren Übergängen geprüft, wie beim Ausführen des Charts.
+- **Bedingungen, die nie erfüllt sind** (Warnung, z.B. `[1 > 2]`) oder immer (Hinweis, z.B. `[true]`). Ausgewertet
+  werden nur Bedingungen, die nicht von Variablen oder Funktionen abhängen.
+- **Zustände, die nie verlassen werden** (Hinweis): Weder der Zustand noch ein Zustand, der ihn enthält, hat einen
+  ausgehenden Übergang. Das ist oft gewollt, z.B. bei einem Zustand „Fehler“. Zustände mit `during`-Aktion werden
+  nicht gemeldet, sie arbeiten, solange sie aktiv sind.
+- **Variablen:** ein Ausgang, der nie geschrieben wird (Warnung), ein Eingang, der nicht verwendet wird und das Chart
+  nur aufweckt (Hinweis), eine lokale Variable, die nicht verwendet oder nur geschrieben wird (Hinweis).
+
+Welche Werte die Datenpunkte haben werden, kann die Prüfung nicht wissen. Ob eine Bedingung mit Variablen je erfüllt
+wird, zeigt die [Simulation](#simulation).
+
 ## Ein laufendes Chart beobachten
 
 Während ein Chart läuft, zeigt der Editor, was es tut:

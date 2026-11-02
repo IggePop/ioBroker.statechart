@@ -23,6 +23,7 @@ Adapter ausgeführt.
 - Simulation: das Chart aus dem Editor laufen lassen, ohne dass etwas geschaltet wird, Eingänge von Hand setzen, Zeit
   vorspulen, Haltepunkte und Einzelschritte
 - Code-Editor mit Syntax-Hervorhebung, Fehlerprüfung (z.B. unbekannte Variablen) und Autovervollständigung
+- Statische Prüfung des Charts: Zustände, die nie aktiv werden, Übergänge, die nie genommen werden, ungenutzte Variablen
 - Mehrere unabhängige Charts pro Instanz, die sich über Datenpunkte anhalten, zurücksetzen und wecken lassen (z.B. aus vis)
 - Import und Export von Charts als JSON-Dateien
 - Kommentare zu Zuständen, Übergängen und Funktionsblöcken sowie Notizen auf der Zeichenfläche

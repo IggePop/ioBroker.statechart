@@ -31,6 +31,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Simulation: run the chart from the editor without switching anything, set the inputs by hand, advance the time,
   breakpoints and single steps
 - Code editor with syntax highlighting, error checking (e.g. unknown variables) and completion
+- Static check of the chart: states which never become active, transitions which are never taken, unused variables
 - Several independent charts per instance, which can be paused, reset and woken up by states (e.g. from vis)
 - Import and export of charts as JSON files
 - Comments on states, transitions and function blocks, and notes on the canvas
@@ -118,6 +119,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) control states per chart: `enabled` pauses and starts it, `reset` restarts it in its initial state, `event` wakes it up with the event of an input
 * (Igge) more temporal logic: `before`, `at` and `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)` for conditions which are true for a time, and the helpers `elapsed()` and `duration()`
 * (Igge) the variables are grouped by kind and shown as compact lines, a click shows the settings of a variable, a search appears with many variables
+* (Igge) static check of the chart: states which never become active or are never left, transitions which are never taken, conditions which are never true, unused variables
 * (Igge) history junction: entering a state returns to its last active sub state
 * (Igge) parallel states (AND): all sub states of a state, or all top level states, are active at the same time and are processed in their execution order
 

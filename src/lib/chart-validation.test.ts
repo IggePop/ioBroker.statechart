@@ -185,14 +185,17 @@ describe("chart-validation => validateTransitionLabel", () => {
 
 describe("chart-validation => validateChart", () => {
     it("reports problems of states and transitions", () => {
-        const problems = validateChart({
-            version: 1,
-            name: "Test",
-            enabled: true,
-            symbols,
-            states: [{ id: "s1", name: "S1", entry: "lihgt = true;", x: 0, y: 0 }],
-            transitions: [{ id: "t1", source: "s1", target: "s1", label: "[x]" }],
-        });
+        const problems = validateChart(
+            {
+                version: 1,
+                name: "Test",
+                enabled: true,
+                symbols,
+                states: [{ id: "s1", name: "S1", entry: "lihgt = true;", x: 0, y: 0 }],
+                transitions: [{ id: "t1", source: "s1", target: "s1", label: "[x]" }],
+            },
+            { analyze: false },
+        );
         expect(problems.map(p => `${p.kind} ${p.id} ${p.field}: ${p.diagnostic.message}`)).to.deep.equal([
             'state s1 entry: Unknown variable "lihgt"',
             'transition t1 label: Unknown variable "x"',
@@ -200,19 +203,27 @@ describe("chart-validation => validateChart", () => {
     });
 
     it("knows the functions of function blocks and checks the blocks", () => {
-        const problems = validateChart({
-            version: 1,
-            name: "Test",
-            enabled: true,
-            symbols,
-            states: [{ id: "s1", name: "S1", entry: "light = isOn(count) && LIMIT > 1;", x: 0, y: 0 }],
-            transitions: [{ id: "t1", source: "s1", target: "s1", label: "[clamp(count, 0, 5) > 1]" }],
-            functions: [
-                { id: "f1", code: "function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }", x: 0, y: 0 },
-                { id: "f2", code: "const LIMIT = 3;\nconst isOn = c => c > LIMIT && motoin;", x: 0, y: 0 },
-                { id: "f3", code: "function clamp() {}\nfunction count() {}", x: 0, y: 0 },
-            ],
-        });
+        const problems = validateChart(
+            {
+                version: 1,
+                name: "Test",
+                enabled: true,
+                symbols,
+                states: [{ id: "s1", name: "S1", entry: "light = isOn(count) && LIMIT > 1;", x: 0, y: 0 }],
+                transitions: [{ id: "t1", source: "s1", target: "s1", label: "[clamp(count, 0, 5) > 1]" }],
+                functions: [
+                    {
+                        id: "f1",
+                        code: "function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }",
+                        x: 0,
+                        y: 0,
+                    },
+                    { id: "f2", code: "const LIMIT = 3;\nconst isOn = c => c > LIMIT && motoin;", x: 0, y: 0 },
+                    { id: "f3", code: "function clamp() {}\nfunction count() {}", x: 0, y: 0 },
+                ],
+            },
+            { analyze: false },
+        );
         expect(problems.map(p => `${p.kind} ${p.id} ${p.field}: ${p.diagnostic.message}`)).to.deep.equal([
             'function f2 code: Unknown variable "motoin"',
             'function f3 code: "clamp" is declared in more than one function block',
@@ -223,30 +234,33 @@ describe("chart-validation => validateChart", () => {
 
 describe("chart-validation => parallel states", () => {
     it("reports transitions between parallel states and their children", () => {
-        const problems = validateChart({
-            version: 1,
-            name: "Test",
-            enabled: true,
-            parallel: true,
-            symbols,
-            states: [
-                { id: "a", name: "A", x: 0, y: 0, parallel: true },
-                { id: "a1", name: "A1", parent: "a", x: 0, y: 0 },
-                { id: "a2", name: "A2", parent: "a", x: 0, y: 0 },
-                { id: "a21", name: "A21", parent: "a2", x: 0, y: 0 },
-                { id: "a22", name: "A22", parent: "a2", x: 0, y: 0 },
-                { id: "b", name: "B", x: 0, y: 0 },
-            ],
-            transitions: [
-                { id: "between", source: "a1", target: "a2", label: "" },
-                { id: "child", source: "a1", target: "a22", label: "" },
-                { id: "top", source: "a21", target: "b", label: "" },
-                // inside a region, to an own child and back: possible
-                { id: "inside", source: "a21", target: "a22", label: "" },
-                { id: "toChild", source: "a", target: "a1", label: "" },
-                { id: "self", source: "a1", target: "a1", label: "" },
-            ],
-        });
+        const problems = validateChart(
+            {
+                version: 1,
+                name: "Test",
+                enabled: true,
+                parallel: true,
+                symbols,
+                states: [
+                    { id: "a", name: "A", x: 0, y: 0, parallel: true },
+                    { id: "a1", name: "A1", parent: "a", x: 0, y: 0 },
+                    { id: "a2", name: "A2", parent: "a", x: 0, y: 0 },
+                    { id: "a21", name: "A21", parent: "a2", x: 0, y: 0 },
+                    { id: "a22", name: "A22", parent: "a2", x: 0, y: 0 },
+                    { id: "b", name: "B", x: 0, y: 0 },
+                ],
+                transitions: [
+                    { id: "between", source: "a1", target: "a2", label: "" },
+                    { id: "child", source: "a1", target: "a22", label: "" },
+                    { id: "top", source: "a21", target: "b", label: "" },
+                    // inside a region, to an own child and back: possible
+                    { id: "inside", source: "a21", target: "a22", label: "" },
+                    { id: "toChild", source: "a", target: "a1", label: "" },
+                    { id: "self", source: "a1", target: "a1", label: "" },
+                ],
+            },
+            { analyze: false },
+        );
         expect(problems.map(p => `${p.id}: ${p.diagnostic.message}`)).to.deep.equal([
             "between: Transitions between parallel states are not possible",
             "child: Transitions between parallel states are not possible",

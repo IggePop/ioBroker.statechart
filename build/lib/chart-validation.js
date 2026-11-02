@@ -39,6 +39,7 @@ __export(chart_validation_exports, {
 module.exports = __toCommonJS(chart_validation_exports);
 var acorn = __toESM(require("acorn"));
 var walk = __toESM(require("acorn-walk"));
+var import_chart_analysis = require("./chart-analysis");
 var import_chart_helpers = require("./chart-helpers");
 var import_chart_model = require("./chart-model");
 var import_chart_structure = require("./chart-structure");
@@ -299,7 +300,7 @@ function prepareHelperCalls(code, kind, createCallId) {
   }
   return { code: result, names: [...names], stateIds: [...stateIds] };
 }
-function validateChart(chart) {
+function validateChart(chart, options = {}) {
   const functionNames = getFunctionNames(chart);
   const problems = [];
   for (const state of chart.states) {
@@ -347,6 +348,14 @@ function validateChart(chart) {
       }
       seen.add(name);
     }
+  }
+  for (const { kind, id, severity, key, args } of options.analyze === false ? [] : (0, import_chart_analysis.analyzeChart)(chart)) {
+    problems.push({
+      kind,
+      id,
+      field: kind === "transition" ? "label" : "",
+      diagnostic: createDiagnostic(0, 0, severity, key, args)
+    });
   }
   return problems;
 }

@@ -198,7 +198,7 @@ export default function CodeEditor({
                         key={i}
                         variant="caption"
                         component="div"
-                        color={d.severity === "error" ? "error" : "warning.main"}
+                        color={`${d.severity}.main`}
                         sx={{ mt: 0.5 }}
                     >
                         {translateDiagnostic(d)}

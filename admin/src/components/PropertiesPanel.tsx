@@ -42,16 +42,19 @@ function useCodeTools(symbols: ChartSymbol[], functions: ChartFunction[], declar
             validateAction: code => validateCode(code, "statements", symbols, 0, functionNames),
             validateLabel: label => validateTransitionLabel(label, symbols, functionNames),
             validateFunction: id => code =>
-                validateChart({
-                    version: 1,
-                    name: "",
-                    enabled: true,
-                    symbols,
-                    states: [],
-                    transitions: [],
-                    functions: functions.map(fn => (fn.id === id ? { ...fn, code } : fn)),
-                })
-                    .filter(p => p.id === id)
+                validateChart(
+                    {
+                        version: 1,
+                        name: "",
+                        enabled: true,
+                        symbols,
+                        states: [],
+                        transitions: [],
+                        functions: functions.map(fn => (fn.id === id ? { ...fn, code } : fn)),
+                    },
+                    { analyze: false },
+                )
+                    .filter(p => p.kind === "function" && p.id === id)
                     .map(p => p.diagnostic),
             completions: [
                 ...symbols.map(s => ({
