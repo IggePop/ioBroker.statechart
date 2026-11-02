@@ -46,8 +46,15 @@ export interface ChartState {
     name: string;
     /** ID of the parent state, null/undefined for top level states */
     parent?: string | null;
-    /** ID of the initial child state (only for states with children) */
+    /** ID of the initial child state (only for states with exclusive children) */
     initial?: string;
+    /**
+     * Decomposition of the children: parallel (AND), all children are active at the same time.
+     * Default is exclusive (OR), exactly one child is active.
+     */
+    parallel?: boolean;
+    /** Children of a parallel state only: execution order among the siblings, lower is first */
+    order?: number;
     /** Action executed when the state is entered */
     entry?: string;
     /** Action executed on every wakeup while the state is active and no transition is taken */
@@ -157,6 +164,8 @@ export interface Chart {
     superStep?: boolean;
     /** ID of the initial top level state (default transition) */
     initial?: string;
+    /** The top level states are parallel (AND), see ChartState.parallel */
+    parallel?: boolean;
     symbols: ChartSymbol[];
     states: ChartState[];
     transitions: ChartTransition[];
@@ -482,8 +491,14 @@ function normalizeChart(data: any, where: string): Chart {
         for (const field of ["entry", "during", "exit", "initial", "comment"]) {
             optionalString(state[field], `${at}: "${field}" is no text`);
         }
+        if (state.order !== undefined && !Number.isFinite(state.order)) {
+            fail(`${at}: "order" is no number`);
+        }
+        const { parallel, ...rest } = state;
         return {
-            ...state,
+            ...rest,
+            // the default (exclusive) is not stored, like in the editor
+            ...(parallel === true ? { parallel } : {}),
             name: typeof state.name === "string" && state.name ? state.name : state.id,
             parent: state.parent || null,
             x: Number.isFinite(state.x) ? state.x : 0,
@@ -588,6 +603,9 @@ function normalizeChart(data: any, where: string): Chart {
     // the default (off) is not stored, like in the editor
     if (chart.superStep !== true) {
         delete chart.superStep;
+    }
+    if (chart.parallel !== true) {
+        delete chart.parallel;
     }
     return chart;
 }

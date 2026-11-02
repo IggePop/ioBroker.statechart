@@ -2,6 +2,7 @@ import React, { memo } from "react";
 import { Handle, NodeResizer, Position } from "@xyflow/react";
 import type { Node, NodeProps } from "@xyflow/react";
 import { Box, Typography } from "@mui/material";
+import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartState } from "../../../src/lib/chart-model";
 import CommentBadge from "./CommentBadge";
 
@@ -55,11 +56,13 @@ type StateNodeProps = NodeProps<
         isActive?: boolean;
         isDropTarget?: boolean;
         problems?: string[];
+        /** Position in the execution order, only for parallel states (whose parent is parallel) */
+        order?: number;
     }>
 >;
 
 function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
-    const { state, isInitial, isActive, isDropTarget, problems } = data;
+    const { state, isInitial, isActive, isDropTarget, problems, order } = data;
     let borderColor = "text.secondary";
     if (isDropTarget) {
         borderColor = "primary.main";
@@ -84,7 +87,8 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                     width: "100%",
                     height: "100%",
                     border: isActive || isDropTarget ? 3 : 2,
-                    borderStyle: problems && !isActive && !isDropTarget ? "dashed" : "solid",
+                    // like in Stateflow, parallel states have a dashed border
+                    borderStyle: order !== undefined ? "dashed" : "solid",
                     borderColor,
                     borderRadius: 3,
                     // a state shows that the dragged state is moved into it when it is dropped
@@ -104,6 +108,16 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                         {state.name}
                     </Typography>
                     <CommentBadge comment={state.comment} />
+                    {order !== undefined && (
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            title={I18n.t("executionOrderTitle", String(order))}
+                            sx={{ fontWeight: "bold" }}
+                        >
+                            {order}
+                        </Typography>
+                    )}
                 </Box>
                 {ACTIONS.filter(action => state[action]).map(action => (
                     <Typography

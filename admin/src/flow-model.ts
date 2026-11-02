@@ -4,6 +4,7 @@
 
 import type { Edge, Node } from "@xyflow/react";
 import type { Chart, ChartFunction, ChartNote, ChartState, ChartTransition } from "../../src/lib/chart-model";
+import { sortByOrder } from "../../src/lib/chart-structure";
 
 export type StateFlowNode = Node<{ state: ChartState }, "state">;
 export type FunctionFlowNode = Node<{ fn: ChartFunction }, "function">;
@@ -261,13 +262,18 @@ export function reparentNodes(
 
 /**
  * The initial state of every level: the configured one if it is valid, otherwise the first state,
- * exactly like the runtime does it
+ * exactly like the runtime does it. Parallel levels have no initial state, all their states are active.
  *
  * @param nodes All nodes
  * @param chartInitial Initial state of the top level
+ * @param chartParallel If the top level states are parallel
  * @returns IDs of all initial states
  */
-export function getInitialStateIds(nodes: ChartFlowNode[], chartInitial: string | undefined): Set<string> {
+export function getInitialStateIds(
+    nodes: ChartFlowNode[],
+    chartInitial: string | undefined,
+    chartParallel = false,
+): Set<string> {
     /** children by parent ID, "" for the top level */
     const children = new Map<string, string[]>();
     /** configured initial state by parent ID */
@@ -280,10 +286,51 @@ export function getInitialStateIds(nodes: ChartFlowNode[], chartInitial: string 
         children.set(parent, [...(children.get(parent) || []), node.id]);
         configured.set(node.id, node.data.state.initial);
     }
+    const parallel = getParallelLevels(nodes, chartParallel);
     const result = new Set<string>();
     for (const [parent, ids] of children) {
+        if (parallel.has(parent)) {
+            continue;
+        }
         const initial = configured.get(parent);
         result.add(initial && ids.includes(initial) ? initial : ids[0]);
+    }
+    return result;
+}
+
+/**
+ * @param nodes All nodes
+ * @param chartParallel If the top level states are parallel
+ * @returns IDs of the states with parallel children, "" for the top level
+ */
+function getParallelLevels(nodes: ChartFlowNode[], chartParallel: boolean): Set<string> {
+    const levels = new Set(nodes.flatMap(n => (n.type === "state" && n.data.state.parallel ? [n.id] : [])));
+    if (chartParallel) {
+        levels.add("");
+    }
+    return levels;
+}
+
+/**
+ * The execution order of the parallel states, as the runtime uses it
+ *
+ * @param nodes All nodes
+ * @param chartParallel If the top level states are parallel
+ * @returns the position (1, 2, ...) among its siblings of each state whose parent is parallel
+ */
+export function getExecutionOrder(nodes: ChartFlowNode[], chartParallel = false): Map<string, number> {
+    const parallel = getParallelLevels(nodes, chartParallel);
+    /** the states of parallel levels by parent ID, "" for the top level */
+    const siblings = new Map<string, ChartState[]>();
+    for (const node of nodes) {
+        const parent = node.parentId || "";
+        if (node.type === "state" && parallel.has(parent)) {
+            siblings.set(parent, [...(siblings.get(parent) || []), node.data.state]);
+        }
+    }
+    const result = new Map<string, number>();
+    for (const states of siblings.values()) {
+        sortByOrder(states).forEach((state, i) => result.set(state.id, i + 1));
     }
     return result;
 }

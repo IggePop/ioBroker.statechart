@@ -67,6 +67,7 @@ import {
     DEFAULT_STATE_WIDTH,
     findDropParent,
     flowToChart,
+    getExecutionOrder,
     getInitialStateIds,
     isDescendantNode,
     pasteClipboard,
@@ -684,7 +685,11 @@ function ChartEditorInner({
         }
     };
 
-    const initialIds = useMemo(() => getInitialStateIds(nodes, chart.initial), [nodes, chart.initial]);
+    const initialIds = useMemo(
+        () => getInitialStateIds(nodes, chart.initial, chart.parallel),
+        [nodes, chart.initial, chart.parallel],
+    );
+    const executionOrder = useMemo(() => getExecutionOrder(nodes, chart.parallel), [nodes, chart.parallel]);
 
     const displayNodes = useMemo(
         () =>
@@ -697,9 +702,10 @@ function ChartEditorInner({
                     isActive: activeIds.includes(n.id),
                     isDropTarget: n.id === dropTarget,
                     problems: problems.get(n.id),
+                    order: executionOrder.get(n.id),
                 } as any,
             })),
-        [nodes, initialIds, activeIds, dropTarget, problems],
+        [nodes, initialIds, executionOrder, activeIds, dropTarget, problems],
     );
     const displayEdges = useMemo(() => {
         const outgoing: Record<string, number> = {};
@@ -915,6 +921,7 @@ function ChartEditorInner({
                             selectedNote={selectedNote}
                             onNoteChange={updateNote}
                             isInitial={!!selectedState && initialIds.has(selectedState.id)}
+                            executionOrder={selectedState ? executionOrder.get(selectedState.id) : undefined}
                             toChild={
                                 !!selectedTransition &&
                                 isDescendantNode(nodes, selectedTransition.source, selectedTransition.target)

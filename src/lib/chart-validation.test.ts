@@ -179,6 +179,40 @@ describe("chart-validation => validateChart", () => {
     });
 });
 
+describe("chart-validation => parallel states", () => {
+    it("reports transitions between parallel states and their children", () => {
+        const problems = validateChart({
+            version: 1,
+            name: "Test",
+            enabled: true,
+            parallel: true,
+            symbols,
+            states: [
+                { id: "a", name: "A", x: 0, y: 0, parallel: true },
+                { id: "a1", name: "A1", parent: "a", x: 0, y: 0 },
+                { id: "a2", name: "A2", parent: "a", x: 0, y: 0 },
+                { id: "a21", name: "A21", parent: "a2", x: 0, y: 0 },
+                { id: "a22", name: "A22", parent: "a2", x: 0, y: 0 },
+                { id: "b", name: "B", x: 0, y: 0 },
+            ],
+            transitions: [
+                { id: "between", source: "a1", target: "a2", label: "" },
+                { id: "child", source: "a1", target: "a22", label: "" },
+                { id: "top", source: "a21", target: "b", label: "" },
+                // inside a region, to an own child and back: possible
+                { id: "inside", source: "a21", target: "a22", label: "" },
+                { id: "toChild", source: "a", target: "a1", label: "" },
+                { id: "self", source: "a1", target: "a1", label: "" },
+            ],
+        });
+        expect(problems.map(p => `${p.id}: ${p.diagnostic.message}`)).to.deep.equal([
+            "between: Transitions between parallel states are not possible",
+            "child: Transitions between parallel states are not possible",
+            "top: Transitions between parallel states are not possible",
+        ]);
+    });
+});
+
 describe("chart-validation => getDeclarations", () => {
     it("returns functions with their signature and other declarations", () => {
         const code = "function clamp(x, lo = 0, ...rest) {}\nconst f = (a, b) => a + b;\nlet counter = 0;";

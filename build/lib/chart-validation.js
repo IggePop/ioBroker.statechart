@@ -41,6 +41,7 @@ var acorn = __toESM(require("acorn"));
 var walk = __toESM(require("acorn-walk"));
 var import_chart_helpers = require("./chart-helpers");
 var import_chart_model = require("./chart-model");
+var import_chart_structure = require("./chart-structure");
 const GLOBALS = /* @__PURE__ */ new Set([
   // the helper functions, e.g. log() and setState()
   ...Object.keys(import_chart_helpers.HELPERS),
@@ -259,9 +260,19 @@ function validateChart(chart) {
       }
     }
   }
+  const structure = new import_chart_structure.ChartStructure(chart);
   for (const transition of chart.transitions) {
     for (const diagnostic of validateTransitionLabel(transition.label, chart.symbols, functionNames)) {
       problems.push({ kind: "transition", id: transition.id, field: "label", diagnostic });
+    }
+    if (structure.getCrossedParallel(transition) !== void 0) {
+      problems.push({
+        kind: "transition",
+        id: transition.id,
+        field: "label",
+        // parallel states are active at the same time, there is nothing to switch between
+        diagnostic: createDiagnostic(0, 0, "error", "Transitions between parallel states are not possible")
+      });
     }
   }
   const symbolNames = new Set(chart.symbols.map((s) => s.name));

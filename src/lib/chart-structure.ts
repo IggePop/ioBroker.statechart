@@ -5,6 +5,16 @@
 
 import type { Chart, ChartState, ChartTransition } from "./chart-model";
 
+/**
+ * Sorts parallel sibling states by their execution order. The sort is stable: states without order keep their
+ * order, after the others.
+ *
+ * @param states The siblings
+ */
+export function sortByOrder<T extends { order?: number }>(states: T[]): T[] {
+    return [...states].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
+}
+
 export interface TransitionKind {
     /** checked after the during action of the source, the source stays active */
     inner: boolean;
@@ -30,6 +40,11 @@ export class ChartStructure {
             const list = this.transitionsBySource.get(transition.source) || [];
             this.transitionsBySource.set(transition.source, [...list, transition]);
         }
+        for (const [parent, children] of this.childrenByParent) {
+            if (this.isParallel(parent || null)) {
+                this.childrenByParent.set(parent, sortByOrder(children));
+            }
+        }
         for (const list of this.transitionsBySource.values()) {
             // the sort is stable: transitions without priority keep their order, after the others
             list.sort((a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER));
@@ -38,6 +53,15 @@ export class ChartStructure {
 
     /**
      * @param parentId null for the top level
+     * @returns true if the children of the state (or the top level states) are parallel
+     */
+    isParallel(parentId: string | null): boolean {
+        return !!(parentId ? this.statesById.get(parentId)?.parallel : this.chart.parallel);
+    }
+
+    /**
+     * @param parentId null for the top level
+     * @returns the children, those of a parallel state in their execution order
      */
     getChildren(parentId: string | null): ChartState[] {
         return this.childrenByParent.get(parentId || "") || [];
@@ -78,6 +102,39 @@ export class ChartStructure {
             parent = this.statesById.get(parent)?.parent;
         }
         return false;
+    }
+
+    /**
+     * @param id ID of the state
+     * @returns the state and its ancestors, the top level state first
+     */
+    getPath(id: string): string[] {
+        const path: string[] = [];
+        // the counter protects against cycles in invalid charts
+        for (let current: string | null | undefined = id; current && path.length <= this.statesById.size;) {
+            path.unshift(current);
+            current = this.statesById.get(current)?.parent;
+        }
+        return path;
+    }
+
+    /**
+     * Transitions between parallel states are not possible, also not between their children: both are active
+     *
+     * @param transition The transition
+     * @returns the parallel state (null for the top level) whose children the transition connects, undefined if none
+     */
+    getCrossedParallel(transition: ChartTransition): string | null | undefined {
+        const source = this.getPath(transition.source);
+        const target = this.getPath(transition.target);
+        for (let i = 0; i < Math.min(source.length, target.length); i++) {
+            if (source[i] !== target[i]) {
+                const parent = i ? source[i - 1] : null;
+                return this.isParallel(parent) ? parent : undefined;
+            }
+        }
+        // the same state, or one is an ancestor of the other
+        return undefined;
     }
 
     /**

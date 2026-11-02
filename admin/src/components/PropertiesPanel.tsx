@@ -133,10 +133,51 @@ function NoteProperties({
     );
 }
 
+/**
+ * Decomposition of the children of a state or of the top level: exclusive (OR) or parallel (AND)
+ *
+ * @param props Component properties
+ * @param props.label Label of the checkbox
+ * @param props.parallel If the children are parallel
+ * @param props.onChange Called with the new value, undefined for the default (exclusive)
+ */
+function ParallelCheckbox({
+    label,
+    parallel,
+    onChange,
+}: {
+    label: string;
+    parallel: boolean | undefined;
+    onChange: (parallel: boolean | undefined) => void;
+}): React.JSX.Element {
+    return (
+        <Box>
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={!!parallel}
+                        // the default is stored as undefined, so it does not appear in the chart
+                        onChange={e => onChange(e.target.checked || undefined)}
+                    />
+                }
+                label={label}
+            />
+            <Typography
+                variant="caption"
+                component="div"
+                color="text.secondary"
+            >
+                {I18n.t("parallelHelp")}
+            </Typography>
+        </Box>
+    );
+}
+
 function StateProperties({
     state,
     tools,
     isInitial,
+    executionOrder,
     onChange,
     onSetInitial,
     onDelete,
@@ -144,6 +185,8 @@ function StateProperties({
     state: ChartState;
     tools: CodeTools;
     isInitial: boolean;
+    /** Position in the execution order if the state is parallel, i.e. its parent is parallel */
+    executionOrder: number | undefined;
     onChange: (patch: Partial<ChartState>) => void;
     onSetInitial: () => void;
     onDelete: () => void;
@@ -157,15 +200,35 @@ function StateProperties({
                 value={state.name}
                 onChange={e => onChange({ name: e.target.value })}
             />
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={isInitial}
-                        disabled={isInitial}
-                        onChange={onSetInitial}
-                    />
-                }
-                label={I18n.t("Initial state")}
+            {executionOrder === undefined ? (
+                <FormControlLabel
+                    control={
+                        <Checkbox
+                            checked={isInitial}
+                            disabled={isInitial}
+                            onChange={onSetInitial}
+                        />
+                    }
+                    label={I18n.t("Initial state")}
+                />
+            ) : (
+                // parallel states have no initial state, they are all active
+                <TextField
+                    size="small"
+                    type="number"
+                    label={I18n.t("Execution order")}
+                    value={state.order ?? ""}
+                    placeholder={String(executionOrder)}
+                    helperText={I18n.t("executionOrderHelp", String(executionOrder))}
+                    onChange={e =>
+                        onChange({ order: e.target.value === "" ? undefined : parseInt(e.target.value, 10) })
+                    }
+                />
+            )}
+            <ParallelCheckbox
+                label={I18n.t("Sub states are parallel (AND)")}
+                parallel={state.parallel}
+                onChange={parallel => onChange({ parallel })}
             />
             {(["entry", "during", "exit"] as const).map(action => (
                 <CodeEditor
@@ -376,6 +439,11 @@ function ChartProperties({
                     {I18n.t("restoreStateHelp")}
                 </Typography>
             </Box>
+            <ParallelCheckbox
+                label={I18n.t("Top level states are parallel (AND)")}
+                parallel={chart.parallel}
+                onChange={parallel => onChange({ parallel })}
+            />
             <Box>
                 <FormControlLabel
                     control={
@@ -415,6 +483,8 @@ interface PropertiesPanelProps {
     onNoteChange: (id: string, patch: Partial<ChartNote>) => void;
     /** If the selected state is the initial state of its level */
     isInitial: boolean;
+    /** Position of the selected state in the execution order, if it is parallel */
+    executionOrder: number | undefined;
     /** If the target of the selected transition is a child of its source */
     toChild: boolean;
     /** Makes a state the initial state of its level */
@@ -447,6 +517,7 @@ export default function PropertiesPanel(props: PropertiesPanelProps): React.JSX.
                 state={selectedState}
                 tools={tools}
                 isInitial={props.isInitial}
+                executionOrder={props.executionOrder}
                 onChange={patch => props.onStateChange(selectedState.id, patch)}
                 onSetInitial={() => props.onSetInitial(selectedState.id)}
                 onDelete={() => props.onDeleteNode(selectedState.id)}

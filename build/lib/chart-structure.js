@@ -18,9 +18,13 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var chart_structure_exports = {};
 __export(chart_structure_exports, {
-  ChartStructure: () => ChartStructure
+  ChartStructure: () => ChartStructure,
+  sortByOrder: () => sortByOrder
 });
 module.exports = __toCommonJS(chart_structure_exports);
+function sortByOrder(states) {
+  return [...states].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
+}
 class ChartStructure {
   constructor(chart) {
     this.chart = chart;
@@ -33,6 +37,11 @@ class ChartStructure {
       const list = this.transitionsBySource.get(transition.source) || [];
       this.transitionsBySource.set(transition.source, [...list, transition]);
     }
+    for (const [parent, children] of this.childrenByParent) {
+      if (this.isParallel(parent || null)) {
+        this.childrenByParent.set(parent, sortByOrder(children));
+      }
+    }
     for (const list of this.transitionsBySource.values()) {
       list.sort((a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER));
     }
@@ -44,6 +53,14 @@ class ChartStructure {
   transitionsBySource = /* @__PURE__ */ new Map();
   /**
    * @param parentId null for the top level
+   * @returns true if the children of the state (or the top level states) are parallel
+   */
+  isParallel(parentId) {
+    return !!(parentId ? this.statesById.get(parentId)?.parallel : this.chart.parallel);
+  }
+  /**
+   * @param parentId null for the top level
+   * @returns the children, those of a parallel state in their execution order
    */
   getChildren(parentId) {
     return this.childrenByParent.get(parentId || "") || [];
@@ -82,6 +99,35 @@ class ChartStructure {
     return false;
   }
   /**
+   * @param id ID of the state
+   * @returns the state and its ancestors, the top level state first
+   */
+  getPath(id) {
+    const path = [];
+    for (let current = id; current && path.length <= this.statesById.size; ) {
+      path.unshift(current);
+      current = this.statesById.get(current)?.parent;
+    }
+    return path;
+  }
+  /**
+   * Transitions between parallel states are not possible, also not between their children: both are active
+   *
+   * @param transition The transition
+   * @returns the parallel state (null for the top level) whose children the transition connects, undefined if none
+   */
+  getCrossedParallel(transition) {
+    const source = this.getPath(transition.source);
+    const target = this.getPath(transition.target);
+    for (let i = 0; i < Math.min(source.length, target.length); i++) {
+      if (source[i] !== target[i]) {
+        const parent = i ? source[i - 1] : null;
+        return this.isParallel(parent) ? parent : void 0;
+      }
+    }
+    return void 0;
+  }
+  /**
    * How a transition is executed
    *
    * @param transition The transition
@@ -96,6 +142,7 @@ class ChartStructure {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  ChartStructure
+  ChartStructure,
+  sortByOrder
 });
 //# sourceMappingURL=chart-structure.js.map

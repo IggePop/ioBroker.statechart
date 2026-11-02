@@ -176,7 +176,10 @@ function generateChartCode(chart, chartId) {
     }
     const children = structure.getChildren(state.id);
     if (children.length) {
-      lines.push(`${i2}initial: ${JSON.stringify(structure.getInitialChild(state.id))},`, `${i2}states: {`);
+      lines.push(
+        structure.isParallel(state.id) ? `${i2}type: "parallel", // all sub states are active, entered in their execution order` : `${i2}initial: ${JSON.stringify(structure.getInitialChild(state.id))},`,
+        `${i2}states: {`
+      );
       for (const child of children) {
         buildState(child, level + 2);
       }
@@ -186,7 +189,10 @@ function generateChartCode(chart, chartId) {
   };
   const topLevel = structure.getChildren(null);
   if (topLevel.length) {
-    lines.push(`${INDENT}initial: ${JSON.stringify(structure.getInitialChild(null))},`, `${INDENT}states: {`);
+    lines.push(
+      structure.isParallel(null) ? `${INDENT}type: "parallel", // all top level states are active, entered in their execution order` : `${INDENT}initial: ${JSON.stringify(structure.getInitialChild(null))},`,
+      `${INDENT}states: {`
+    );
     for (const state of topLevel) {
       buildState(state, 2);
     }
@@ -206,6 +212,29 @@ function generateChartCode(chart, chartId) {
 ${INDENT.repeat(level + 1)}${prefix}process_${identifier(s.id)}(input);
 ${INDENT.repeat(level)}}`
   );
+  const processChildren = (parent, children) => {
+    if (!structure.isParallel(parent)) {
+      return [...callActive(children, 1, "return "), `${INDENT}return false;`];
+    }
+    const lines2 = [
+      `${INDENT}// all sub states are active (parallel), they are processed in their execution order.`,
+      `${INDENT}// A transition in one of them does not stop the others, unless it left this state.`,
+      ...parent ? [`${INDENT}const entries = entryCount(${JSON.stringify(parent)});`] : [],
+      `${INDENT}let taken = false;`
+    ];
+    children.forEach((child, i) => {
+      if (i && parent) {
+        lines2.push(
+          `${INDENT}if (!isActive(${JSON.stringify(parent)}) || entryCount(${JSON.stringify(parent)}) !== entries) {`,
+          `${INDENT}${INDENT}return true; // left (and maybe entered again) by the transition`,
+          `${INDENT}}`
+        );
+      }
+      lines2.push(`${INDENT}taken = process_${identifier(child.id)}(input) || taken;`);
+    });
+    lines2.push(`${INDENT}return taken;`);
+    return lines2;
+  };
   lines.push(
     "// ---------- Wakeup ----------",
     "",
@@ -235,8 +264,7 @@ ${INDENT.repeat(level)}}`
     " * @returns {boolean} true if a transition was taken",
     " */",
     "function step(input) {",
-    ...callActive(topLevel, 1, "return "),
-    `${INDENT}return false;`,
+    ...processChildren(null, topLevel),
     "}",
     ""
   );
@@ -292,9 +320,8 @@ ${indent(dedent(state.during), 2)}
 ${INDENT}}` : `${INDENT}// none`,
       `${INDENT}// 3. inner transitions (to own sub states, the state stays active)`,
       ...inner.length ? inner : [`${INDENT}// none`],
-      `${INDENT}// 4. active sub state`,
-      ...children.length ? callActive(children, 1, "return ") : [`${INDENT}// none`],
-      `${INDENT}return false;`,
+      `${INDENT}// 4. ${structure.isParallel(state.id) && children.length ? "all sub states" : "active sub state"}`,
+      ...children.length ? processChildren(state.id, children) : [`${INDENT}// none`, `${INDENT}return false;`],
       "}",
       ""
     );
@@ -315,6 +342,7 @@ ${INDENT}}`
     "// Provided by the adapter:",
     "// getState(id)        current value of an ioBroker state",
     "// isActive(stateId)   true if the state of the chart is active",
+    "// entryCount(stateId) how often the state was entered",
     "// elapsed(stateId)    milliseconds since the state was entered; when it reaches the delay of an",
     "//                     after(...) of the state, a timer calls wakeup(null)",
     "// At the start of each wakeup, the adapter stores the values of the variables used in hasChanged(),",

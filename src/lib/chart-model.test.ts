@@ -106,6 +106,29 @@ describe("chart-model => export and import", () => {
         expect(importError(c => (c.symbols[0].trigger = "sometimes"))).to.match(/invalid trigger "sometimes"/);
         expect(importError(c => (c.symbols[0].ack = "maybe"))).to.match(/invalid ack filter "maybe"/);
         expect(importError(c => (c.symbols[0].debounceMs = -5))).to.match(/"debounceMs" is no number of 0 or more/);
+        expect(importError(c => (c.states[1].order = "first"))).to.match(/state on: "order" is no number/);
+    });
+
+    it("keeps parallel states and does not store the default", () => {
+        const [chart] = parseExport(
+            JSON.stringify({
+                parallel: true,
+                states: [
+                    { id: "a", parallel: true },
+                    { id: "b", parent: "a", order: 2, parallel: false },
+                ],
+                transitions: [],
+                symbols: [],
+            }),
+        );
+        expect(chart.parallel).to.equal(true);
+        expect(chart.states.map(s => [s.parallel, s.order])).to.deep.equal([
+            [true, undefined],
+            [undefined, 2],
+        ]);
+        expect(chart.states[1]).to.not.have.property("parallel");
+        const [exclusive] = parseExport(JSON.stringify({ parallel: false, states: [], transitions: [], symbols: [] }));
+        expect(exclusive).to.not.have.property("parallel");
     });
 
     it("imports notes and comments", () => {

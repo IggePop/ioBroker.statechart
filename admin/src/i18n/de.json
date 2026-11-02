@@ -118,5 +118,12 @@
     "Set ends automatically": "Enden automatisch setzen",
     "anchorsHelp": "Die Enden eines Übergangs werden automatisch an den Rändern seiner Zustände platziert. Wähle den Übergang aus und ziehe die runden Griffe an seinen Enden am Rand entlang, um sie an einer anderen Stelle festzulegen, oder auf einen anderen Zustand, um den Übergang dorthin umzuhängen.",
     "endGripAutomatic": "Automatisch platziert. Am Rand entlang ziehen, um dieses Ende dort festzulegen, oder auf einen anderen Zustand ziehen, um den Übergang dorthin umzuhängen.",
-    "endGripFixed": "An dieser Stelle festgelegt. Am Rand entlang ziehen, um es zu verschieben, oder auf einen anderen Zustand ziehen, um den Übergang dorthin umzuhängen. Doppelklick: wieder automatisch platzieren."
+    "endGripFixed": "An dieser Stelle festgelegt. Am Rand entlang ziehen, um es zu verschieben, oder auf einen anderen Zustand ziehen, um den Übergang dorthin umzuhängen. Doppelklick: wieder automatisch platzieren.",
+    "Sub states are parallel (AND)": "Unterzustände sind parallel (UND)",
+    "Top level states are parallel (AND)": "Zustände der obersten Ebene sind parallel (UND)",
+    "parallelHelp": "Aus: Genau einer der Zustände ist aktiv (ODER). An: Alle sind gleichzeitig aktiv (UND), dargestellt mit gestricheltem Rahmen. Bei jedem Aufwecken werden sie nacheinander in ihrer Ausführungsreihenfolge bearbeitet. Übergänge zwischen parallelen Zuständen sind nicht möglich.",
+    "Execution order": "Ausführungsreihenfolge",
+    "executionOrderHelp": "Die parallelen Zustände werden in dieser Reihenfolge bearbeitet, kleinere zuerst. Ohne Zahl nach den anderen. Aktuell Position %s.",
+    "executionOrderTitle": "Paralleler Zustand, Position %s der Ausführungsreihenfolge",
+    "Transitions between parallel states are not possible": "Übergänge zwischen parallelen Zuständen sind nicht möglich"
 }

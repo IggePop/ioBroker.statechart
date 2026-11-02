@@ -118,5 +118,12 @@
     "Set ends automatically": "Set ends automatically",
     "anchorsHelp": "The ends of a transition are placed automatically on the borders of its states. Select the transition and drag the round grips at its ends along the border to fix them at another place, or drop a grip on another state to move the transition there.",
     "endGripAutomatic": "Placed automatically. Drag along the border to fix this end there, or drop it on another state to move the transition there.",
-    "endGripFixed": "Fixed at this place. Drag along the border to move it, or drop it on another state to move the transition there. Double click: place it automatically again."
+    "endGripFixed": "Fixed at this place. Drag along the border to move it, or drop it on another state to move the transition there. Double click: place it automatically again.",
+    "Sub states are parallel (AND)": "Sub states are parallel (AND)",
+    "Top level states are parallel (AND)": "Top level states are parallel (AND)",
+    "parallelHelp": "Off: exactly one of the states is active (OR). On: all of them are active at the same time (AND), shown with a dashed border. On every wakeup, they are processed one after the other in their execution order. Transitions between parallel states are not possible.",
+    "Execution order": "Execution order",
+    "executionOrderHelp": "The parallel states are processed in this order, lower first. Without a number, after the others. Currently position %s.",
+    "executionOrderTitle": "Parallel state, position %s in the execution order",
+    "Transitions between parallel states are not possible": "Transitions between parallel states are not possible"
 }

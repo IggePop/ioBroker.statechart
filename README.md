@@ -25,7 +25,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 ### Features
 
 - Graphical editor as its own entry in the admin side bar
-- States with `entry`, `during` and `exit` actions
+- States with `entry`, `during` and `exit` actions, nested and parallel states (AND)
 - Transitions with labels in the well-known syntax `event[condition]{action}`
 - Timers: `after(5, sec)`
 - Function blocks with your own JavaScript functions, usable in all conditions and actions
@@ -147,6 +147,23 @@ the state it would be moved into is highlighted. Every level has its own initial
   the state stays active, only its active sub state is left, its own `entry`/`exit` are not executed.
   With the option **Leave and enter the parent state again**, it is left and entered again instead.
 
+### Parallel states
+
+With the option **Sub states are parallel (AND)** of a state, all its sub states are active at the same time
+instead of exactly one, e.g. "Heating" and "Window" in a state "Home". The option **Top level states are parallel
+(AND)** of the chart does the same for the top level. Like in Stateflow, parallel states have a dashed border and
+show their position in the execution order in the upper right corner. They have no initial state.
+
+- Entering the parent enters all parallel states (each with its initial sub state), in their execution order.
+  Leaving it leaves them in reverse order.
+- On every wakeup, after the parent (its transitions and its `during` action), each parallel state is processed in
+  its execution order, see above. A transition in one of them does not stop the others, so each of them can take a
+  transition in the same wakeup. A transition which leaves the parent stops the processing of the remaining ones.
+- The execution order is set in the properties of the parallel states: lower first, states without a number after
+  the others.
+- Transitions between parallel states, or between their sub states, are not possible: both are active anyway.
+- `activeState` contains all active states, separated by commas, e.g. `Home.Heating.On, Home.Window.Closed`.
+
 ### Helper functions
 
 In conditions, actions and function blocks:
@@ -232,7 +249,7 @@ For every chart, the adapter creates below `statechart.<instance>.charts.<chart>
 
 | State | Content |
 |---|---|
-| `activeState` | Name of the active state, nested states as `Parent.Child` |
+| `activeState` | Name of the active state, nested states as `Parent.Child`, parallel states separated by commas |
 | `activeStateIds` | IDs of all active states as JSON |
 | `snapshot` | Stored state of the chart (active states, when they were entered, locals), see below |
 | `values` | Current values of all variables as JSON, `{}` if the chart does not run |
@@ -272,7 +289,7 @@ restart** in the chart properties is switched off. Variables declared in functio
 
 ### Limitations
 
-- Parallel states (AND), history junctions and connective junctions are not supported yet.
+- History junctions and connective junctions are not supported yet.
 - Deleting a super state also deletes its sub states.
 - Unsaved changes are lost when you select another chart.
 - Conditions and actions run in a separate JavaScript context with a time limit of 1 second, but this
@@ -293,7 +310,7 @@ Adapter ausgeführt.
 ### Funktionen
 
 - Grafischer Editor als eigener Eintrag in der Seitenleiste des Admins
-- Zustände mit `entry`-, `during`- und `exit`-Aktionen
+- Zustände mit `entry`-, `during`- und `exit`-Aktionen, verschachtelte und parallele Zustände (UND)
 - Übergänge mit Beschriftungen in der bekannten Syntax `event[bedingung]{aktion}`
 - Timer: `after(5, sec)`
 - Funktionsblöcke mit eigenen JavaScript-Funktionen, nutzbar in allen Bedingungen und Aktionen
@@ -419,6 +436,25 @@ würde. Jede Ebene hat ihren eigenen Startzustand (Punkt mit Pfeil).
   eigenen `entry`/`exit` laufen nicht. Mit der Option **Elternzustand verlassen und neu betreten** wird
   er stattdessen verlassen und neu betreten.
 
+### Parallele Zustände
+
+Mit der Option **Unterzustände sind parallel (UND)** eines Zustands sind alle seine Unterzustände gleichzeitig aktiv
+statt genau einer, z.B. „Heizung“ und „Fenster“ in einem Zustand „Zuhause“. Die Option **Zustände der obersten Ebene
+sind parallel (UND)** des Charts macht dasselbe für die oberste Ebene. Wie bei Stateflow haben parallele Zustände einen
+gestrichelten Rahmen und zeigen oben rechts ihre Position in der Ausführungsreihenfolge. Sie haben keinen Startzustand.
+
+- Beim Betreten des Elternzustands werden alle parallelen Zustände betreten (jeder mit seinem Start-Unterzustand), in
+  ihrer Ausführungsreihenfolge. Beim Verlassen werden sie in umgekehrter Reihenfolge verlassen.
+- Bei jedem Aufwecken wird nach dem Elternzustand (seinen Übergängen und seiner `during`-Aktion) jeder parallele
+  Zustand in seiner Ausführungsreihenfolge bearbeitet, siehe oben. Ein Übergang in einem von ihnen hält die anderen
+  nicht auf, jeder kann also im selben Aufwecken einen Übergang nehmen. Ein Übergang, der den Elternzustand verlässt,
+  beendet die Bearbeitung der übrigen.
+- Die Ausführungsreihenfolge wird in den Eigenschaften der parallelen Zustände festgelegt: kleinere zuerst, Zustände
+  ohne Zahl nach den anderen.
+- Übergänge zwischen parallelen Zuständen oder zwischen ihren Unterzuständen sind nicht möglich, beide sind ohnehin
+  aktiv.
+- `activeState` enthält alle aktiven Zustände, durch Kommas getrennt, z.B. `Zuhause.Heizung.An, Zuhause.Fenster.Zu`.
+
 ### Hilfsfunktionen
 
 In Bedingungen, Aktionen und Funktionsblöcken:
@@ -508,7 +544,7 @@ Für jedes Chart legt der Adapter unter `statechart.<instanz>.charts.<chart>` an
 
 | Datenpunkt | Inhalt |
 |---|---|
-| `activeState` | Name des aktiven Zustands, verschachtelte Zustände als `Eltern.Kind` |
+| `activeState` | Name des aktiven Zustands, verschachtelte Zustände als `Eltern.Kind`, parallele durch Kommas getrennt |
 | `activeStateIds` | IDs aller aktiven Zustände als JSON |
 | `snapshot` | Gespeicherter Zustand des Charts (aktive Zustände, wann sie betreten wurden, lokale Variablen), siehe unten |
 | `values` | Aktuelle Werte aller Variablen als JSON, `{}` wenn das Chart nicht läuft |
@@ -549,7 +585,7 @@ Funktionsblöcken deklariert sind, werden nicht wiederhergestellt.
 
 ### Einschränkungen
 
-- Parallele Zustände (AND), History- und Verbindungspunkte werden noch nicht unterstützt.
+- History- und Verbindungspunkte werden noch nicht unterstützt.
 - Beim Löschen eines Superstates werden auch seine Unterzustände gelöscht.
 - Ungespeicherte Änderungen gehen verloren, wenn ein anderes Chart ausgewählt wird.
 - Bedingungen und Aktionen laufen in einem eigenen JavaScript-Kontext mit 1 Sekunde Zeitlimit, das
@@ -620,6 +656,9 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (Igge) parallel states (AND): all sub states of a state, or all top level states, are active at the same time and are processed in their execution order
+
 ### 0.2.0 (2026-11-01)
 * (Igge) the adapter and the editor are written in TypeScript now, no changes of the behavior
 * (Igge) live values of the variables in the editor

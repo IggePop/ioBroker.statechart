@@ -155,6 +155,9 @@ interface CheckedTransition {
  * Starting with the active top level state, each active state is processed like this:
  * 1. its outer transitions, 2. its "during" action, 3. its inner transitions (to its own children),
  * 4. its active child. Processing stops as soon as a transition is taken.
+ * The children of a parallel state (or the top level of a parallel chart) are all active: in step 4, each of them
+ * is processed in its execution order. A transition in one of them does not stop the others, unless it left
+ * the parallel state.
  *
  * The runtime selects the transition itself and sends an event for exactly this transition to XState,
  * which executes the exit, transition and entry actions in the right order.
@@ -178,6 +181,8 @@ export class ChartRuntime {
     activeIds: string[] = [];
     /** time each active state was entered */
     readonly enteredAt = new Map<string, number>();
+    /** how often each state was entered, to notice that a parallel state was left and entered again */
+    readonly entryCount = new Map<string, number>();
     /** timers of the temporal transitions by state */
     readonly timers = new Map<string, { handle?: NodeJS.Timeout }[]>();
     /** temporal transitions whose time has come */
@@ -423,6 +428,7 @@ export class ChartRuntime {
      */
     onEnter(id: string): void {
         this.enteredAt.set(id, this.now());
+        this.entryCount.set(id, (this.entryCount.get(id) ?? 0) + 1);
         this.startTimers(id);
     }
 
@@ -734,12 +740,7 @@ export class ChartRuntime {
      * @returns true if a transition was taken
      */
     step(input: string | null): boolean {
-        for (const id of this.getActiveChildren(null)) {
-            if (this.processState(id, input)) {
-                return true;
-            }
-        }
-        return false;
+        return this.processChildren(null, input);
     }
 
     /**
@@ -793,12 +794,37 @@ export class ChartRuntime {
         if (this.takeFirstValid(this.innerTransitions.get(id), input)) {
             return true;
         }
-        for (const child of this.getActiveChildren(id)) {
-            if (this.processState(child, input)) {
-                return true;
+        return this.processChildren(id, input);
+    }
+
+    /**
+     * Processes the active child of a state, or all children of a parallel state, see the class description
+     *
+     * @param parent ID of the state, null for the top level
+     * @param input Name of the input which caused the wakeup, null for timers
+     * @returns true if a transition was taken
+     */
+    processChildren(parent: string | null, input: string | null): boolean {
+        if (!this.structure.isParallel(parent)) {
+            for (const child of this.getActiveChildren(parent)) {
+                if (this.processState(child, input)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        const entries = parent && this.entryCount.get(parent);
+        let taken = false;
+        for (const child of this.structure.getChildren(parent)) {
+            // a transition of a previous child left the parallel state (and maybe entered it again)
+            if (parent && (!this.activeIds.includes(parent) || this.entryCount.get(parent) !== entries)) {
+                break;
+            }
+            if (this.activeIds.includes(child.id) && this.processState(child.id, input)) {
+                taken = true;
             }
         }
-        return false;
+        return taken;
     }
 
     /**
@@ -894,7 +920,12 @@ export class ChartRuntime {
 
             const subStates = structure.getChildren(state.id);
             if (subStates.length) {
-                node.initial = structure.getInitialChild(state.id);
+                if (structure.isParallel(state.id)) {
+                    // all children are active, XState enters them in their execution order
+                    node.type = "parallel";
+                } else {
+                    node.initial = structure.getInitialChild(state.id);
+                }
                 node.states = Object.fromEntries(subStates.map(s => [s.id, buildState(s)]));
             }
             return node;
@@ -906,7 +937,7 @@ export class ChartRuntime {
         }
         return {
             id: `chart_${this.chartId}`,
-            initial: structure.getInitialChild(null),
+            ...(structure.isParallel(null) ? { type: "parallel" } : { initial: structure.getInitialChild(null) }),
             states: Object.fromEntries(topLevel.map(s => [s.id, buildState(s)])),
         };
     }
@@ -923,6 +954,10 @@ export class ChartRuntime {
         const where = `${source.name} -> ${target?.name ?? transition.target}`;
         if (!target) {
             this.host.log.warn(`[${this.chart.name}] Transition ${where}: unknown target, ignored`);
+            return null;
+        }
+        if (this.structure.getCrossedParallel(transition) !== undefined) {
+            // already logged as problem of the chart
             return null;
         }
 

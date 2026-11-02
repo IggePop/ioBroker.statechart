@@ -91,6 +91,28 @@ describe("chart-codegen => generateChartCode", () => {
         acorn.parse(code, { ecmaVersion: "latest" });
     });
 
+    it("shows parallel states", () => {
+        const chart = createChart();
+        chart.parallel = true;
+        chart.states[0].parallel = true;
+        chart.states[1].order = 2;
+        chart.states[2].order = 1;
+        chart.transitions = chart.transitions.filter(t => t.id !== "start" && t.id !== "broken");
+        const code = generateChartCode(chart, "heating");
+        acorn.parse(code, { ecmaVersion: "latest" });
+        expect(code).to.include('type: "parallel", // all top level states are active');
+        expect(code).to.include('type: "parallel", // all sub states are active');
+        expect(code).not.to.include('initial: "heat"');
+        // the sub states of Auto in their execution order, stopping when Auto was left
+        expect(code).to.match(
+            /function process_auto[\s\S]*const entries = entryCount\("auto"\);[\s\S]*taken = process_heat\(input\) \|\| taken;\s+if \(!isActive\("auto"\) \|\| entryCount\("auto"\) !== entries\) \{[\s\S]*taken = process_idle\(input\) \|\| taken;\s+return taken;/,
+        );
+        // the top level cannot be left
+        expect(code).to.match(
+            /function step\(input\) \{[\s\S]*?taken = process_auto\(input\) \|\| taken;\s+taken = process_manualState/,
+        );
+    });
+
     it("indents multi line actions", () => {
         const code = generateChartCode(createChart(), "heating");
         expect(code).to.include(

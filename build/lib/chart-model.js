@@ -214,8 +214,14 @@ function normalizeChart(data, where) {
     for (const field of ["entry", "during", "exit", "initial", "comment"]) {
       optionalString(state[field], `${at}: "${field}" is no text`);
     }
+    if (state.order !== void 0 && !Number.isFinite(state.order)) {
+      fail(`${at}: "order" is no number`);
+    }
+    const { parallel, ...rest } = state;
     return {
-      ...state,
+      ...rest,
+      // the default (exclusive) is not stored, like in the editor
+      ...parallel === true ? { parallel } : {},
       name: typeof state.name === "string" && state.name ? state.name : state.id,
       parent: state.parent || null,
       x: Number.isFinite(state.x) ? state.x : 0,
@@ -312,6 +318,9 @@ function normalizeChart(data, where) {
   };
   if (chart.superStep !== true) {
     delete chart.superStep;
+  }
+  if (chart.parallel !== true) {
+    delete chart.parallel;
   }
   return chart;
 }

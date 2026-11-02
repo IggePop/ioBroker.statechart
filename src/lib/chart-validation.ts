@@ -8,6 +8,7 @@ import * as walk from "acorn-walk";
 import { CHANGE_HELPERS, HELPERS } from "./chart-helpers";
 import { LabelSyntaxError, formatMessage, parseTransitionLabelWithRanges } from "./chart-model";
 import type { Chart, ChartSymbol } from "./chart-model";
+import { ChartStructure } from "./chart-structure";
 
 /** Names which can be used in conditions and actions besides the chart variables */
 export const GLOBALS = new Set([
@@ -347,9 +348,19 @@ export function validateChart(chart: Chart): ChartProblem[] {
             }
         }
     }
+    const structure = new ChartStructure(chart);
     for (const transition of chart.transitions) {
         for (const diagnostic of validateTransitionLabel(transition.label, chart.symbols, functionNames)) {
             problems.push({ kind: "transition", id: transition.id, field: "label", diagnostic });
+        }
+        if (structure.getCrossedParallel(transition) !== undefined) {
+            problems.push({
+                kind: "transition",
+                id: transition.id,
+                field: "label",
+                // parallel states are active at the same time, there is nothing to switch between
+                diagnostic: createDiagnostic(0, 0, "error", "Transitions between parallel states are not possible"),
+            });
         }
     }
 

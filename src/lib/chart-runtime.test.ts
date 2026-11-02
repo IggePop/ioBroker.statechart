@@ -859,6 +859,169 @@ function createHeatingChart(): Chart {
     };
 }
 
+describe("chart-runtime => parallel states", () => {
+    let runtime: ChartRuntime | undefined;
+    afterEach(() => runtime?.stop());
+
+    /**
+     * Home (parallel) with the regions Heating (Off, On) and Window (Closed, Open), and the state Away.
+     * All actions write to the local "trace".
+     */
+    function createHomeChart(): Chart {
+        const traced = (id: string, name: string, parent: string | null, extra: Partial<ChartState> = {}) => ({
+            id,
+            name,
+            parent,
+            x: 0,
+            y: 0,
+            entry: `trace.push("enter ${name}");`,
+            exit: `trace.push("exit ${name}");`,
+            ...extra,
+        });
+        return {
+            version: 1,
+            name: "Home",
+            enabled: true,
+            initial: "home",
+            symbols: [
+                { name: "cold", scope: "input", stateId: "test.0.cold" },
+                { name: "open", scope: "input", stateId: "test.0.open" },
+                { name: "leave", scope: "input", stateId: "test.0.leave" },
+                { name: "trace", scope: "local", initial: [] },
+            ],
+            states: [
+                traced("home", "Home", null, { parallel: true }),
+                traced("heat", "Heating", "home", { order: 1, during: 'trace.push("during Heating");' }),
+                traced("hOff", "HeatOff", "heat"),
+                traced("hOn", "HeatOn", "heat"),
+                traced("win", "Window", "home", { order: 2, during: 'trace.push("during Window");' }),
+                traced("wClosed", "Closed", "win"),
+                traced("wOpen", "Open", "win"),
+                traced("away", "Away", null),
+            ],
+            transitions: [
+                { id: "t1", source: "hOff", target: "hOn", label: "[cold]" },
+                { id: "t2", source: "wClosed", target: "wOpen", label: "[open]" },
+                { id: "t3", source: "hOn", target: "away", label: "[leave]" },
+                { id: "t4", source: "away", target: "home", label: "[!leave]" },
+            ],
+        };
+    }
+
+    async function start(chart = createHomeChart()): Promise<ReturnType<typeof createHost>> {
+        const host = createHost({ "test.0.cold": false, "test.0.open": false, "test.0.leave": false });
+        runtime = new ChartRuntime("home", chart, host);
+        await runtime.start();
+        return host;
+    }
+
+    const trace = (): string[] => {
+        const result = runtime?.sandbox.trace as string[];
+        runtime!.sandbox.trace = [];
+        return result;
+    };
+
+    it("enters all regions in their execution order", async () => {
+        const host = await start();
+        expect(host.active.at(-1)).to.equal("Home.Heating.HeatOff, Home.Window.Closed");
+        expect(runtime?.activeIds).to.deep.equal(["home", "heat", "hOff", "win", "wClosed"]);
+        expect(trace()).to.deep.equal([
+            "enter Home",
+            "enter Heating",
+            "enter HeatOff",
+            "enter Window",
+            "enter Closed",
+            // the wakeup after the start
+            "during Heating",
+            "during Window",
+        ]);
+    });
+
+    it("processes all regions on every wakeup, a transition in one does not stop the others", async () => {
+        const host = await start();
+        trace();
+        runtime!.sandbox.open = true;
+        runtime!.sandbox.cold = true;
+        runtime?.handleInput("test.0.cold", true);
+        expect(host.active.at(-1)).to.equal("Home.Heating.HeatOn, Home.Window.Open");
+        expect(trace()).to.deep.equal([
+            "during Heating",
+            "exit HeatOff",
+            "enter HeatOn",
+            "during Window",
+            "exit Closed",
+            "enter Open",
+        ]);
+        expect(host.history.filter(e => e.kind === "transition").map(e => e.transition)).to.deep.equal(["t1", "t2"]);
+    });
+
+    it("uses the execution order", async () => {
+        const chart = createHomeChart();
+        chart.states.find(s => s.id === "win")!.order = 0;
+        await start(chart);
+        expect(trace().slice(-2)).to.deep.equal(["during Window", "during Heating"]);
+        expect(runtime?.activeIds).to.deep.equal(["home", "win", "wClosed", "heat", "hOff"]);
+    });
+
+    it("leaves all regions, and does not process the remaining regions after leaving", async () => {
+        const host = await start();
+        runtime?.handleInput("test.0.cold", true);
+        trace();
+        runtime?.handleInput("test.0.leave", true);
+        expect(host.active.at(-1)).to.equal("Away");
+        // the window region is not processed anymore, it is left in reverse order
+        expect(trace()).to.deep.equal([
+            "during Heating",
+            "exit Closed",
+            "exit Window",
+            "exit HeatOn",
+            "exit Heating",
+            "exit Home",
+            "enter Away",
+        ]);
+        runtime?.handleInput("test.0.leave", false);
+        expect(host.active.at(-1)).to.equal("Home.Heating.HeatOff, Home.Window.Closed");
+    });
+
+    it("ignores transitions between parallel states and reports them", async () => {
+        const chart = createHomeChart();
+        chart.transitions.push({ id: "t5", source: "hOff", target: "wOpen", label: "" });
+        const host = await start(chart);
+        expect(host.warnings.join(" ")).to.include(
+            "HeatOff -> Open: Transitions between parallel states are not possible",
+        );
+        expect(host.active.at(-1)).to.equal("Home.Heating.HeatOff, Home.Window.Closed");
+    });
+
+    it("supports a parallel top level and restores the regions after a restart", async () => {
+        const chart: Chart = {
+            version: 1,
+            name: "Top",
+            enabled: true,
+            parallel: true,
+            symbols: [{ name: "open", scope: "input", stateId: "test.0.open" }],
+            states: [
+                { id: "a", name: "A", x: 0, y: 0, order: 2 },
+                { id: "b", name: "B", x: 0, y: 0, order: 1 },
+                { id: "b1", name: "B1", parent: "b", x: 0, y: 0 },
+                { id: "b2", name: "B2", parent: "b", x: 0, y: 0 },
+            ],
+            transitions: [{ id: "t1", source: "b1", target: "b2", label: "[open]" }],
+        };
+        const host = createHost({ "test.0.open": false });
+        runtime = new ChartRuntime("top", chart, host);
+        await runtime.start();
+        expect(host.active.at(-1)).to.equal("B.B1, A");
+        runtime.handleInput("test.0.open", true);
+        expect(host.active.at(-1)).to.equal("B.B2, A");
+        runtime.stop();
+
+        runtime = new ChartRuntime("top", chart, host);
+        await runtime.start({ restore: true });
+        expect(runtime.activeIds).to.deep.equal(["b", "b2", "a"]);
+    });
+});
+
 describe("chart-runtime => nested states (Stateflow semantics)", () => {
     let runtime: ChartRuntime | undefined;
     afterEach(() => runtime?.stop());
