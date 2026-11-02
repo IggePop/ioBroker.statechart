@@ -1,5 +1,12 @@
 import { expect } from "chai";
-import { createChart, createExport, nameToId, parseExport, parseTransitionLabel } from "./chart-model";
+import {
+    createChart,
+    createExport,
+    nameToId,
+    parseExport,
+    parseTransitionLabel,
+    parseTransitionLabelWithRanges,
+} from "./chart-model";
 import type { Chart } from "./chart-model";
 
 function createTestChart(): Chart {
@@ -179,16 +186,52 @@ describe("chart-model => parseTransitionLabel", () => {
     });
 
     it("parses temporal transitions", () => {
-        expect(parseTransitionLabel("after(5, sec)")).to.deep.equal({ afterMs: 5000 });
+        expect(parseTransitionLabel("after(5, sec)")).to.deep.equal({ temporal: { operator: "after", ms: 5000 } });
         expect(parseTransitionLabel("after(1.5,min)[!motion]")).to.deep.equal({
-            afterMs: 90_000,
+            temporal: { operator: "after", ms: 90_000 },
             condition: "!motion",
         });
-        expect(parseTransitionLabel("after(200, msec)")).to.deep.equal({ afterMs: 200 });
+        expect(parseTransitionLabel("before(200, msec)")).to.deep.equal({ temporal: { operator: "before", ms: 200 } });
+        expect(parseTransitionLabel("at(2, sec)")).to.deep.equal({ temporal: { operator: "at", ms: 2000 } });
+        expect(parseTransitionLabel("every(10, min){count++;}")).to.deep.equal({
+            temporal: { operator: "every", ms: 600_000 },
+            action: "count++;",
+        });
+    });
+
+    it("parses temporal transitions counting the wakeups by an input", () => {
+        expect(parseTransitionLabel("after(3, button)")).to.deep.equal({
+            temporal: { operator: "after", count: 3, event: "button" },
+        });
+        const { ranges } = parseTransitionLabelWithRanges("every( 2 , button )[x]");
+        expect(ranges.temporal).to.deep.equal({ from: 0, to: 19 });
+        expect(ranges.temporalEvent).to.deep.equal({ from: 11, to: 17 });
+    });
+
+    it("parses after(n, unit, condition)", () => {
+        const label = 'after(5, min, !motion && isTimeBetween("22:00", "06:00"))[light]';
+        const { label: parsed, ranges } = parseTransitionLabelWithRanges(label);
+        expect(parsed).to.deep.equal({
+            temporal: { operator: "after", ms: 300_000, condition: '!motion && isTimeBetween("22:00", "06:00")' },
+            condition: "light",
+        });
+        const { from, to } = ranges.temporalCondition as { from: number; to: number };
+        expect(label.substring(from, to)).to.equal('!motion && isTimeBetween("22:00", "06:00")');
     });
 
     it("rejects invalid labels", () => {
-        expect(() => parseTransitionLabel("after(5, hours)")).to.throw(/Invalid temporal expression/);
+        for (const invalid of [
+            "after(5)",
+            "after(x, sec)",
+            "after(0, button)",
+            "after(2.5, button)",
+            "every(0, sec)",
+            "before(5, sec, motion)",
+            "after(3, button, motion)",
+            "after(5, sec, )",
+        ]) {
+            expect(() => parseTransitionLabel(invalid), invalid).to.throw(/Invalid temporal expression/);
+        }
         expect(() => parseTransitionLabel("[a > 1")).to.throw(/Missing/);
         expect(() => parseTransitionLabel("a b")).to.throw(/Unexpected/);
     });

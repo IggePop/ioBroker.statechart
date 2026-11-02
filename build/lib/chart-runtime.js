@@ -71,7 +71,7 @@ class ChartRuntime {
     this.host = host;
     this.structure = new import_chart_structure.ChartStructure(chart);
     this.statesById = this.structure.statesById;
-    this.sandbox = import_node_vm.default.createContext(this.createHelpers());
+    this.sandbox = import_node_vm.default.createContext({ ...this.createHelpers(), ...import_chart_model.TIME_UNITS });
     this.hash = getChartHash(chart);
     this.prepareAllCode();
   }
@@ -97,8 +97,22 @@ class ChartRuntime {
   entryCount = /* @__PURE__ */ new Map();
   /** timers of the temporal transitions by state */
   timers = /* @__PURE__ */ new Map();
-  /** temporal transitions whose time has come */
+  /** after(n, unit) transitions whose time has come */
   expired = /* @__PURE__ */ new Set();
+  /** at() and every() transitions whose timer caused the current wakeup */
+  firedTimers = /* @__PURE__ */ new Set();
+  /** wakeups by each input since each active state was entered, by state */
+  inputCounts = /* @__PURE__ */ new Map();
+  /** since when the condition of each after(n, unit, condition) of the active states is true, by transition */
+  trueSince = /* @__PURE__ */ new Map();
+  /** timers of after(n, unit, condition), by transition */
+  durationTimers = /* @__PURE__ */ new Map();
+  /** for duration(): since when the value of each call is true, by call and state */
+  durationCalls = /* @__PURE__ */ new Map();
+  /** number of duration() calls found in the code, to give each of them an ID */
+  durationCallCount = 0;
+  /** the state whose condition or action is executed, used by elapsed() and duration() */
+  context = null;
   /** timers of inputs with debounce, by variable name */
   debounceTimers = /* @__PURE__ */ new Map();
   /** JSON of the last persisted data, to persist only changes */
@@ -137,6 +151,7 @@ class ChartRuntime {
     for (const transition of this.chart.transitions) {
       try {
         const label = (0, import_chart_model.parseTransitionLabel)(transition.label);
+        this.prepareCode(label.temporal?.condition, "expression");
         this.prepareCode(label.condition, "expression");
         this.prepareCode(label.action, "statements");
       } catch {
@@ -149,7 +164,8 @@ class ChartRuntime {
   /**
    * @param code A condition, action or function block
    * @param kind Expression or statements
-   * @returns the code with the names of the variables in hasChanged() etc., see quoteChangeArguments()
+   * @returns the code with the names of the variables in hasChanged() etc. and the IDs of the duration() calls,
+   * see prepareHelperCalls()
    */
   prepareCode(code, kind) {
     if (!code) {
@@ -158,7 +174,7 @@ class ChartRuntime {
     const key = `${kind}:${code}`;
     let prepared = this.preparedCode.get(key);
     if (prepared === void 0) {
-      const quoted = (0, import_chart_validation.quoteChangeArguments)(code, kind);
+      const quoted = (0, import_chart_validation.prepareHelperCalls)(code, kind, () => `d${++this.durationCallCount}`);
       prepared = quoted.code;
       for (const name of quoted.names) {
         this.changeVariables.add(name);
@@ -245,6 +261,13 @@ class ChartRuntime {
     this.publishActiveStates(this.actor.getSnapshot().value);
     for (const id of this.activeIds) {
       this.enteredAt.set(id, persisted.entered[id] ?? this.now());
+      this.inputCounts.set(id, new Map(Object.entries(persisted.counts?.[id] ?? {})));
+      for (const transition of this.temporalTransitions.get(id) || []) {
+        const since = persisted.trueSince?.[transition.id];
+        if (since !== void 0) {
+          this.trueSince.set(transition.id, since);
+        }
+      }
       this.startTimers(id);
     }
   }
@@ -272,7 +295,13 @@ class ChartRuntime {
       this.host.log.info(`[${this.chart.name}] The chart was changed, starting in the initial state`);
       return null;
     }
-    return { ...persisted, entered: persisted.entered || {}, locals: persisted.locals || {} };
+    return {
+      ...persisted,
+      entered: persisted.entered || {},
+      locals: persisted.locals || {},
+      counts: persisted.counts || {},
+      trueSince: persisted.trueSince || {}
+    };
   }
   /**
    * Stores the current state of the chart, if it changed since the last time
@@ -288,7 +317,11 @@ class ChartRuntime {
       entered: Object.fromEntries(this.enteredAt),
       locals: Object.fromEntries(
         this.chart.symbols.filter((s) => s.scope === "local").map((s) => [s.name, this.sandbox[s.name]])
-      )
+      ),
+      counts: Object.fromEntries(
+        [...this.inputCounts].filter(([, counts]) => counts.size).map(([id, counts]) => [id, Object.fromEntries(counts)])
+      ),
+      trueSince: Object.fromEntries(this.trueSince)
     };
     let json;
     try {
@@ -310,6 +343,7 @@ class ChartRuntime {
   onEnter(id) {
     this.enteredAt.set(id, this.now());
     this.entryCount.set(id, (this.entryCount.get(id) ?? 0) + 1);
+    this.inputCounts.set(id, /* @__PURE__ */ new Map());
     this.startTimers(id);
   }
   /**
@@ -323,9 +357,46 @@ class ChartRuntime {
       clearTimeout(timer.handle);
     }
     this.timers.delete(id);
+    this.inputCounts.delete(id);
     for (const transition of this.temporalTransitions.get(id) || []) {
       this.expired.delete(transition.id);
+      this.stopDuration(transition.id);
     }
+    for (const [key, call] of this.durationCalls) {
+      if (call.state === id) {
+        this.durationCalls.delete(key);
+      }
+    }
+  }
+  /**
+   * Stops measuring how long the condition of an after(n, unit, condition) is true
+   *
+   * @param id ID of the transition
+   */
+  stopDuration(id) {
+    this.trueSince.delete(id);
+    clearTimeout(this.durationTimers.get(id)?.handle);
+    this.durationTimers.delete(id);
+  }
+  /**
+   * Calls the callback at the given time, also after delays which are too long for setTimeout()
+   *
+   * @param due The time (ms since 1970), the callback is called right away if it has passed
+   * @param timer Gets the handle of the timeout, to clear it
+   * @param callback Called at the time
+   */
+  scheduleAt(due, timer, callback) {
+    const remaining = due - this.now();
+    timer.handle = setTimeout(
+      () => {
+        if (remaining > MAX_TIMEOUT_MS && due - this.now() > 0) {
+          this.scheduleAt(due, timer, callback);
+        } else {
+          callback();
+        }
+      },
+      Math.min(Math.max(remaining, 0), MAX_TIMEOUT_MS)
+    );
   }
   /**
    * Starts a timer for every temporal transition of a state, which wakes up the chart when its time has come
@@ -335,27 +406,36 @@ class ChartRuntime {
   startTimers(id) {
     const entered = this.enteredAt.get(id) ?? this.now();
     const timers = [];
-    for (const transition of this.temporalTransitions.get(id) || []) {
-      const timer = {};
-      const due = entered + transition.afterMs;
-      const wait = () => {
-        const remaining = due - this.now();
-        timer.handle = setTimeout(
-          () => {
-            if (due - this.now() > 0 && remaining > MAX_TIMEOUT_MS) {
-              wait();
-              return;
-            }
-            this.expired.add(transition.id);
-            this.wakeup(null);
-          },
-          Math.min(Math.max(remaining, 0), MAX_TIMEOUT_MS)
-        );
-      };
-      wait();
-      timers.push(timer);
-    }
     this.timers.set(id, timers);
+    for (const transition of this.temporalTransitions.get(id) || []) {
+      const { operator, ms, condition } = transition.temporal;
+      if (ms === void 0 || operator === "before" || condition !== void 0) {
+        continue;
+      }
+      const timer = {};
+      timers.push(timer);
+      const fire = (due2) => {
+        if (operator === "after") {
+          this.expired.add(transition.id);
+          this.wakeup(null);
+          return;
+        }
+        this.firedTimers.add(transition.id);
+        try {
+          this.wakeup(null);
+        } finally {
+          this.firedTimers.delete(transition.id);
+        }
+        if (operator === "every" && this.timers.get(id)?.includes(timer)) {
+          this.scheduleAt(due2 + ms, timer, () => fire(due2 + ms));
+        }
+      };
+      let due = entered + ms;
+      if (operator === "every" && due < this.now()) {
+        due = entered + Math.ceil((this.now() - entered) / ms) * ms;
+      }
+      this.scheduleAt(due, timer, () => fire(due));
+    }
   }
   /**
    * Logs the problems found by the validation, the chart is started anyway
@@ -388,6 +468,10 @@ class ChartRuntime {
     }
     this.timers.clear();
     this.expired.clear();
+    for (const timer of this.durationTimers.values()) {
+      clearTimeout(timer.handle);
+    }
+    this.durationTimers.clear();
     for (const timer of this.debounceTimers.values()) {
       clearTimeout(timer);
     }
@@ -446,6 +530,24 @@ class ChartRuntime {
           );
         }
         return new Date(time.getTime() + (Number(offsetMinutes) || 0) * 6e4);
+      },
+      elapsed: (unit = import_chart_model.TIME_UNITS.sec) => {
+        const entered = this.context === null ? void 0 : this.enteredAt.get(this.context);
+        if (entered === void 0) {
+          throw new Error("elapsed() can only be used in conditions and in the actions of states");
+        }
+        return (this.now() - entered) / unit;
+      },
+      // the ID of the call is added by prepareHelperCalls()
+      duration: (call, value, unit = import_chart_model.TIME_UNITS.sec) => {
+        const key = `${call}@${this.context}`;
+        if (!value) {
+          this.durationCalls.delete(key);
+          return 0;
+        }
+        const since = this.durationCalls.get(key)?.since ?? this.now();
+        this.durationCalls.set(key, { since, state: this.context });
+        return (this.now() - since) / unit;
       },
       hasChanged: (name) => this.getChange(name, "hasChanged").changed,
       hasChangedFrom: (name, value) => {
@@ -528,6 +630,14 @@ class ChartRuntime {
     this.wakeupCause = cause;
     this.wakeupInput = input;
     this.rememberValues();
+    if (input !== null) {
+      for (const [id, counts] of this.inputCounts) {
+        if (this.temporalTransitions.get(id)?.some((t) => t.temporal?.event === input)) {
+          counts.set(input, (counts.get(input) ?? 0) + 1);
+        }
+      }
+    }
+    this.updateDurations();
     if (!this.chart.superStep) {
       this.step(input);
     } else {
@@ -543,9 +653,38 @@ class ChartRuntime {
         );
       }
     }
+    this.updateDurations();
     this.writeChangedOutputs();
     this.persist();
     this.publishLive();
+  }
+  /**
+   * Checks the conditions of after(n, unit, condition) of the active states, and starts a timer which wakes up the
+   * chart when a condition has been true for the time
+   */
+  updateDurations() {
+    for (const id of this.activeIds) {
+      for (const transition of this.temporalTransitions.get(id) || []) {
+        const temporal = transition.temporal;
+        if (temporal.condition === void 0) {
+          continue;
+        }
+        if (!this.run(transition.temporalCondition, `${transition.where}/after condition`, id)) {
+          this.stopDuration(transition.id);
+          continue;
+        }
+        const since = this.trueSince.get(transition.id) ?? this.now();
+        this.trueSince.set(transition.id, since);
+        if (!this.durationTimers.has(transition.id)) {
+          const timer = {};
+          this.durationTimers.set(transition.id, timer);
+          this.scheduleAt(since + temporal.ms, timer, () => {
+            this.durationTimers.delete(transition.id);
+            this.wakeup(null);
+          });
+        }
+      }
+    }
   }
   /**
    * Stores the values of the variables used by the change detection at the start of a wakeup
@@ -637,7 +776,7 @@ class ChartRuntime {
     }
     const state = this.statesById.get(id);
     if (state?.during) {
-      this.runAction(state.during, `${state.name}/during`);
+      this.runAction(state.during, `${state.name}/during`, id);
     }
     if (this.takeFirstValid(this.innerTransitions.get(id), input)) {
       return true;
@@ -688,13 +827,10 @@ class ChartRuntime {
    */
   takeFirstValid(transitions, input) {
     for (const transition of transitions || []) {
-      if (transition.event && transition.event !== input) {
+      if (!this.isTriggered(transition, input)) {
         continue;
       }
-      if (transition.afterMs !== void 0 && !this.isExpired(transition)) {
-        continue;
-      }
-      if (transition.condition && !this.run(transition.condition, `${transition.where}/condition`)) {
+      if (transition.condition && !this.run(transition.condition, `${transition.where}/condition`, transition.source)) {
         continue;
       }
       this.actor?.send({ type: `T.${transition.id}` });
@@ -714,15 +850,49 @@ class ChartRuntime {
     return false;
   }
   /**
-   * @param transition A temporal transition
-   * @returns true if its source state is active for at least its delay
+   * @param transition The transition
+   * @param input Name of the input which caused the wakeup, null for timers
+   * @returns true if its event and its temporal expression allow it in this wakeup (the condition is not checked)
    */
-  isExpired(transition) {
-    if (this.expired.has(transition.id)) {
+  isTriggered(transition, input) {
+    if (transition.event && transition.event !== input) {
+      return false;
+    }
+    const temporal = transition.temporal;
+    if (!temporal) {
       return true;
     }
+    if (temporal.event !== void 0) {
+      if (temporal.event !== input) {
+        return false;
+      }
+      const count = this.inputCounts.get(transition.source)?.get(temporal.event) ?? 0;
+      const n = temporal.count;
+      switch (temporal.operator) {
+        case "after":
+          return count >= n;
+        case "before":
+          return count < n;
+        case "at":
+          return count === n;
+        case "every":
+          return count % n === 0;
+      }
+    }
+    const ms = temporal.ms;
+    if (temporal.condition !== void 0) {
+      const since = this.trueSince.get(transition.id);
+      return since !== void 0 && this.now() - since >= ms;
+    }
     const entered = this.enteredAt.get(transition.source);
-    return entered !== void 0 && this.now() - entered >= transition.afterMs;
+    switch (temporal.operator) {
+      case "after":
+        return this.expired.has(transition.id) || entered !== void 0 && this.now() - entered >= ms;
+      case "before":
+        return entered !== void 0 && this.now() - entered < ms;
+      default:
+        return this.firedTimers.has(transition.id);
+    }
   }
   buildMachineConfig() {
     const structure = this.structure;
@@ -731,10 +901,10 @@ class ChartRuntime {
         id: state.id,
         entry: [
           () => this.onEnter(state.id),
-          ...state.entry ? [() => this.runAction(state.entry, `${state.name}/entry`)] : []
+          ...state.entry ? [() => this.runAction(state.entry, `${state.name}/entry`, state.id)] : []
         ],
         exit: [
-          ...state.exit ? [() => this.runAction(state.exit, `${state.name}/exit`)] : [],
+          ...state.exit ? [() => this.runAction(state.exit, `${state.name}/exit`, state.id)] : [],
           () => this.onExit(state.id)
         ],
         on: {}
@@ -753,7 +923,7 @@ class ChartRuntime {
       this.innerTransitions.set(state.id, inner);
       this.temporalTransitions.set(
         state.id,
-        [...outer, ...inner].filter((t) => t.afterMs !== void 0)
+        [...outer, ...inner].filter((t) => t.temporal !== void 0)
       );
       const subStates = structure.getChildren(state.id);
       if (subStates.length) {
@@ -798,11 +968,12 @@ class ChartRuntime {
       return null;
     }
     const condition = label.condition ? this.compile(`(${this.prepareCode(label.condition, "expression")})`, `${where}/condition`) : null;
+    const temporalCondition = label.temporal?.condition ? this.compile(`(${this.prepareCode(label.temporal.condition, "expression")})`, `${where}/after condition`) : null;
     const { inner, reenter } = this.structure.getTransitionKind(transition);
     const config = {
       target: `#${target.id}`,
       reenter,
-      actions: label.action ? [() => this.runAction(label.action, `${where}/action`)] : []
+      actions: label.action ? [() => this.runAction(label.action, `${where}/action`, source.id)] : []
     };
     return {
       inner,
@@ -814,7 +985,8 @@ class ChartRuntime {
         from: source.name,
         to: target.name,
         event: label.event,
-        afterMs: label.afterMs,
+        temporal: label.temporal,
+        temporalCondition,
         condition
       }
     };
@@ -834,16 +1006,21 @@ class ChartRuntime {
   /**
    * @param script The compiled code
    * @param where Used in error messages
+   * @param context The state whose condition or action it is, for elapsed() and duration()
    */
-  run(script, where) {
+  run(script, where, context = this.context) {
     if (!script) {
       return void 0;
     }
+    const previous = this.context;
+    this.context = context;
     try {
       return script.runInContext(this.sandbox, { timeout: SCRIPT_TIMEOUT_MS });
     } catch (err) {
       this.host.log.warn(`[${this.chart.name}] ${where}: ${err.message}`);
       return void 0;
+    } finally {
+      this.context = previous;
     }
   }
   /**
@@ -851,11 +1028,12 @@ class ChartRuntime {
    *
    * @param code The action
    * @param where Used in error messages
+   * @param context The state whose action it is (the source state for transition actions)
    */
-  runAction(code, where) {
+  runAction(code, where, context) {
     this.run(this.compile(`{
 ${this.prepareCode(code, "statements")}
-}`, where), where);
+}`, where), where, context);
     this.writeChangedOutputs();
   }
   writeChangedOutputs() {

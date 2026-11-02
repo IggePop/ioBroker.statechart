@@ -22,6 +22,8 @@ __export(chart_model_exports, {
   EXPORT_FORMAT: () => EXPORT_FORMAT,
   LabelSyntaxError: () => LabelSyntaxError,
   MAX_SUPER_STEPS: () => MAX_SUPER_STEPS,
+  TEMPORAL_OPERATORS: () => TEMPORAL_OPERATORS,
+  TIME_UNITS: () => TIME_UNITS,
   createChart: () => createChart,
   createExport: () => createExport,
   formatMessage: () => formatMessage,
@@ -33,6 +35,7 @@ __export(chart_model_exports, {
 module.exports = __toCommonJS(chart_model_exports);
 const CHART_MODEL_VERSION = 1;
 const MAX_SUPER_STEPS = 100;
+const TEMPORAL_OPERATORS = ["after", "before", "at", "every"];
 const TIME_UNITS = {
   msec: 1,
   sec: 1e3,
@@ -88,6 +91,65 @@ function readEnclosed(text, start, open, close) {
   }
   throw new LabelSyntaxError('Missing "%s"', [close], start, text.length);
 }
+const INVALID_TEMPORAL = 'Invalid temporal expression "%s", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)';
+function splitArguments(text, from, to) {
+  const args = [];
+  let depth = 0;
+  let quote = null;
+  let start = from;
+  const push = (end) => {
+    const raw = text.substring(start, end);
+    const trimmed = raw.trim();
+    args.push({ text: trimmed, from: start + raw.indexOf(trimmed) });
+  };
+  for (let i = from; i < to; i++) {
+    const c = text[i];
+    if (quote) {
+      if (c === "\\") {
+        i++;
+      } else if (c === quote) {
+        quote = null;
+      }
+    } else if (c === '"' || c === "'" || c === "`") {
+      quote = c;
+    } else if ("([{".includes(c)) {
+      depth++;
+    } else if (")]}".includes(c)) {
+      depth--;
+    } else if (c === "," && depth === 0) {
+      push(i);
+      start = i + 1;
+    }
+  }
+  push(to);
+  return args;
+}
+function parseTemporal(text, operator, from, open, end) {
+  const fail = () => {
+    throw new LabelSyntaxError(INVALID_TEMPORAL, [text.substring(from, end)], from, end);
+  };
+  const args = splitArguments(text, open + 1, end - 1);
+  const number = /^\d+(?:\.\d+)?$/.test(args[0]?.text) ? parseFloat(args[0].text) : fail();
+  const unit = args[1]?.text ?? "";
+  if (operator === "every" && number === 0) {
+    fail();
+  }
+  if (Object.hasOwn(TIME_UNITS, unit)) {
+    const temporal = { operator, ms: number * TIME_UNITS[unit] };
+    if (args.length === 3 && operator === "after" && args[2].text) {
+      temporal.condition = args[2].text;
+      return { temporal, condition: { from: args[2].from, to: args[2].from + args[2].text.length } };
+    }
+    return args.length === 2 ? { temporal } : fail();
+  }
+  if (args.length !== 2 || !/^[A-Za-z_$][\w$]*$/.test(unit) || !Number.isInteger(number) || number < 1) {
+    fail();
+  }
+  return {
+    temporal: { operator, count: number, event: unit },
+    event: { from: args[1].from, to: args[1].from + unit.length }
+  };
+}
 function parseTransitionLabelWithRanges(label) {
   const result = {};
   const ranges = {};
@@ -106,19 +168,17 @@ function parseTransitionLabelWithRanges(label) {
     const from = pos;
     pos += event[0].length;
     skipSpace();
-    if (event[0] === "after" && text[pos] === "(") {
-      const { content, end } = readEnclosed(text, pos, "(", ")");
-      const afterMatch = /^(\d+(?:\.\d+)?)\s*,\s*(msec|sec|min)$/.exec(content);
-      if (!afterMatch) {
-        throw new LabelSyntaxError(
-          'Invalid temporal expression "%s", expected e.g. after(5, sec)',
-          [`after(${content})`],
-          from,
-          end
-        );
+    if (TEMPORAL_OPERATORS.includes(event[0]) && text[pos] === "(") {
+      const { end } = readEnclosed(text, pos, "(", ")");
+      const parsed = parseTemporal(text, event[0], from, pos, end);
+      result.temporal = parsed.temporal;
+      ranges.temporal = { from, to: end };
+      if (parsed.event) {
+        ranges.temporalEvent = parsed.event;
       }
-      result.afterMs = parseFloat(afterMatch[1]) * TIME_UNITS[afterMatch[2]];
-      ranges.after = { from, to: end };
+      if (parsed.condition) {
+        ranges.temporalCondition = parsed.condition;
+      }
       pos = end;
     } else {
       result.event = event[0];
@@ -351,6 +411,8 @@ function parseExport(text) {
   EXPORT_FORMAT,
   LabelSyntaxError,
   MAX_SUPER_STEPS,
+  TEMPORAL_OPERATORS,
+  TIME_UNITS,
   createChart,
   createExport,
   formatMessage,

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import {
     getDeclarations,
-    quoteChangeArguments,
+    prepareHelperCalls,
     validateChart,
     validateCode,
     validateTransitionLabel,
@@ -71,6 +71,9 @@ describe("chart-validation => validateCode", () => {
     });
 });
 
+/** For code without duration() */
+const noId = (): string => "unused";
+
 describe("chart-validation => change detection", () => {
     it("accepts variables of the chart, also as string", () => {
         const code = 'hasChanged(motion) && hasChangedTo(light, true) && hasChangedFrom("count", 0)';
@@ -96,19 +99,31 @@ describe("chart-validation => change detection", () => {
 
     it("passes the names of the variables instead of their values", () => {
         expect(
-            quoteChangeArguments('hasChangedTo(motion, true) && !hasChanged("light") && motion', "expression"),
+            prepareHelperCalls('hasChangedTo(motion, true) && !hasChanged("light") && motion', "expression", noId),
         ).to.deep.equal({
             code: 'hasChangedTo("motion", true) && !hasChanged("light") && motion',
             names: ["motion", "light"],
         });
-        expect(quoteChangeArguments("if (hasChanged(count)) { log(count); }", "statements").code).to.equal(
+        expect(prepareHelperCalls("if (hasChanged(count)) { log(count); }", "statements", noId).code).to.equal(
             'if (hasChanged("count")) { log(count); }',
         );
         // code with syntax errors is not executed anyway
-        expect(quoteChangeArguments("hasChanged(motion", "expression")).to.deep.equal({
+        expect(prepareHelperCalls("hasChanged(motion", "expression", noId)).to.deep.equal({
             code: "hasChanged(motion",
             names: [],
         });
+    });
+
+    it("gives each duration() call an ID", () => {
+        let n = 0;
+        const createId = (): string => `d${++n}`;
+        expect(
+            prepareHelperCalls(
+                "duration(motion) > 5 || duration (light && x(1, 2), min) > 1 || duration()",
+                "expression",
+                createId,
+            ).code,
+        ).to.equal('duration("d1", motion) > 5 || duration ("d2", light && x(1, 2), min) > 1 || duration("d3")');
     });
 });
 
@@ -131,6 +146,17 @@ describe("chart-validation => validateTransitionLabel", () => {
         const label = "[motion]\n{\n  light = true;\n  cnt++;\n}";
         expect(summarize(validateTransitionLabel(label, symbols), label)).to.deep.equal([
             'error: Unknown variable "cnt" @cnt',
+        ]);
+    });
+
+    it("checks the input and the condition of temporal expressions", () => {
+        expect(summarize(validateTransitionLabel("every(3, motoin)", symbols), "every(3, motoin)")).to.deep.equal([
+            'error: Unknown input "motoin", use a time unit (msec, sec, min) or the name of an input @motoin',
+        ]);
+        expect(validateTransitionLabel("after(3, motion)[elapsed(min) > 1]", symbols)).to.deep.equal([]);
+        const withCondition = "after(5, min, !motion && lightt)";
+        expect(summarize(validateTransitionLabel(withCondition, symbols), withCondition)).to.deep.equal([
+            'error: Unknown variable "lightt" @lightt',
         ]);
     });
 

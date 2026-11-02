@@ -268,13 +268,39 @@ ${INDENT.repeat(level)}}`
     "}",
     ""
   );
+  const temporalCheck = (transition, temporal) => {
+    const id = JSON.stringify(transition.id);
+    const source = JSON.stringify(transition.source);
+    if (temporal.event !== void 0) {
+      const event = JSON.stringify(temporal.event);
+      const count = `inputCount(${source}, ${event})`;
+      const checks = {
+        after: `${count} >= ${temporal.count}`,
+        before: `${count} < ${temporal.count}`,
+        at: `${count} === ${temporal.count}`,
+        every: `${count} % ${temporal.count} === 0`
+      };
+      return `input === ${event} && ${checks[temporal.operator]}`;
+    }
+    if (temporal.condition !== void 0) {
+      return `trueFor(${id}) >= ${temporal.ms}`;
+    }
+    switch (temporal.operator) {
+      case "after":
+        return `timeInState(${source}) >= ${temporal.ms}`;
+      case "before":
+        return `timeInState(${source}) < ${temporal.ms}`;
+      default:
+        return `timerFired(${id})`;
+    }
+  };
   const check = (transition, label) => {
     const conditions = [];
     if (label.event) {
       conditions.push(`input === ${JSON.stringify(label.event)}`);
     }
-    if (label.afterMs !== void 0) {
-      conditions.push(`elapsed(${JSON.stringify(transition.source)}) >= ${label.afterMs}`);
+    if (label.temporal) {
+      conditions.push(temporalCheck(transition, label.temporal));
     }
     if (label.condition) {
       conditions.push(`(${label.condition})`);
@@ -343,8 +369,14 @@ ${INDENT}}`
     "// getState(id)        current value of an ioBroker state",
     "// isActive(stateId)   true if the state of the chart is active",
     "// entryCount(stateId) how often the state was entered",
-    "// elapsed(stateId)    milliseconds since the state was entered; when it reaches the delay of an",
-    "//                     after(...) of the state, a timer calls wakeup(null)",
+    "// timeInState(stateId) milliseconds since the state was entered; when it reaches the delay of an",
+    "//                     after(n, unit) or at(n, unit) of the state, a timer calls wakeup(null)",
+    "// timerFired(id)      true in the wakeup(null) of the timer of at(n, unit) or every(n, unit) of the transition",
+    "// inputCount(stateId, input)",
+    "//                     the wakeups by the input since the state was entered, for e.g. after(3, button)",
+    "// trueFor(id)         milliseconds the condition of after(n, unit, condition) of the transition has been true,",
+    "//                     checked at the start and at the end of every wakeup; a timer calls wakeup(null) when",
+    "//                     it reaches the delay",
     "// At the start of each wakeup, the adapter stores the values of the variables used in hasChanged(),",
     "// hasChangedFrom() and hasChangedTo(), these compare them with the values of the previous wakeup.",
     "//",

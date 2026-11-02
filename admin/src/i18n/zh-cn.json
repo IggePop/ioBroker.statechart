@@ -22,7 +22,7 @@
     "Delete state": "Delete state",
     "Transition": "Transition",
     "Label": "Label",
-    "labelHelp": "event[condition]{action}, every part is optional. Event: name of an input or after(5, sec)",
+    "labelHelp": "event[condition]{action}, every part is optional. Event: name of an input, or a temporal expression like after(5, sec), before(...), at(...), every(...), after(3, input) or after(5, min, condition)",
     "Priority": "Priority",
     "priorityHelp": "Transitions of the same state are checked in this order",
     "Delete transition": "Delete transition",
@@ -45,7 +45,6 @@
     "Syntax error: %s": "Syntax error: %s",
     "Unexpected \"%s\"": "Unexpected \"%s\"",
     "Missing \"%s\"": "Missing \"%s\"",
-    "Invalid temporal expression \"%s\", expected e.g. after(5, sec)": "Invalid temporal expression \"%s\", expected e.g. after(5, sec)",
     "Unexpected \"%s\", expected event[condition]{action}": "Unexpected \"%s\", expected event[condition]{action}",
     "Add function": "Add function",
     "Function": "Function",
@@ -136,5 +135,7 @@
     "No matching variables": "No matching variables",
     "No variables": "None yet",
     "No state selected": "No state selected",
-    "Wake up options": "Wake up options"
+    "Wake up options": "Wake up options",
+    "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)": "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)",
+    "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input"
 }

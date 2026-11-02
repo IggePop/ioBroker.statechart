@@ -22,7 +22,7 @@
     "Delete state": "Zustand löschen",
     "Transition": "Übergang",
     "Label": "Beschriftung",
-    "labelHelp": "event[bedingung]{aktion}, jeder Teil ist optional. Event: Name eines Eingangs oder after(5, sec)",
+    "labelHelp": "event[bedingung]{aktion}, jeder Teil ist optional. Event: Name eines Eingangs oder ein Zeitausdruck wie after(5, sec), before(...), at(...), every(...), after(3, eingang) oder after(5, min, bedingung)",
     "Priority": "Priorität",
     "priorityHelp": "Übergänge desselben Zustands werden in dieser Reihenfolge geprüft",
     "Delete transition": "Übergang löschen",
@@ -45,7 +45,6 @@
     "Syntax error: %s": "Syntaxfehler: %s",
     "Unexpected \"%s\"": "Unerwartet: \"%s\"",
     "Missing \"%s\"": "\"%s\" fehlt",
-    "Invalid temporal expression \"%s\", expected e.g. after(5, sec)": "Ungültiger Zeitausdruck \"%s\", erwartet z.B. after(5, sec)",
     "Unexpected \"%s\", expected event[condition]{action}": "Unerwartet: \"%s\", erwartet event[bedingung]{aktion}",
     "Add function": "Funktion hinzufügen",
     "Function": "Funktion",
@@ -136,5 +135,7 @@
     "No matching variables": "Keine passenden Variablen",
     "No variables": "Noch keine",
     "No state selected": "Kein Datenpunkt ausgewählt",
-    "Wake up options": "Optionen zum Aufwecken"
+    "Wake up options": "Optionen zum Aufwecken",
+    "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)": "Ungültiger Zeitausdruck \"%s\", erwartet z.B. after(5, sec), every(10, min), after(3, taster) oder after(5, min, bedingung)",
+    "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unbekannter Eingang \"%s\", verwende eine Zeiteinheit (msec, sec, min) oder den Namen eines Eingangs"
 }

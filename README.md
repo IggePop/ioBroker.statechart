@@ -27,7 +27,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Graphical editor as its own entry in the admin side bar
 - States with `entry`, `during` and `exit` actions, nested and parallel states (AND)
 - Transitions with labels in the well-known syntax `event[condition]{action}`
-- Timers: `after(5, sec)`
+- Temporal logic like in Stateflow: `after(5, sec)`, `before`, `at`, `every`, counting inputs, `after(5, min, condition)`, `elapsed()`, `duration()`
 - Function blocks with your own JavaScript functions, usable in all conditions and actions
 - Inputs and outputs mapped to any ioBroker states
 - Live view: the active state is highlighted in the editor, the current values of the variables are shown, taken
@@ -104,12 +104,35 @@ All parts are optional and may span several lines.
 | Part | Meaning | Example |
 |---|---|---|
 | `event` | Name of an input: the transition is only checked when this input changes | `motion` |
-| `after(n, unit)` | Instead of an event: valid from *n* units after entering the state on. Then a timer wakes up the chart, and the condition is checked again on every following wakeup. Units: `msec`, `sec`, `min` | `after(30, sec)` |
+| `after(n, unit)` | Instead of an event: a temporal expression, see below | `after(30, sec)` |
 | `[condition]` | JavaScript expression, the transition is only taken if it is true | `[temp > 21 && !window]` |
 | `{action}` | JavaScript, executed when the transition is taken | `{count++; light = true;}` |
 
 Without event, a transition is checked whenever any input changes. If a state has several outgoing
 transitions, they are checked in the order of their **priority** (shown at the arrow).
+
+#### Temporal logic
+
+Instead of an event, a transition can have a temporal expression like in Stateflow. Time is measured from entering
+the source state, in the units `msec`, `sec` and `min`:
+
+| Expression | Valid | Example |
+|---|---|---|
+| `after(n, unit)` | from *n* units on. A timer wakes up the chart, then the condition is checked again on every following wakeup | `after(30, sec)[!motion]` |
+| `before(n, unit)` | during the first *n* units, there is no timer | `before(5, sec)[button]` |
+| `at(n, unit)` | exactly once: in the wakeup of its timer after *n* units, not later | `at(10, min)` |
+| `every(n, unit)` | every *n* units, in the wakeup of its timer | `every(15, min){count++;}` |
+| `after(n, unit, condition)` | as soon as the condition has been true for *n* units without interruption. A timer wakes up the chart exactly then | `after(5, min, !motion)` |
+
+The same operators can count the wakeups by an input instead of the time, e.g. `after(3, button)` is valid on the
+third and every further wakeup by `button` since entering the state, `at(3, button)` only on the third,
+`every(2, button)` on every second one and `before(3, button)` on the first two. These transitions are only checked
+on the wakeups by that input, the wakeup which entered the state does not count.
+
+The condition of `after(n, unit, condition)` is checked on every wakeup, so it should depend on inputs and variables,
+not on functions like `isTimeBetween()` which change without a wakeup. In conditions and actions, `elapsed(unit)` and
+`duration(condition, unit)` give the times as numbers (see the helper functions). The counters and the times of
+`after(n, unit, condition)` continue after a restart of the adapter.
 
 ### When inputs wake up the chart
 
@@ -182,6 +205,8 @@ In conditions, actions and function blocks:
 | `hasChanged(variable)` | true if the variable has changed, see below |
 | `hasChangedFrom(variable, value)` | true if the variable has changed and its previous value was `value` |
 | `hasChangedTo(variable, value)` | true if the variable has changed to `value`, e.g. `hasChangedTo(button, true)` for a rising edge |
+| `elapsed(unit)` | time since the state was entered (in conditions of transitions: the source state), unit `sec` (default), `msec` or `min`, e.g. `[elapsed(min) > 10]` |
+| `duration(condition, unit)` | time the condition has been true without interruption, measured on the wakeups, unit `sec` (default), `msec` or `min`. It does not wake up the chart, for that use `after(n, unit, condition)` |
 
 `isDaytime()` and `astroTime()` use the location of the ioBroker system settings. To read other states, add
 them as inputs: their variables are always up to date and wake up the chart. Time based functions do not wake up
@@ -286,7 +311,9 @@ restart** in the chart properties is switched off. Variables declared in functio
   the new state. A separate condition action and `/action` are not supported (yet).
 - Transitions are selected like in Stateflow (outer before inner, see above), XState only executes them.
   Pure XState would check the transitions of sub states first.
-- Temporal logic is limited to `after(n, msec|sec|min)`, measured in real time.
+- Temporal logic is measured in real time, not in time steps: conditions are only checked when the chart wakes up.
+  `after(n, unit, condition)` replaces the common Stateflow pattern `[duration(condition) > n]`, which would need a
+  wakeup at the right time.
 - Conditions and actions use JavaScript, not MATLAB/C syntax.
 
 ### Limitations
@@ -314,7 +341,7 @@ Adapter ausgeführt.
 - Grafischer Editor als eigener Eintrag in der Seitenleiste des Admins
 - Zustände mit `entry`-, `during`- und `exit`-Aktionen, verschachtelte und parallele Zustände (UND)
 - Übergänge mit Beschriftungen in der bekannten Syntax `event[bedingung]{aktion}`
-- Timer: `after(5, sec)`
+- Zeitlogik wie bei Stateflow: `after(5, sec)`, `before`, `at`, `every`, Zählen von Eingängen, `after(5, min, bedingung)`, `elapsed()`, `duration()`
 - Funktionsblöcke mit eigenen JavaScript-Funktionen, nutzbar in allen Bedingungen und Aktionen
 - Eingänge und Ausgänge, die mit beliebigen ioBroker-Datenpunkten verbunden sind
 - Live-Ansicht: Der aktive Zustand wird im Editor hervorgehoben, die aktuellen Werte der Variablen werden angezeigt,
@@ -393,12 +420,35 @@ Alle Teile sind optional und dürfen über mehrere Zeilen gehen.
 | Teil | Bedeutung | Beispiel |
 |---|---|---|
 | `event` | Name eines Eingangs: Der Übergang wird nur geprüft, wenn sich dieser Eingang ändert | `motion` |
-| `after(n, einheit)` | Statt eines Events: gültig ab *n* Einheiten nach Betreten des Zustands. Dann weckt ein Timer das Chart, und die Bedingung wird bei jedem weiteren Aufwecken erneut geprüft. Einheiten: `msec`, `sec`, `min` | `after(30, sec)` |
+| `after(n, einheit)` | Statt eines Events: ein Zeitausdruck, siehe unten | `after(30, sec)` |
 | `[bedingung]` | JavaScript-Ausdruck, der Übergang wird nur genommen, wenn er wahr ist | `[temp > 21 && !fenster]` |
 | `{aktion}` | JavaScript, wird ausgeführt, wenn der Übergang genommen wird | `{zaehler++; licht = true;}` |
 
 Ohne Event wird ein Übergang bei jeder Änderung eines beliebigen Eingangs geprüft. Hat ein Zustand
 mehrere ausgehende Übergänge, werden sie in der Reihenfolge ihrer **Priorität** geprüft (steht am Pfeil).
+
+#### Zeitlogik
+
+Statt eines Events kann ein Übergang wie bei Stateflow einen Zeitausdruck haben. Die Zeit wird ab dem Betreten des
+Quellzustands gemessen, in den Einheiten `msec`, `sec` und `min`:
+
+| Ausdruck | Gültig | Beispiel |
+|---|---|---|
+| `after(n, einheit)` | ab *n* Einheiten. Ein Timer weckt das Chart, danach wird die Bedingung bei jedem weiteren Aufwecken erneut geprüft | `after(30, sec)[!motion]` |
+| `before(n, einheit)` | während der ersten *n* Einheiten, ohne Timer | `before(5, sec)[taster]` |
+| `at(n, einheit)` | genau einmal: beim Aufwecken durch seinen Timer nach *n* Einheiten, nicht später | `at(10, min)` |
+| `every(n, einheit)` | alle *n* Einheiten, beim Aufwecken durch seinen Timer | `every(15, min){zaehler++;}` |
+| `after(n, einheit, bedingung)` | sobald die Bedingung *n* Einheiten ununterbrochen wahr ist. Ein Timer weckt das Chart genau dann | `after(5, min, !motion)` |
+
+Dieselben Operatoren können statt der Zeit das Aufwecken durch einen Eingang zählen: `after(3, taster)` gilt beim
+dritten und jedem weiteren Aufwecken durch `taster` seit dem Betreten des Zustands, `at(3, taster)` nur beim dritten,
+`every(2, taster)` bei jedem zweiten und `before(3, taster)` bei den ersten beiden. Diese Übergänge werden nur beim
+Aufwecken durch diesen Eingang geprüft, das Aufwecken, das den Zustand betreten hat, zählt nicht mit.
+
+Die Bedingung von `after(n, einheit, bedingung)` wird bei jedem Aufwecken geprüft. Sie sollte daher von Eingängen und
+Variablen abhängen, nicht von Funktionen wie `isTimeBetween()`, die sich ohne Aufwecken ändern. In Bedingungen und
+Aktionen liefern `elapsed(einheit)` und `duration(bedingung, einheit)` die Zeiten als Zahl (siehe Hilfsfunktionen).
+Die Zähler und die Zeiten von `after(n, einheit, bedingung)` laufen nach einem Neustart des Adapters weiter.
 
 ### Wann Eingänge das Chart aufwecken
 
@@ -475,6 +525,8 @@ In Bedingungen, Aktionen und Funktionsblöcken:
 | `hasChanged(variable)` | wahr, wenn sich die Variable geändert hat, siehe unten |
 | `hasChangedFrom(variable, wert)` | wahr, wenn sich die Variable geändert hat und vorher `wert` war |
 | `hasChangedTo(variable, wert)` | wahr, wenn sich die Variable auf `wert` geändert hat, z.B. `hasChangedTo(taster, true)` für eine steigende Flanke |
+| `elapsed(einheit)` | Zeit seit Betreten des Zustands (in Bedingungen von Übergängen: des Quellzustands), Einheit `sec` (Standard), `msec` oder `min`, z.B. `[elapsed(min) > 10]` |
+| `duration(bedingung, einheit)` | Zeit, die die Bedingung ununterbrochen wahr ist, gemessen beim Aufwecken, Einheit `sec` (Standard), `msec` oder `min`. Weckt das Chart nicht, dafür gibt es `after(n, einheit, bedingung)` |
 
 `isDaytime()` und `astroTime()` nutzen den Standort aus den ioBroker-Systemeinstellungen. Andere Datenpunkte liest
 man über Eingänge: Ihre Variablen sind immer aktuell und wecken das Chart. Zeitabhängige Funktionen wecken das
@@ -584,7 +636,9 @@ Funktionsblöcken deklariert sind, werden nicht wiederhergestellt.
   neuen Zustands. Eine eigene Condition Action und `/aktion` werden (noch) nicht unterstützt.
 - Übergänge werden wie bei Stateflow ausgewählt (außen vor innen, siehe oben), XState führt sie nur aus.
   Reines XState würde die Übergänge der Unterzustände zuerst prüfen.
-- Zeitlogik gibt es nur als `after(n, msec|sec|min)`, gemessen in Echtzeit.
+- Zeitlogik wird in Echtzeit gemessen, nicht in Zeitschritten: Bedingungen werden nur beim Aufwecken geprüft.
+  `after(n, einheit, bedingung)` ersetzt das bei Stateflow übliche `[duration(bedingung) > n]`, das ein Aufwecken
+  zum richtigen Zeitpunkt bräuchte.
 - Bedingungen und Aktionen sind JavaScript, nicht MATLAB- oder C-Syntax.
 
 ### Einschränkungen
@@ -661,6 +715,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) more temporal logic: `before`, `at` and `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)` for conditions which are true for a time, and the helpers `elapsed()` and `duration()`
 * (Igge) the variables are grouped by kind and shown as compact lines, a click shows the settings of a variable, a search appears with many variables
 * (Igge) parallel states (AND): all sub states of a state, or all top level states, are active at the same time and are processed in their execution order
 

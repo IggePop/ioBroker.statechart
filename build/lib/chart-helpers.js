@@ -53,6 +53,14 @@ const HELPERS = {
     signature: 'astroTime("sunset", offsetMinutes = 0)',
     description: "Time of an astro event today: sunrise, sunset, dawn, dusk, solarNoon, nauticalDawn, nauticalDusk, goldenHour, goldenHourEnd, night, nightEnd"
   },
+  elapsed: {
+    signature: "elapsed(sec)",
+    description: "Time since the state was entered (for transitions: the source state), in sec (default), msec or min"
+  },
+  duration: {
+    signature: "duration(condition, sec)",
+    description: "Time the condition has been true without interruption, measured on the wakeups, in sec (default), msec or min. Does not wake up the chart, see after(n, unit, condition)"
+  },
   hasChanged: {
     signature: "hasChanged(variable)",
     description: "true if the value of the variable at the start of this wakeup differs from the value at the start of the previous wakeup"

@@ -6,10 +6,10 @@ import type { SunTimes } from "suncalc";
 import { createActor, createMachine } from "xstate";
 import type { AnyActor, AnyStateMachine } from "xstate";
 import { isTimeBetween } from "./chart-helpers";
-import { MAX_SUPER_STEPS, parseTransitionLabel } from "./chart-model";
-import type { Chart, ChartState, ChartSymbol, ChartTransition } from "./chart-model";
+import { MAX_SUPER_STEPS, TIME_UNITS, parseTransitionLabel } from "./chart-model";
+import type { Chart, ChartState, ChartSymbol, ChartTransition, TemporalExpression } from "./chart-model";
 import { ChartStructure } from "./chart-structure";
-import { getDeclarations, quoteChangeArguments, validateChart } from "./chart-validation";
+import { getDeclarations, prepareHelperCalls, validateChart } from "./chart-validation";
 import type { CodeKind } from "./chart-validation";
 
 /** Maximum run time of a single condition or action */
@@ -35,6 +35,10 @@ export interface PersistedChart {
     entered: Record<string, number>;
     /** Values of the local variables */
     locals: Record<string, any>;
+    /** Wakeups by each input since each active state was entered, by state (missing in older versions) */
+    counts?: Record<string, Record<string, number>>;
+    /** Since when the condition of each after(n, unit, condition) is true, by transition (missing in older versions) */
+    trueSince?: Record<string, number>;
 }
 
 /**
@@ -139,18 +143,29 @@ interface CheckedTransition {
     to: string;
     /** Name of the input which must have caused the wakeup */
     event?: string;
-    /** Temporal transition: only valid this long after entering the source state */
-    afterMs?: number;
+    /** Temporal transition, e.g. after(5, sec) */
+    temporal?: TemporalExpression;
+    /** The condition of after(n, unit, condition) */
+    temporalCondition: vm.Script | null;
     condition: vm.Script | null;
+}
+
+/** A timer which may be re-armed, see ChartRuntime.scheduleAt() */
+interface Timer {
+    handle?: NodeJS.Timeout;
 }
 
 /**
  * Executes a single chart with XState.
  *
- * Wakeup semantics like Stateflow: every change of an input wakes up the chart once, as well as every
- * expiring after(...) of an active state. Transitions with event are only checked when that input changed,
- * all others on every wakeup. A temporal transition after(n, unit) is valid from n units after entering its
- * source state on, so its condition is checked again on every following wakeup.
+ * Wakeup semantics like Stateflow: every change of an input wakes up the chart once, as well as the timers of
+ * the temporal transitions of the active states. Transitions with event are only checked when that input changed,
+ * all others on every wakeup. Temporal transitions, measured from entering their source state:
+ * - after(n, unit) is valid from n units on, so its condition is checked again on every following wakeup
+ * - before(n, unit) is valid during the first n units, it has no timer
+ * - at(n, unit) and every(n, unit) are only valid in the wakeup of their timer
+ * - op(n, input) counts the wakeups by the input instead of the time, and is only valid in those wakeups
+ * - after(n, unit, condition) is valid when the condition is true for n units, measured on the wakeups
  *
  * Starting with the active top level state, each active state is processed like this:
  * 1. its outer transitions, 2. its "during" action, 3. its inner transitions (to its own children),
@@ -184,9 +199,23 @@ export class ChartRuntime {
     /** how often each state was entered, to notice that a parallel state was left and entered again */
     readonly entryCount = new Map<string, number>();
     /** timers of the temporal transitions by state */
-    readonly timers = new Map<string, { handle?: NodeJS.Timeout }[]>();
-    /** temporal transitions whose time has come */
+    readonly timers = new Map<string, Timer[]>();
+    /** after(n, unit) transitions whose time has come */
     readonly expired = new Set<string>();
+    /** at() and every() transitions whose timer caused the current wakeup */
+    readonly firedTimers = new Set<string>();
+    /** wakeups by each input since each active state was entered, by state */
+    readonly inputCounts = new Map<string, Map<string, number>>();
+    /** since when the condition of each after(n, unit, condition) of the active states is true, by transition */
+    readonly trueSince = new Map<string, number>();
+    /** timers of after(n, unit, condition), by transition */
+    readonly durationTimers = new Map<string, Timer>();
+    /** for duration(): since when the value of each call is true, by call and state */
+    readonly durationCalls = new Map<string, { since: number; state: string | null }>();
+    /** number of duration() calls found in the code, to give each of them an ID */
+    durationCallCount = 0;
+    /** the state whose condition or action is executed, used by elapsed() and duration() */
+    context: string | null = null;
     /** timers of inputs with debounce, by variable name */
     readonly debounceTimers = new Map<string, NodeJS.Timeout>();
     /** JSON of the last persisted data, to persist only changes */
@@ -221,7 +250,8 @@ export class ChartRuntime {
     ) {
         this.structure = new ChartStructure(chart);
         this.statesById = this.structure.statesById;
-        this.sandbox = vm.createContext(this.createHelpers());
+        // the time units can be used in the helpers, e.g. elapsed(min)
+        this.sandbox = vm.createContext({ ...this.createHelpers(), ...TIME_UNITS });
         this.hash = getChartHash(chart);
         this.prepareAllCode();
     }
@@ -238,6 +268,7 @@ export class ChartRuntime {
         for (const transition of this.chart.transitions) {
             try {
                 const label = parseTransitionLabel(transition.label);
+                this.prepareCode(label.temporal?.condition, "expression");
                 this.prepareCode(label.condition, "expression");
                 this.prepareCode(label.action, "statements");
             } catch {
@@ -252,7 +283,8 @@ export class ChartRuntime {
     /**
      * @param code A condition, action or function block
      * @param kind Expression or statements
-     * @returns the code with the names of the variables in hasChanged() etc., see quoteChangeArguments()
+     * @returns the code with the names of the variables in hasChanged() etc. and the IDs of the duration() calls,
+     * see prepareHelperCalls()
      */
     prepareCode(code: string | undefined, kind: CodeKind): string {
         if (!code) {
@@ -261,7 +293,7 @@ export class ChartRuntime {
         const key = `${kind}:${code}`;
         let prepared = this.preparedCode.get(key);
         if (prepared === undefined) {
-            const quoted = quoteChangeArguments(code, kind);
+            const quoted = prepareHelperCalls(code, kind, () => `d${++this.durationCallCount}`);
             prepared = quoted.code;
             for (const name of quoted.names) {
                 this.changeVariables.add(name);
@@ -360,6 +392,14 @@ export class ChartRuntime {
         this.publishActiveStates(this.actor.getSnapshot().value);
         for (const id of this.activeIds) {
             this.enteredAt.set(id, persisted.entered[id] ?? this.now());
+            this.inputCounts.set(id, new Map(Object.entries(persisted.counts?.[id] ?? {})));
+            for (const transition of this.temporalTransitions.get(id) || []) {
+                const since = persisted.trueSince?.[transition.id];
+                if (since !== undefined) {
+                    // the timer is started when the condition is checked on the wakeup after the start
+                    this.trueSince.set(transition.id, since);
+                }
+            }
             this.startTimers(id);
         }
     }
@@ -389,7 +429,13 @@ export class ChartRuntime {
             this.host.log.info(`[${this.chart.name}] The chart was changed, starting in the initial state`);
             return null;
         }
-        return { ...persisted, entered: persisted.entered || {}, locals: persisted.locals || {} };
+        return {
+            ...persisted,
+            entered: persisted.entered || {},
+            locals: persisted.locals || {},
+            counts: persisted.counts || {},
+            trueSince: persisted.trueSince || {},
+        };
     }
 
     /**
@@ -407,6 +453,12 @@ export class ChartRuntime {
             locals: Object.fromEntries(
                 this.chart.symbols.filter(s => s.scope === "local").map(s => [s.name, this.sandbox[s.name]]),
             ),
+            counts: Object.fromEntries(
+                [...this.inputCounts]
+                    .filter(([, counts]) => counts.size)
+                    .map(([id, counts]) => [id, Object.fromEntries(counts)]),
+            ),
+            trueSince: Object.fromEntries(this.trueSince),
         };
         let json;
         try {
@@ -429,6 +481,7 @@ export class ChartRuntime {
     onEnter(id: string): void {
         this.enteredAt.set(id, this.now());
         this.entryCount.set(id, (this.entryCount.get(id) ?? 0) + 1);
+        this.inputCounts.set(id, new Map());
         this.startTimers(id);
     }
 
@@ -443,9 +496,49 @@ export class ChartRuntime {
             clearTimeout(timer.handle);
         }
         this.timers.delete(id);
+        this.inputCounts.delete(id);
         for (const transition of this.temporalTransitions.get(id) || []) {
             this.expired.delete(transition.id);
+            this.stopDuration(transition.id);
         }
+        // duration() starts again when the state is entered again
+        for (const [key, call] of this.durationCalls) {
+            if (call.state === id) {
+                this.durationCalls.delete(key);
+            }
+        }
+    }
+
+    /**
+     * Stops measuring how long the condition of an after(n, unit, condition) is true
+     *
+     * @param id ID of the transition
+     */
+    stopDuration(id: string): void {
+        this.trueSince.delete(id);
+        clearTimeout(this.durationTimers.get(id)?.handle);
+        this.durationTimers.delete(id);
+    }
+
+    /**
+     * Calls the callback at the given time, also after delays which are too long for setTimeout()
+     *
+     * @param due The time (ms since 1970), the callback is called right away if it has passed
+     * @param timer Gets the handle of the timeout, to clear it
+     * @param callback Called at the time
+     */
+    scheduleAt(due: number, timer: Timer, callback: () => void): void {
+        const remaining = due - this.now();
+        timer.handle = setTimeout(
+            () => {
+                if (remaining > MAX_TIMEOUT_MS && due - this.now() > 0) {
+                    this.scheduleAt(due, timer, callback);
+                } else {
+                    callback();
+                }
+            },
+            Math.min(Math.max(remaining, 0), MAX_TIMEOUT_MS),
+        );
     }
 
     /**
@@ -455,28 +548,41 @@ export class ChartRuntime {
      */
     startTimers(id: string): void {
         const entered = this.enteredAt.get(id) ?? this.now();
-        const timers: { handle?: NodeJS.Timeout }[] = [];
-        for (const transition of this.temporalTransitions.get(id) || []) {
-            const timer: { handle?: NodeJS.Timeout } = {};
-            const due = entered + (transition.afterMs as number);
-            const wait = (): void => {
-                const remaining = due - this.now();
-                timer.handle = setTimeout(
-                    () => {
-                        if (due - this.now() > 0 && remaining > MAX_TIMEOUT_MS) {
-                            wait();
-                            return;
-                        }
-                        this.expired.add(transition.id);
-                        this.wakeup(null);
-                    },
-                    Math.min(Math.max(remaining, 0), MAX_TIMEOUT_MS),
-                );
-            };
-            wait();
-            timers.push(timer);
-        }
+        const timers: Timer[] = [];
         this.timers.set(id, timers);
+        for (const transition of this.temporalTransitions.get(id) || []) {
+            const { operator, ms, condition } = transition.temporal as TemporalExpression;
+            // before() needs no timer, counting expressions wait for their input, and the timer of
+            // after(n, unit, condition) starts when the condition is true
+            if (ms === undefined || operator === "before" || condition !== undefined) {
+                continue;
+            }
+            const timer: Timer = {};
+            timers.push(timer);
+            const fire = (due: number): void => {
+                if (operator === "after") {
+                    this.expired.add(transition.id);
+                    this.wakeup(null);
+                    return;
+                }
+                this.firedTimers.add(transition.id);
+                try {
+                    this.wakeup(null);
+                } finally {
+                    this.firedTimers.delete(transition.id);
+                }
+                // unless the wakeup left the state
+                if (operator === "every" && this.timers.get(id)?.includes(timer)) {
+                    this.scheduleAt(due + ms, timer, () => fire(due + ms));
+                }
+            };
+            let due = entered + ms;
+            if (operator === "every" && due < this.now()) {
+                // after a restart: the next time in the rhythm, the times missed while the adapter was stopped are skipped
+                due = entered + Math.ceil((this.now() - entered) / ms) * ms;
+            }
+            this.scheduleAt(due, timer, () => fire(due));
+        }
     }
 
     /**
@@ -513,6 +619,10 @@ export class ChartRuntime {
         }
         this.timers.clear();
         this.expired.clear();
+        for (const timer of this.durationTimers.values()) {
+            clearTimeout(timer.handle);
+        }
+        this.durationTimers.clear();
         for (const timer of this.debounceTimers.values()) {
             clearTimeout(timer);
         }
@@ -581,6 +691,24 @@ export class ChartRuntime {
                     );
                 }
                 return new Date(time.getTime() + (Number(offsetMinutes) || 0) * 60_000);
+            },
+            elapsed: (unit = TIME_UNITS.sec) => {
+                const entered = this.context === null ? undefined : this.enteredAt.get(this.context);
+                if (entered === undefined) {
+                    throw new Error("elapsed() can only be used in conditions and in the actions of states");
+                }
+                return (this.now() - entered) / unit;
+            },
+            // the ID of the call is added by prepareHelperCalls()
+            duration: (call: string, value: any, unit = TIME_UNITS.sec) => {
+                const key = `${call}@${this.context}`;
+                if (!value) {
+                    this.durationCalls.delete(key);
+                    return 0;
+                }
+                const since = this.durationCalls.get(key)?.since ?? this.now();
+                this.durationCalls.set(key, { since, state: this.context });
+                return (this.now() - since) / unit;
             },
             hasChanged: (name: string) => this.getChange(name, "hasChanged").changed,
             hasChangedFrom: (name: string, value: any) => {
@@ -669,6 +797,15 @@ export class ChartRuntime {
         this.wakeupCause = cause;
         this.wakeupInput = input;
         this.rememberValues();
+        if (input !== null) {
+            for (const [id, counts] of this.inputCounts) {
+                // only the inputs counted by the state, so other wakeups do not change the persisted data
+                if (this.temporalTransitions.get(id)?.some(t => t.temporal?.event === input)) {
+                    counts.set(input, (counts.get(input) ?? 0) + 1);
+                }
+            }
+        }
+        this.updateDurations();
         if (!this.chart.superStep) {
             this.step(input);
         } else {
@@ -686,10 +823,41 @@ export class ChartRuntime {
                 );
             }
         }
+        // the states entered by this wakeup start measuring their after(n, unit, condition)
+        this.updateDurations();
         // functions called in conditions may have changed outputs as well
         this.writeChangedOutputs();
         this.persist();
         this.publishLive();
+    }
+
+    /**
+     * Checks the conditions of after(n, unit, condition) of the active states, and starts a timer which wakes up the
+     * chart when a condition has been true for the time
+     */
+    updateDurations(): void {
+        for (const id of this.activeIds) {
+            for (const transition of this.temporalTransitions.get(id) || []) {
+                const temporal = transition.temporal as TemporalExpression;
+                if (temporal.condition === undefined) {
+                    continue;
+                }
+                if (!this.run(transition.temporalCondition, `${transition.where}/after condition`, id)) {
+                    this.stopDuration(transition.id);
+                    continue;
+                }
+                const since = this.trueSince.get(transition.id) ?? this.now();
+                this.trueSince.set(transition.id, since);
+                if (!this.durationTimers.has(transition.id)) {
+                    const timer: Timer = {};
+                    this.durationTimers.set(transition.id, timer);
+                    this.scheduleAt(since + (temporal.ms as number), timer, () => {
+                        this.durationTimers.delete(transition.id);
+                        this.wakeup(null);
+                    });
+                }
+            }
+        }
     }
 
     /**
@@ -789,7 +957,7 @@ export class ChartRuntime {
         }
         const state = this.statesById.get(id);
         if (state?.during) {
-            this.runAction(state.during, `${state.name}/during`);
+            this.runAction(state.during, `${state.name}/during`, id);
         }
         if (this.takeFirstValid(this.innerTransitions.get(id), input)) {
             return true;
@@ -844,13 +1012,13 @@ export class ChartRuntime {
      */
     takeFirstValid(transitions: CheckedTransition[] | undefined, input: string | null): boolean {
         for (const transition of transitions || []) {
-            if (transition.event && transition.event !== input) {
+            if (!this.isTriggered(transition, input)) {
                 continue;
             }
-            if (transition.afterMs !== undefined && !this.isExpired(transition)) {
-                continue;
-            }
-            if (transition.condition && !this.run(transition.condition, `${transition.where}/condition`)) {
+            if (
+                transition.condition &&
+                !this.run(transition.condition, `${transition.where}/condition`, transition.source)
+            ) {
                 continue;
             }
             this.actor?.send({ type: `T.${transition.id}` });
@@ -872,15 +1040,51 @@ export class ChartRuntime {
     }
 
     /**
-     * @param transition A temporal transition
-     * @returns true if its source state is active for at least its delay
+     * @param transition The transition
+     * @param input Name of the input which caused the wakeup, null for timers
+     * @returns true if its event and its temporal expression allow it in this wakeup (the condition is not checked)
      */
-    isExpired(transition: CheckedTransition): boolean {
-        if (this.expired.has(transition.id)) {
+    isTriggered(transition: CheckedTransition, input: string | null): boolean {
+        if (transition.event && transition.event !== input) {
+            return false;
+        }
+        const temporal = transition.temporal;
+        if (!temporal) {
             return true;
         }
+        if (temporal.event !== undefined) {
+            if (temporal.event !== input) {
+                return false;
+            }
+            const count = this.inputCounts.get(transition.source)?.get(temporal.event) ?? 0;
+            const n = temporal.count as number;
+            switch (temporal.operator) {
+                case "after":
+                    return count >= n;
+                case "before":
+                    return count < n;
+                case "at":
+                    return count === n;
+                case "every":
+                    return count % n === 0;
+            }
+        }
+        const ms = temporal.ms as number;
+        if (temporal.condition !== undefined) {
+            const since = this.trueSince.get(transition.id);
+            return since !== undefined && this.now() - since >= ms;
+        }
         const entered = this.enteredAt.get(transition.source);
-        return entered !== undefined && this.now() - entered >= (transition.afterMs as number);
+        switch (temporal.operator) {
+            case "after":
+                // the timer may fire a bit early, or not at all while the adapter was stopped
+                return this.expired.has(transition.id) || (entered !== undefined && this.now() - entered >= ms);
+            case "before":
+                return entered !== undefined && this.now() - entered < ms;
+            default:
+                // at() and every()
+                return this.firedTimers.has(transition.id);
+        }
     }
 
     buildMachineConfig(): any {
@@ -891,10 +1095,10 @@ export class ChartRuntime {
                 id: state.id,
                 entry: [
                     () => this.onEnter(state.id),
-                    ...(state.entry ? [() => this.runAction(state.entry, `${state.name}/entry`)] : []),
+                    ...(state.entry ? [() => this.runAction(state.entry, `${state.name}/entry`, state.id)] : []),
                 ],
                 exit: [
-                    ...(state.exit ? [() => this.runAction(state.exit, `${state.name}/exit`)] : []),
+                    ...(state.exit ? [() => this.runAction(state.exit, `${state.name}/exit`, state.id)] : []),
                     () => this.onExit(state.id),
                 ],
                 on: {},
@@ -915,7 +1119,7 @@ export class ChartRuntime {
             this.innerTransitions.set(state.id, inner);
             this.temporalTransitions.set(
                 state.id,
-                [...outer, ...inner].filter(t => t.afterMs !== undefined),
+                [...outer, ...inner].filter(t => t.temporal !== undefined),
             );
 
             const subStates = structure.getChildren(state.id);
@@ -972,11 +1176,14 @@ export class ChartRuntime {
         const condition = label.condition
             ? this.compile(`(${this.prepareCode(label.condition, "expression")})`, `${where}/condition`)
             : null;
+        const temporalCondition = label.temporal?.condition
+            ? this.compile(`(${this.prepareCode(label.temporal.condition, "expression")})`, `${where}/after condition`)
+            : null;
         const { inner, reenter } = this.structure.getTransitionKind(transition);
         const config = {
             target: `#${target.id}`,
             reenter,
-            actions: label.action ? [() => this.runAction(label.action, `${where}/action`)] : [],
+            actions: label.action ? [() => this.runAction(label.action, `${where}/action`, source.id)] : [],
         };
         return {
             inner,
@@ -988,7 +1195,8 @@ export class ChartRuntime {
                 from: source.name,
                 to: target.name,
                 event: label.event,
-                afterMs: label.afterMs,
+                temporal: label.temporal,
+                temporalCondition,
                 condition,
             },
         };
@@ -1010,16 +1218,21 @@ export class ChartRuntime {
     /**
      * @param script The compiled code
      * @param where Used in error messages
+     * @param context The state whose condition or action it is, for elapsed() and duration()
      */
-    run(script: vm.Script | null, where: string): any {
+    run(script: vm.Script | null, where: string, context: string | null = this.context): any {
         if (!script) {
             return undefined;
         }
+        const previous = this.context;
+        this.context = context;
         try {
             return script.runInContext(this.sandbox, { timeout: SCRIPT_TIMEOUT_MS });
         } catch (err) {
             this.host.log.warn(`[${this.chart.name}] ${where}: ${err.message}`);
             return undefined;
+        } finally {
+            this.context = previous;
         }
     }
 
@@ -1028,10 +1241,11 @@ export class ChartRuntime {
      *
      * @param code The action
      * @param where Used in error messages
+     * @param context The state whose action it is (the source state for transition actions)
      */
-    runAction(code: string | undefined, where: string): void {
+    runAction(code: string | undefined, where: string, context: string): void {
         // the block keeps "let" and "const" declarations local to this action
-        this.run(this.compile(`{\n${this.prepareCode(code, "statements")}\n}`, where), where);
+        this.run(this.compile(`{\n${this.prepareCode(code, "statements")}\n}`, where), where, context);
         this.writeChangedOutputs();
     }
 

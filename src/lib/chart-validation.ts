@@ -6,7 +6,7 @@
 import * as acorn from "acorn";
 import * as walk from "acorn-walk";
 import { CHANGE_HELPERS, HELPERS } from "./chart-helpers";
-import { LabelSyntaxError, formatMessage, parseTransitionLabelWithRanges } from "./chart-model";
+import { LabelSyntaxError, TIME_UNITS, formatMessage, parseTransitionLabelWithRanges } from "./chart-model";
 import type { Chart, ChartSymbol } from "./chart-model";
 import { ChartStructure } from "./chart-structure";
 
@@ -14,6 +14,8 @@ import { ChartStructure } from "./chart-structure";
 export const GLOBALS = new Set([
     // the helper functions, e.g. log() and setState()
     ...Object.keys(HELPERS),
+    // the time units, e.g. elapsed(min)
+    ...Object.keys(TIME_UNITS),
     "undefined",
     "NaN",
     "Infinity",
@@ -212,7 +214,8 @@ export function validateTransitionLabel(
     const { label: parts, ranges } = parsed;
 
     const diagnostics: Diagnostic[] = [];
-    if (parts.event && ranges.event && !symbols.some(s => s.scope === "input" && s.name === parts.event)) {
+    const isInput = (name: string): boolean => symbols.some(s => s.scope === "input" && s.name === name);
+    if (parts.event && ranges.event && !isInput(parts.event)) {
         diagnostics.push(
             createDiagnostic(
                 ranges.event.from,
@@ -221,6 +224,23 @@ export function validateTransitionLabel(
                 'Unknown event "%s", use the name of an input',
                 [parts.event],
             ),
+        );
+    }
+    const temporal = parts.temporal;
+    if (temporal?.event && ranges.temporalEvent && !isInput(temporal.event)) {
+        diagnostics.push(
+            createDiagnostic(
+                ranges.temporalEvent.from,
+                ranges.temporalEvent.to,
+                "error",
+                'Unknown input "%s", use a time unit (msec, sec, min) or the name of an input',
+                [temporal.event],
+            ),
+        );
+    }
+    if (temporal?.condition && ranges.temporalCondition) {
+        diagnostics.push(
+            ...validateCode(temporal.condition, "expression", symbols, ranges.temporalCondition.from, functionNames),
         );
     }
     if (parts.condition && ranges.condition) {
@@ -289,37 +309,52 @@ export function getFunctionNames(chart: Chart): string[] {
 }
 
 /**
- * Replaces the variable in the first argument of hasChanged(), hasChangedFrom() and hasChangedTo() by its name
- * in quotes: these helpers need the name of the variable, not its value
+ * Prepares the calls of helpers which need more than the values of their arguments:
+ * - hasChanged(), hasChangedFrom() and hasChangedTo() need the name of the variable in their first argument,
+ *   it is replaced by the name in quotes
+ * - duration() measures each call on its own, an ID of the call is added as first argument
  *
  * @param code The code
  * @param kind Expression or statements
+ * @param createCallId Creates the ID of a duration() call
  * @returns the changed code and the names of the variables, the unchanged code if it has syntax errors
  */
-export function quoteChangeArguments(code: string, kind: CodeKind): { code: string; names: string[] } {
+export function prepareHelperCalls(
+    code: string,
+    kind: CodeKind,
+    createCallId: () => string,
+): { code: string; names: string[] } {
     const parsed = code.trim() ? parseCode(code, kind) : null;
     if (!parsed || "diagnostic" in parsed) {
         return { code, names: [] };
     }
     const names = new Set<string>();
-    const replacements: acorn.Identifier[] = [];
+    /** the text replacing the code from start to end */
+    const replacements: { start: number; end: number; text: string }[] = [];
     walk.simple(parsed.ast, {
         CallExpression(node) {
-            const arg = node.arguments[0];
-            if (node.callee.type !== "Identifier" || !CHANGE_HELPERS.has(node.callee.name)) {
+            if (node.callee.type !== "Identifier") {
                 return;
             }
-            if (arg?.type === "Identifier") {
-                replacements.push(arg);
-                names.add(arg.name);
-            } else if (arg?.type === "Literal" && typeof arg.value === "string") {
-                names.add(arg.value);
+            const arg = node.arguments[0];
+            if (node.callee.name === "duration") {
+                // after the opening bracket
+                const at = code.indexOf("(", node.callee.end) + 1;
+                const id = JSON.stringify(createCallId());
+                replacements.push({ start: at, end: at, text: node.arguments.length ? `${id}, ` : id });
+            } else if (CHANGE_HELPERS.has(node.callee.name)) {
+                if (arg?.type === "Identifier") {
+                    replacements.push({ start: arg.start, end: arg.end, text: JSON.stringify(arg.name) });
+                    names.add(arg.name);
+                } else if (arg?.type === "Literal" && typeof arg.value === "string") {
+                    names.add(arg.value);
+                }
             }
         },
     });
     let result = code;
-    for (const { start, end, name } of replacements.sort((a, b) => b.start - a.start)) {
-        result = result.substring(0, start) + JSON.stringify(name) + result.substring(end);
+    for (const { start, end, text } of replacements.sort((a, b) => b.start - a.start)) {
+        result = result.substring(0, start) + text + result.substring(end);
     }
     return { code: result, names: [...names] };
 }

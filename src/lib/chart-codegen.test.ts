@@ -47,7 +47,7 @@ describe("chart-codegen => generateChartCode", () => {
         expect(code).to.include('id: "chart_heating"');
         expect(code).to.include('initial: "heat"');
         // temporal transitions are checked like the others, valid from the moment their time has come
-        expect(code).to.include('if (elapsed("manualState") >= 300000 && (!manual)) {');
+        expect(code).to.include('if (timeInState("manualState") >= 300000 && (!manual)) {');
         expect(code).to.include('"T.toAuto": { target: "#auto" }');
         expect(code).not.to.include("after: {");
     });
@@ -89,6 +89,26 @@ describe("chart-codegen => generateChartCode", () => {
         expect(code).to.include("for (let steps = 0; steps < 100 && step(input); steps++) {\n        input = null;\n");
         // the generated code is valid JavaScript
         acorn.parse(code, { ecmaVersion: "latest" });
+    });
+
+    it("shows the temporal logic", () => {
+        const chart = createChart();
+        chart.transitions = [
+            { id: "a", source: "idle", target: "heat", label: "before(5, sec)" },
+            { id: "b", source: "idle", target: "heat", label: "at(5, sec)" },
+            { id: "c", source: "idle", target: "heat", label: "every(1, min)[temp < 20]" },
+            { id: "d", source: "idle", target: "heat", label: "after(3, manual)" },
+            { id: "e", source: "idle", target: "heat", label: "every(2, manual)" },
+            { id: "f", source: "heat", target: "idle", label: "after(5, min, temp > 22)" },
+        ];
+        const code = generateChartCode(chart, "heating");
+        acorn.parse(code, { ecmaVersion: "latest" });
+        expect(code).to.include('if (timeInState("idle") < 5000) {');
+        expect(code).to.include('if (timerFired("b")) {');
+        expect(code).to.include('if (timerFired("c") && (temp < 20)) {');
+        expect(code).to.include('if (input === "manual" && inputCount("idle", "manual") >= 3) {');
+        expect(code).to.include('if (input === "manual" && inputCount("idle", "manual") % 2 === 0) {');
+        expect(code).to.include('if (trueFor("f") >= 300000) {');
     });
 
     it("shows parallel states", () => {

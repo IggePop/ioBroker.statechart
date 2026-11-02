@@ -538,6 +538,175 @@ describe("chart-runtime => temporal transitions and restoring after a restart", 
     });
 });
 
+describe("chart-runtime => temporal logic", () => {
+    let runtime: ChartRuntime | undefined;
+    afterEach(() => runtime?.stop());
+
+    /**
+     * The light chart with other transitions Off -> On and On -> Off, and a second input "other"
+     *
+     * @param labels Labels of the transitions Off -> On and On -> Off
+     * @param prepare Changes the chart before the start
+     */
+    async function start(
+        labels: [string, string],
+        prepare?: (chart: Chart) => void,
+    ): Promise<ReturnType<typeof createHost>> {
+        const chart = createLightChart();
+        chart.symbols.push({ name: "other", scope: "input", stateId: "test.0.other" });
+        chart.transitions = [
+            { id: "t1", source: "off", target: "on", label: labels[0] },
+            { id: "t2", source: "on", target: "off", label: labels[1] },
+        ];
+        prepare?.(chart);
+        const host = createHost({ "test.0.motion": false, "test.0.other": 0 });
+        // some tests start a second chart
+        runtime?.stop();
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        return host;
+    }
+
+    it("before(n, unit) is only valid during the first n units", async () => {
+        const host = await start(["before(40, msec)[motion]", ""]);
+        runtime?.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("On");
+
+        const late = await start(["before(40, msec)[motion]", ""]);
+        await wait(60);
+        runtime?.handleInput("test.0.motion", true);
+        expect(late.active.at(-1)).to.equal("Off");
+    });
+
+    it("at(n, unit) is only valid in the wakeup of its timer", async () => {
+        const host = await start(["at(30, msec)[motion]", ""]);
+        runtime?.handleInput("test.0.motion", true);
+        // before the time
+        expect(host.active.at(-1)).to.equal("Off");
+        await wait(60);
+        expect(host.active.at(-1)).to.equal("On");
+
+        const missed = await start(["at(30, msec)[motion]", ""]);
+        await wait(60);
+        // after the time, unlike after(...)
+        runtime?.handleInput("test.0.motion", true);
+        expect(missed.active.at(-1)).to.equal("Off");
+    });
+
+    it("every(n, unit) is valid in the wakeup of each period", async () => {
+        const host = await start(["every(30, msec)[count >= 2]", ""], chart => {
+            chart.states[0].during = "count++;";
+        });
+        // the during action counts the wakeups: after the start, then on every period
+        await wait(45);
+        expect(runtime?.sandbox.count).to.equal(2);
+        expect(host.active.at(-1)).to.equal("Off");
+        await wait(60);
+        expect(host.active.at(-1)).to.equal("On");
+    });
+
+    it("counts the wakeups by an input since entering the state", async () => {
+        const host = await start(["after(3, motion)", "at(2, motion)"]);
+        runtime?.handleInput("test.0.motion", true);
+        runtime?.handleInput("test.0.other", 1);
+        runtime?.handleInput("test.0.motion", false);
+        expect(host.active.at(-1)).to.equal("Off");
+        runtime?.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("On");
+        // counting starts again in On, the wakeup which entered it does not count
+        runtime?.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("On");
+        runtime?.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("Off");
+    });
+
+    it("every(n, input) and before(n, input)", async () => {
+        const host = await start(["every(2, motion)", "before(2, other)"]);
+        runtime?.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("Off");
+        runtime?.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("On");
+        runtime?.handleInput("test.0.other", 1);
+        expect(host.active.at(-1)).to.equal("Off");
+    });
+
+    it("after(n, unit, condition) waits until the condition is true for the time", async () => {
+        const host = await start(["motion", "after(50, msec, !motion)"]);
+        runtime?.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("On");
+        runtime?.handleInput("test.0.motion", false);
+        await wait(30);
+        // motion again: the time starts again
+        runtime?.handleInput("test.0.motion", true);
+        runtime?.handleInput("test.0.motion", false);
+        await wait(30);
+        expect(host.active.at(-1)).to.equal("On");
+        // the timer wakes up the chart, without another input
+        await wait(50);
+        expect(host.active.at(-1)).to.equal("Off");
+    });
+
+    it("measures after(n, unit, condition) from entering the state", async () => {
+        const host = await start(["motion", "after(40, msec, true)"]);
+        runtime?.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("On");
+        await wait(70);
+        expect(host.active.at(-1)).to.equal("Off");
+    });
+
+    it("provides elapsed() and duration() in conditions and actions", async () => {
+        const host = await start(["other[elapsed(msec) >= 40]", ""], chart => {
+            chart.symbols.push({ name: "measured", scope: "local", initial: 0 });
+            chart.states[0].during = "measured = duration(motion, msec);";
+        });
+        runtime?.handleInput("test.0.other", 1);
+        expect(host.active.at(-1)).to.equal("Off");
+        runtime?.handleInput("test.0.motion", true);
+        expect(runtime?.sandbox.measured).to.equal(0);
+        await wait(50);
+        runtime?.handleInput("test.0.motion", true);
+        expect(runtime?.sandbox.measured).to.be.at.least(40);
+        runtime?.handleInput("test.0.other", 2);
+        expect(host.active.at(-1)).to.equal("On");
+    });
+
+    it("uses min as unit in elapsed() and reports elapsed() outside of states", async () => {
+        const host = await start(["other[elapsed(min) < 1]", ""], chart => {
+            chart.functions = [{ id: "f", x: 0, y: 0, code: "const startedAt = elapsed();" }];
+        });
+        expect(host.warnings.join(" ")).to.include("elapsed() can only be used in conditions and in the actions");
+        runtime?.handleInput("test.0.other", 1);
+        expect(host.active.at(-1)).to.equal("On");
+    });
+
+    it("restores the counts and the time of after(n, unit, condition) after a restart", async () => {
+        const host = createHost({ "test.0.motion": false, "test.0.other": 0 });
+        const chart = createLightChart();
+        chart.symbols.push({ name: "other", scope: "input", stateId: "test.0.other" });
+        chart.transitions = [
+            { id: "t1", source: "off", target: "on", label: "after(2, other)" },
+            { id: "t2", source: "on", target: "off", label: "after(60, msec, !motion)" },
+        ];
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        runtime.handleInput("test.0.other", 1);
+        runtime.stop();
+
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start({ restore: true });
+        runtime.handleInput("test.0.other", 2);
+        expect(host.active.at(-1)).to.equal("On");
+        await wait(30);
+        runtime.stop();
+
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start({ restore: true });
+        // the 60 ms started before the restart
+        await wait(45);
+        expect(host.active.at(-1)).to.equal("Off");
+    });
+});
+
 describe("chart-runtime => helper functions", () => {
     let runtime: ChartRuntime | undefined;
     afterEach(() => runtime?.stop());

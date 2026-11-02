@@ -177,18 +177,45 @@ export interface Chart {
     comment?: string;
 }
 
+/** Temporal logic operators, like in Stateflow */
+export type TemporalOperator = "after" | "before" | "at" | "every";
+
+export const TEMPORAL_OPERATORS: TemporalOperator[] = ["after", "before", "at", "every"];
+
+/**
+ * A temporal expression in the trigger part of a transition label, measured from entering the source state:
+ * - after(n, unit): from n units on
+ * - before(n, unit): only during the first n units
+ * - at(n, unit): exactly once, after n units
+ * - every(n, unit): every n units
+ * - op(n, input): the same, counting the wakeups by the input instead of the time
+ * - after(n, unit, condition): as soon as the condition is true for n units without interruption
+ */
+export interface TemporalExpression {
+    operator: TemporalOperator;
+    /** Time based: the time in milliseconds */
+    ms?: number;
+    /** Counting: the number of wakeups by the input */
+    count?: number;
+    /** Counting: name of the input whose wakeups are counted */
+    event?: string;
+    /** after(n, unit, condition): the JavaScript expression which must be true for the time */
+    condition?: string;
+}
+
 export interface TransitionLabel {
     /** Name of the triggering event (an input symbol), undefined = any wakeup */
     event?: string;
-    /** Delay of a temporal transition after(n, unit) in milliseconds */
-    afterMs?: number;
+    /** Temporal transition, e.g. after(5, sec) */
+    temporal?: TemporalExpression;
     /** Guard expression */
     condition?: string;
     /** Transition action */
     action?: string;
 }
 
-const TIME_UNITS: Record<string, number> = {
+/** Milliseconds of the time units, they can also be used in conditions and actions, e.g. elapsed(min) */
+export const TIME_UNITS: Record<string, number> = {
     msec: 1,
     sec: 1000,
     min: 60_000,
@@ -241,8 +268,12 @@ export interface TextRange {
 /** Positions of the parts in the label text */
 export interface TransitionLabelRanges {
     event?: TextRange;
-    /** The whole after(...) expression */
-    after?: TextRange;
+    /** The whole temporal expression, e.g. after(...) */
+    temporal?: TextRange;
+    /** The input of a counting temporal expression, e.g. button in after(3, button) */
+    temporalEvent?: TextRange;
+    /** The condition of after(n, unit, condition) */
+    temporalCondition?: TextRange;
     /** Content of [...] without the brackets */
     condition?: TextRange;
     /** Content of {...} without the brackets */
@@ -311,6 +342,97 @@ function readEnclosed(
     throw new LabelSyntaxError('Missing "%s"', [close], start, text.length);
 }
 
+/** Message for invalid temporal expressions */
+const INVALID_TEMPORAL =
+    'Invalid temporal expression "%s", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)';
+
+/**
+ * Splits the arguments of a call at the commas outside of brackets and strings
+ *
+ * @param text The label
+ * @param from Index after the opening bracket
+ * @param to Index of the closing bracket
+ * @returns the arguments with their position, trimmed
+ */
+function splitArguments(text: string, from: number, to: number): { text: string; from: number }[] {
+    const args: { text: string; from: number }[] = [];
+    let depth = 0;
+    let quote: string | null = null;
+    let start = from;
+    const push = (end: number): void => {
+        const raw = text.substring(start, end);
+        const trimmed = raw.trim();
+        args.push({ text: trimmed, from: start + raw.indexOf(trimmed) });
+    };
+    for (let i = from; i < to; i++) {
+        const c = text[i];
+        if (quote) {
+            if (c === "\\") {
+                i++;
+            } else if (c === quote) {
+                quote = null;
+            }
+        } else if (c === '"' || c === "'" || c === "`") {
+            quote = c;
+        } else if ("([{".includes(c)) {
+            depth++;
+        } else if (")]}".includes(c)) {
+            depth--;
+        } else if (c === "," && depth === 0) {
+            push(i);
+            start = i + 1;
+        }
+    }
+    push(to);
+    return args;
+}
+
+/**
+ * Parses the arguments of a temporal expression
+ *
+ * @param text The label
+ * @param operator The operator
+ * @param from Start of the expression (the operator)
+ * @param open Index of the opening bracket
+ * @param end Index after the closing bracket
+ * @returns the expression and the positions of its input and condition
+ * @throws {LabelSyntaxError}
+ */
+function parseTemporal(
+    text: string,
+    operator: TemporalOperator,
+    from: number,
+    open: number,
+    end: number,
+): { temporal: TemporalExpression; event?: TextRange; condition?: TextRange } {
+    const fail = (): never => {
+        throw new LabelSyntaxError(INVALID_TEMPORAL, [text.substring(from, end)], from, end);
+    };
+    const args = splitArguments(text, open + 1, end - 1);
+    const number = /^\d+(?:\.\d+)?$/.test(args[0]?.text) ? parseFloat(args[0].text) : fail();
+    const unit = args[1]?.text ?? "";
+    // every(0, sec) would never end
+    if (operator === "every" && number === 0) {
+        fail();
+    }
+    if (Object.hasOwn(TIME_UNITS, unit)) {
+        const temporal: TemporalExpression = { operator, ms: number * TIME_UNITS[unit] };
+        if (args.length === 3 && operator === "after" && args[2].text) {
+            temporal.condition = args[2].text;
+            return { temporal, condition: { from: args[2].from, to: args[2].from + args[2].text.length } };
+        }
+        return args.length === 2 ? { temporal } : fail();
+    }
+    // counting the wakeups by an input
+    if (args.length !== 2 || !/^[A-Za-z_$][\w$]*$/.test(unit) || !Number.isInteger(number) || number < 1) {
+        fail();
+    }
+    return {
+        temporal: { operator, count: number, event: unit },
+        event: { from: args[1].from, to: args[1].from + unit.length },
+    };
+}
+
 /**
  * Parses a transition label and returns where its parts are, see parseTransitionLabel
  *
@@ -340,19 +462,17 @@ export function parseTransitionLabelWithRanges(label: string | undefined): {
         const from = pos;
         pos += event[0].length;
         skipSpace();
-        if (event[0] === "after" && text[pos] === "(") {
-            const { content, end } = readEnclosed(text, pos, "(", ")");
-            const afterMatch = /^(\d+(?:\.\d+)?)\s*,\s*(msec|sec|min)$/.exec(content);
-            if (!afterMatch) {
-                throw new LabelSyntaxError(
-                    'Invalid temporal expression "%s", expected e.g. after(5, sec)',
-                    [`after(${content})`],
-                    from,
-                    end,
-                );
+        if (TEMPORAL_OPERATORS.includes(event[0] as TemporalOperator) && text[pos] === "(") {
+            const { end } = readEnclosed(text, pos, "(", ")");
+            const parsed = parseTemporal(text, event[0] as TemporalOperator, from, pos, end);
+            result.temporal = parsed.temporal;
+            ranges.temporal = { from, to: end };
+            if (parsed.event) {
+                ranges.temporalEvent = parsed.event;
             }
-            result.afterMs = parseFloat(afterMatch[1]) * TIME_UNITS[afterMatch[2]];
-            ranges.after = { from, to: end };
+            if (parsed.condition) {
+                ranges.temporalCondition = parsed.condition;
+            }
             pos = end;
         } else {
             result.event = event[0];
@@ -390,7 +510,8 @@ export function parseTransitionLabelWithRanges(label: string | undefined): {
 
 /**
  * Parses a transition label in Stateflow syntax: event[condition]{action}
- * All parts are optional. Instead of an event, after(n, sec|msec|min) creates a temporal transition.
+ * All parts are optional. Instead of an event, a temporal expression like after(n, sec|msec|min) creates a
+ * temporal transition, see TemporalExpression.
  *
  * @param label The label text
  * @throws {LabelSyntaxError}

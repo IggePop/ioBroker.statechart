@@ -31,7 +31,7 @@ __export(chart_validation_exports, {
   GLOBALS: () => GLOBALS,
   getDeclarations: () => getDeclarations,
   getFunctionNames: () => getFunctionNames,
-  quoteChangeArguments: () => quoteChangeArguments,
+  prepareHelperCalls: () => prepareHelperCalls,
   validateChart: () => validateChart,
   validateCode: () => validateCode,
   validateTransitionLabel: () => validateTransitionLabel
@@ -45,6 +45,8 @@ var import_chart_structure = require("./chart-structure");
 const GLOBALS = /* @__PURE__ */ new Set([
   // the helper functions, e.g. log() and setState()
   ...Object.keys(import_chart_helpers.HELPERS),
+  // the time units, e.g. elapsed(min)
+  ...Object.keys(import_chart_model.TIME_UNITS),
   "undefined",
   "NaN",
   "Infinity",
@@ -173,7 +175,8 @@ function validateTransitionLabel(label, symbols, functionNames = []) {
   }
   const { label: parts, ranges } = parsed;
   const diagnostics = [];
-  if (parts.event && ranges.event && !symbols.some((s) => s.scope === "input" && s.name === parts.event)) {
+  const isInput = (name) => symbols.some((s) => s.scope === "input" && s.name === name);
+  if (parts.event && ranges.event && !isInput(parts.event)) {
     diagnostics.push(
       createDiagnostic(
         ranges.event.from,
@@ -182,6 +185,23 @@ function validateTransitionLabel(label, symbols, functionNames = []) {
         'Unknown event "%s", use the name of an input',
         [parts.event]
       )
+    );
+  }
+  const temporal = parts.temporal;
+  if (temporal?.event && ranges.temporalEvent && !isInput(temporal.event)) {
+    diagnostics.push(
+      createDiagnostic(
+        ranges.temporalEvent.from,
+        ranges.temporalEvent.to,
+        "error",
+        'Unknown input "%s", use a time unit (msec, sec, min) or the name of an input',
+        [temporal.event]
+      )
+    );
+  }
+  if (temporal?.condition && ranges.temporalCondition) {
+    diagnostics.push(
+      ...validateCode(temporal.condition, "expression", symbols, ranges.temporalCondition.from, functionNames)
     );
   }
   if (parts.condition && ranges.condition) {
@@ -223,7 +243,7 @@ function getDeclarations(code) {
 function getFunctionNames(chart) {
   return (chart.functions || []).flatMap((fn) => getDeclarations(fn.code).map((d) => d.name));
 }
-function quoteChangeArguments(code, kind) {
+function prepareHelperCalls(code, kind, createCallId) {
   const parsed = code.trim() ? parseCode(code, kind) : null;
   if (!parsed || "diagnostic" in parsed) {
     return { code, names: [] };
@@ -232,21 +252,27 @@ function quoteChangeArguments(code, kind) {
   const replacements = [];
   walk.simple(parsed.ast, {
     CallExpression(node) {
-      const arg = node.arguments[0];
-      if (node.callee.type !== "Identifier" || !import_chart_helpers.CHANGE_HELPERS.has(node.callee.name)) {
+      if (node.callee.type !== "Identifier") {
         return;
       }
-      if (arg?.type === "Identifier") {
-        replacements.push(arg);
-        names.add(arg.name);
-      } else if (arg?.type === "Literal" && typeof arg.value === "string") {
-        names.add(arg.value);
+      const arg = node.arguments[0];
+      if (node.callee.name === "duration") {
+        const at = code.indexOf("(", node.callee.end) + 1;
+        const id = JSON.stringify(createCallId());
+        replacements.push({ start: at, end: at, text: node.arguments.length ? `${id}, ` : id });
+      } else if (import_chart_helpers.CHANGE_HELPERS.has(node.callee.name)) {
+        if (arg?.type === "Identifier") {
+          replacements.push({ start: arg.start, end: arg.end, text: JSON.stringify(arg.name) });
+          names.add(arg.name);
+        } else if (arg?.type === "Literal" && typeof arg.value === "string") {
+          names.add(arg.value);
+        }
       }
     }
   });
   let result = code;
-  for (const { start, end, name } of replacements.sort((a, b) => b.start - a.start)) {
-    result = result.substring(0, start) + JSON.stringify(name) + result.substring(end);
+  for (const { start, end, text } of replacements.sort((a, b) => b.start - a.start)) {
+    result = result.substring(0, start) + text + result.substring(end);
   }
   return { code: result, names: [...names] };
 }
@@ -306,7 +332,7 @@ function validateChart(chart) {
   GLOBALS,
   getDeclarations,
   getFunctionNames,
-  quoteChangeArguments,
+  prepareHelperCalls,
   validateChart,
   validateCode,
   validateTransitionLabel
