@@ -61,7 +61,8 @@ Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.17 o
 
 1. Open **State Machine** in the admin side bar.
 2. Create a chart with **+** in the list on the left.
-3. Define the variables in the tab **Variables** on the right:
+3. Define the variables in the tab **Variables** on the right, with **+** next to their group. The variables are
+   grouped by kind, each one is a line with its state and current value, a click on it shows its settings:
    - **Input**: read from an ioBroker state, every change wakes up the chart
    - **Output**: written to an ioBroker state when an action changes it
    - **Local**: only exists inside the chart, with an initial value
@@ -112,7 +113,8 @@ transitions, they are checked in the order of their **priority** (shown at the a
 
 ### When inputs wake up the chart
 
-Every input has three settings in the tab **Variables**:
+Every input has three settings in the tab **Variables**, under **Wake up options** (shown right away if one of
+them differs from the default):
 
 | Setting | Values | Default |
 |---|---|---|
@@ -223,7 +225,7 @@ While a chart runs, the editor shows what it does:
 
 - The **active states** have a green border.
 - **Live values** (panel at the top left of the canvas, switched on and off with the last icon in the toolbar):
-  the current values of all variables. They are also shown below each variable in the tab **Variables**.
+  the current values of all variables. They are also shown in the line of each variable in the tab **Variables**.
 - A **transition lights up** for a moment when the chart takes it.
 - The tab **History** lists the starts of the chart and the transitions taken, newest first: when, from which state
   to which, triggered by which input or by a timer (`after`), and which states were active afterwards. Click a
@@ -346,7 +348,8 @@ Voraussetzungen: Node.js 22 oder neuer, js-controller 6.0.11 oder neuer, Admin 7
 
 1. In der Seitenleiste des Admins **Zustandsmaschine** öffnen.
 2. Links in der Liste mit **+** ein Chart anlegen.
-3. Rechts im Reiter **Variablen** die Variablen festlegen:
+3. Rechts im Reiter **Variablen** die Variablen festlegen, mit **+** neben ihrer Gruppe. Die Variablen sind nach Art
+   gruppiert, jede ist eine Zeile mit ihrem Datenpunkt und aktuellen Wert, ein Klick darauf zeigt ihre Einstellungen:
    - **Eingang**: wird aus einem ioBroker-Datenpunkt gelesen, jede Änderung weckt das Chart auf
    - **Ausgang**: wird in einen ioBroker-Datenpunkt geschrieben, wenn eine Aktion ihn ändert
    - **Lokal**: gibt es nur im Chart, mit einem Startwert
@@ -399,7 +402,8 @@ mehrere ausgehende Übergänge, werden sie in der Reihenfolge ihrer **Priorität
 
 ### Wann Eingänge das Chart aufwecken
 
-Jeder Eingang hat im Reiter **Variablen** drei Einstellungen:
+Jeder Eingang hat im Reiter **Variablen** unter **Optionen zum Aufwecken** drei Einstellungen (gleich sichtbar, wenn
+eine davon vom Standard abweicht):
 
 | Einstellung | Werte | Standard |
 |---|---|---|
@@ -516,7 +520,7 @@ Während ein Chart läuft, zeigt der Editor, was es tut:
 
 - Die **aktiven Zustände** haben einen grünen Rahmen.
 - **Live-Werte** (Tafel oben links auf der Zeichenfläche, ein- und ausgeschaltet mit dem letzten Symbol der
-  Werkzeugleiste): die aktuellen Werte aller Variablen. Sie stehen auch unter jeder Variable im Reiter **Variablen**.
+  Werkzeugleiste): die aktuellen Werte aller Variablen. Sie stehen auch in der Zeile jeder Variable im Reiter **Variablen**.
 - Ein **Übergang leuchtet kurz auf**, wenn das Chart ihn nimmt.
 - Der Reiter **Verlauf** listet die Starts des Charts und die genommenen Übergänge, der neueste zuerst: wann, von
   welchem Zustand zu welchem, ausgelöst durch welchen Eingang oder einen Timer (`after`), und welche Zustände danach
@@ -657,6 +661,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) the variables are grouped by kind and shown as compact lines, a click shows the settings of a variable, a search appears with many variables
 * (Igge) parallel states (AND): all sub states of a state, or all top level states, are active at the same time and are processed in their execution order
 
 ### 0.2.0 (2026-11-01)

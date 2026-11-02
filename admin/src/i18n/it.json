@@ -125,5 +125,16 @@
     "Execution order": "Execution order",
     "executionOrderHelp": "The parallel states are processed in this order, lower first. Without a number, after the others. Currently position %s.",
     "executionOrderTitle": "Parallel state, position %s in the execution order",
-    "Transitions between parallel states are not possible": "Transitions between parallel states are not possible"
+    "Transitions between parallel states are not possible": "Transitions between parallel states are not possible",
+    "Inputs": "Inputs",
+    "Outputs": "Outputs",
+    "Locals": "Locals",
+    "Add input": "Add input",
+    "Add output": "Add output",
+    "Add local": "Add local variable",
+    "Search variables": "Search variables",
+    "No matching variables": "No matching variables",
+    "No variables": "None yet",
+    "No state selected": "No state selected",
+    "Wake up options": "Wake up options"
 }

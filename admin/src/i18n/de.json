@@ -125,5 +125,16 @@
     "Execution order": "Ausführungsreihenfolge",
     "executionOrderHelp": "Die parallelen Zustände werden in dieser Reihenfolge bearbeitet, kleinere zuerst. Ohne Zahl nach den anderen. Aktuell Position %s.",
     "executionOrderTitle": "Paralleler Zustand, Position %s der Ausführungsreihenfolge",
-    "Transitions between parallel states are not possible": "Übergänge zwischen parallelen Zuständen sind nicht möglich"
+    "Transitions between parallel states are not possible": "Übergänge zwischen parallelen Zuständen sind nicht möglich",
+    "Inputs": "Eingänge",
+    "Outputs": "Ausgänge",
+    "Locals": "Lokale Variablen",
+    "Add input": "Eingang hinzufügen",
+    "Add output": "Ausgang hinzufügen",
+    "Add local": "Lokale Variable hinzufügen",
+    "Search variables": "Variablen suchen",
+    "No matching variables": "Keine passenden Variablen",
+    "No variables": "Noch keine",
+    "No state selected": "Kein Datenpunkt ausgewählt",
+    "Wake up options": "Optionen zum Aufwecken"
 }
