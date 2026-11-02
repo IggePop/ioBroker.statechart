@@ -193,6 +193,18 @@ For every chart, the adapter creates below `statechart.<instance>.charts.<chart>
 
 The chart itself is stored in the object `statechart.<instance>.charts.<chart>`.
 
+### Controlling a chart from vis or scripts
+
+Three states control a chart. They react on commands (written without ack), the adapter confirms them with ack:
+
+| State | Write | Effect |
+|---|---|---|
+| `enabled` | `false` / `true` | Pauses the chart, or starts it in its initial state, like ▶ and ⏸ in the chart list. The state always shows whether the chart runs, also when it is started or paused in the editor |
+| `reset` | `true` | Starts a running chart again in its initial state, the entry actions of the initial states are executed. A paused chart stays paused |
+| `event` | name of an input | Wakes up the chart with the event of this input, without changing its value: transitions like `button[...]` and counting expressions like `after(3, button)` react as if the input was updated. Other names are logged as warning |
+
+Example for a script of the JavaScript adapter: `setState("statechart.0.charts.light.reset", true);`
+
 ## Restart of the adapter
 
 After a restart of the adapter or of ioBroker, every chart continues in the states which were active

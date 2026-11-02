@@ -24,6 +24,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_chart_runtime = require("./lib/chart-runtime");
 const HISTORY_LENGTH = 200;
+const CONTROLS = ["enabled", "reset", "event"];
 class Statechart extends utils.Adapter {
   /** running charts by chart ID */
   runtimes = /* @__PURE__ */ new Map();
@@ -64,6 +65,9 @@ class Statechart extends utils.Adapter {
     }
     this.subscribeObjects("charts.*");
     this.subscribeStates("charts.*.history");
+    for (const control of CONTROLS) {
+      this.subscribeStates(`charts.*.${control}`);
+    }
   }
   /**
    * Reads the location of the ioBroker system settings, used by isDaytime() and astroTime()
@@ -94,11 +98,11 @@ class Statechart extends utils.Adapter {
   }
   /**
    * @param id State ID
-   * @returns the chart ID if the state is the history of a chart
+   * @returns the chart ID and the name of the state if it is a state of a chart, e.g. "history"
    */
-  getHistoryChartId(id) {
-    const match = /^charts.([^.]+).history$/.exec(id.substring(this.namespace.length + 1));
-    return id.startsWith(`${this.namespace}.`) && match ? match[1] : void 0;
+  parseChartStateId(id) {
+    const match = /^charts\.([^.]+)\.([^.]+)$/.exec(id.substring(this.namespace.length + 1));
+    return id.startsWith(`${this.namespace}.`) && match ? { chartId: match[1], name: match[2] } : void 0;
   }
   /**
    * @param chartId Chart ID
@@ -113,6 +117,7 @@ class Statechart extends utils.Adapter {
     }
     await this.createChartStates(chartId);
     await this.loadHistory(chartId);
+    await this.setState(`charts.${chartId}.enabled`, chart.enabled !== false, true);
     const empty = !chart.states?.length;
     if (!chart.enabled || empty) {
       if (empty) {
@@ -260,6 +265,85 @@ class Statechart extends utils.Adapter {
       },
       native: {}
     });
+    await this.setObjectNotExistsAsync(`charts.${chartId}.enabled`, {
+      type: "state",
+      common: {
+        name: "Chart runs: false pauses it, true starts it in its initial state",
+        type: "boolean",
+        role: "switch.enable",
+        read: true,
+        write: true
+      },
+      native: {}
+    });
+    await this.setObjectNotExistsAsync(`charts.${chartId}.reset`, {
+      type: "state",
+      common: {
+        name: "Restart the running chart in its initial state",
+        type: "boolean",
+        role: "button",
+        read: false,
+        write: true
+      },
+      native: {}
+    });
+    await this.setObjectNotExistsAsync(`charts.${chartId}.event`, {
+      type: "state",
+      common: {
+        name: "Name of an input: wakes up the chart with this event, without changing the value of the input",
+        type: "string",
+        role: "text",
+        read: true,
+        write: true
+      },
+      native: {}
+    });
+  }
+  /**
+   * Executes a command written to a control state of a chart
+   *
+   * @param chartId Chart ID
+   * @param control Name of the state
+   * @param val The written value
+   */
+  async handleControl(chartId, control, val) {
+    const id = `charts.${chartId}.${control}`;
+    const obj = await this.getObjectAsync(`charts.${chartId}`);
+    const chart = obj?.type === "channel" ? obj.native?.chart : void 0;
+    if (!chart) {
+      return;
+    }
+    if (control === "enabled") {
+      const enabled = val === true || val === "true" || val === 1;
+      if (enabled === (chart.enabled !== false)) {
+        await this.setState(id, enabled, true);
+        return;
+      }
+      await this.extendObjectAsync(`charts.${chartId}`, { native: { chart: { enabled } } });
+      return;
+    }
+    const runtime = this.runtimes.get(chartId);
+    if (control === "reset") {
+      if (runtime) {
+        this.log.info(`Chart "${chart.name}" is reset`);
+        this.chartQueue = this.chartQueue.then(async () => {
+          this.stopChart(chartId);
+          await this.startChart(chartId, obj);
+        }).catch((err) => this.log.error(`Cannot reset chart ${chartId}: ${err.message}`));
+        await this.chartQueue;
+      } else {
+        this.log.info(`Chart "${chart.name}" is not reset, it does not run`);
+      }
+      await this.setState(id, false, true);
+      return;
+    }
+    const name = String(val ?? "").trim();
+    if (!runtime) {
+      this.log.info(`Event "${name}" ignored, chart "${chart.name}" does not run`);
+    } else if (!runtime.handleEvent(name)) {
+      this.log.warn(`Chart "${chart.name}": unknown event "${name}", use the name of an input`);
+    }
+    await this.setState(id, name, true);
   }
   /**
    * Subscribes to all inputs of the running charts and unsubscribes from the ones no longer used
@@ -321,11 +405,19 @@ class Statechart extends utils.Adapter {
     if (!state) {
       return;
     }
-    const historyOf = this.getHistoryChartId(id);
-    if (historyOf) {
+    const own = this.parseChartStateId(id);
+    if (own?.name === "history") {
       if (!state.ack) {
-        this.histories.set(historyOf, []);
-        void this.setState(`charts.${historyOf}.history`, "[]", true);
+        this.histories.set(own.chartId, []);
+        void this.setState(`charts.${own.chartId}.history`, "[]", true);
+      }
+      return;
+    }
+    if (own && CONTROLS.includes(own.name)) {
+      if (!state.ack) {
+        this.handleControl(own.chartId, own.name, state.val).catch(
+          (err) => this.log.error(`Cannot execute ${id}: ${err.message}`)
+        );
       }
       return;
     }

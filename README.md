@@ -29,7 +29,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Live view: the active state is highlighted in the editor, the current values of the variables are shown, taken
   transitions light up, and a history shows when which transition was taken and why
 - Code editor with syntax highlighting, error checking (e.g. unknown variables) and completion
-- Several independent charts per instance
+- Several independent charts per instance, which can be paused, reset and woken up by states (e.g. from vis)
 - Import and export of charts as JSON files
 - Comments on states, transitions and function blocks, and notes on the canvas
 - Per input: wake up on every update or only on changes, filter by ack, debounce
@@ -110,6 +110,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) control states per chart: `enabled` pauses and starts it, `reset` restarts it in its initial state, `event` wakes it up with the event of an input
 * (Igge) more temporal logic: `before`, `at` and `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)` for conditions which are true for a time, and the helpers `elapsed()` and `duration()`
 * (Igge) the variables are grouped by kind and shown as compact lines, a click shows the settings of a variable, a search appears with many variables
 * (Igge) parallel states (AND): all sub states of a state, or all top level states, are active at the same time and are processed in their execution order

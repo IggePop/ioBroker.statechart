@@ -978,6 +978,17 @@ describe("chart-runtime => triggers of inputs", () => {
         expect(r.sandbox.count).to.equal(0);
     });
 
+    it("wakes up with the event of an input without changing its value", async () => {
+        const r = await start({});
+        r.sandbox.motion = "unchanged";
+        expect(r.handleEvent("motion")).to.equal(true);
+        expect(r.sandbox.count).to.equal(1);
+        expect(r.sandbox.seen).to.equal("unchanged");
+        expect(r.handleEvent("light")).to.equal(false);
+        expect(r.handleEvent("nothing")).to.equal(false);
+        expect(r.sandbox.count).to.equal(1);
+    });
+
     it("cancels pending debounce timers when it stops", async () => {
         const r = await start({ debounceMs: 20 });
         r.handleInput("test.0.motion", true);

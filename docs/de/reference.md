@@ -201,6 +201,18 @@ Für jedes Chart legt der Adapter unter `statechart.<instanz>.charts.<chart>` an
 
 Das Chart selbst ist im Objekt `statechart.<instanz>.charts.<chart>` gespeichert.
 
+### Ein Chart aus vis oder Skripten steuern
+
+Drei Datenpunkte steuern ein Chart. Sie reagieren auf Befehle (ohne ack geschrieben), der Adapter bestätigt sie mit ack:
+
+| Datenpunkt | Schreiben | Wirkung |
+|---|---|---|
+| `enabled` | `false` / `true` | Hält das Chart an oder startet es in seinem Startzustand, wie ▶ und ⏸ in der Chart-Liste. Der Datenpunkt zeigt immer, ob das Chart läuft, auch wenn es im Editor gestartet oder angehalten wurde |
+| `reset` | `true` | Startet ein laufendes Chart neu in seinem Startzustand, die entry-Aktionen der Startzustände laufen. Ein angehaltenes Chart bleibt angehalten |
+| `event` | Name eines Eingangs | Weckt das Chart mit dem Event dieses Eingangs, ohne seinen Wert zu ändern: Übergänge wie `taster[...]` und Zählausdrücke wie `after(3, taster)` reagieren so, als wäre der Eingang aktualisiert worden. Andere Namen werden als Warnung geloggt |
+
+Beispiel für ein Skript im JavaScript-Adapter: `setState("statechart.0.charts.licht.reset", true);`
+
 ## Neustart des Adapters
 
 Nach einem Neustart des Adapters oder von ioBroker macht jedes Chart in den Zuständen weiter, die

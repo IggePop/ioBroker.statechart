@@ -28,6 +28,10 @@ and the code generator directly from `src/lib/`, so they are shared by both.
 
 After changes of `io-package.json`, run `npm run dev-server upload` and restart `npm run dev-server watch`.
 
+While `dev-server watch` runs, it builds the adapter itself on every change in `src`. Do not run `npm run build` or
+`npm run build:ts` meanwhile: they delete `build` first, and afterwards the dev-server may no longer copy the files
+in `build/lib` into its instance. Restart `dev-server watch` if that happened.
+
 **The built adapter (`build`) and tab (`admin/build`) are committed**, because installations from GitHub do
 not run a build. After changes in `src` or `admin/src`, run `npm run build` and commit `build` and
 `admin/build` as well. The workflow job `check-build` fails if they are outdated. The source maps are not

@@ -773,6 +773,21 @@ export class ChartRuntime {
     }
 
     /**
+     * Wakes up the chart with the event of an input, without changing the value of the input
+     * (state charts.<chart>.event)
+     *
+     * @param name Name of the input
+     * @returns false if the chart has no input with this name
+     */
+    handleEvent(name: string): boolean {
+        if (!this.chart.symbols.some(s => s.scope === "input" && s.name === name)) {
+            return false;
+        }
+        this.wakeup(name);
+        return true;
+    }
+
+    /**
      * Sets the variable of an input and wakes up the chart
      *
      * @param symbol The input
