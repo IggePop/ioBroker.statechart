@@ -501,3 +501,72 @@ export function pasteClipboard(
         edges: [...edges.map(e => ({ ...e, selected: false })), ...pastedEdges],
     };
 }
+
+/** How selected nodes are aligned or distributed */
+export type Alignment = "left" | "centerX" | "right" | "top" | "centerY" | "bottom" | "distributeX" | "distributeY";
+
+/**
+ * Aligns rectangles, e.g. at the left border of the leftmost one, or distributes them with equal gaps between
+ * the outermost ones
+ *
+ * @param rects The absolute positions and sizes by ID
+ * @param alignment How they are aligned
+ * @returns the new absolute positions by ID, only of the rectangles which are moved
+ */
+export function alignRects(rects: Map<string, Rect>, alignment: Alignment): Map<string, { x: number; y: number }> {
+    const list = [...rects.entries()].map(([id, rect]) => ({ id, ...rect }));
+    const result = new Map<string, { x: number; y: number }>();
+    const set = (id: string, x: number, y: number): void => {
+        const rect = rects.get(id)!;
+        if (Math.round(x) !== Math.round(rect.x) || Math.round(y) !== Math.round(rect.y)) {
+            result.set(id, { x: Math.round(x), y: Math.round(y) });
+        }
+    };
+    if (list.length < 2) {
+        return result;
+    }
+    const left = Math.min(...list.map(r => r.x));
+    const right = Math.max(...list.map(r => r.x + r.width));
+    const top = Math.min(...list.map(r => r.y));
+    const bottom = Math.max(...list.map(r => r.y + r.height));
+
+    if (alignment === "distributeX" || alignment === "distributeY") {
+        const horizontal = alignment === "distributeX";
+        const start = (r: Rect): number => (horizontal ? r.x : r.y);
+        const size = (r: Rect): number => (horizontal ? r.width : r.height);
+        // the outermost ones stay where they are
+        const sorted = [...list].sort((a, b) => start(a) - start(b));
+        const total = (horizontal ? right - left : bottom - top) - sorted.reduce((sum, r) => sum + size(r), 0);
+        const gap = total / (sorted.length - 1);
+        let position = horizontal ? left : top;
+        for (const rect of sorted) {
+            set(rect.id, horizontal ? position : rect.x, horizontal ? rect.y : position);
+            position += size(rect) + gap;
+        }
+        return result;
+    }
+
+    for (const r of list) {
+        switch (alignment) {
+            case "left":
+                set(r.id, left, r.y);
+                break;
+            case "centerX":
+                set(r.id, (left + right) / 2 - r.width / 2, r.y);
+                break;
+            case "right":
+                set(r.id, right - r.width, r.y);
+                break;
+            case "top":
+                set(r.id, r.x, top);
+                break;
+            case "centerY":
+                set(r.id, r.x, (top + bottom) / 2 - r.height / 2);
+                break;
+            case "bottom":
+                set(r.id, r.x, bottom - r.height);
+                break;
+        }
+    }
+    return result;
+}

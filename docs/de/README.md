@@ -29,6 +29,7 @@ Adapter ausgeführt.
 - Kommentare zu Zuständen, Übergängen und Funktionsblöcken sowie Notizen auf der Zeichenfläche
 - Pro Eingang: Aufwecken bei jeder Aktualisierung oder nur bei Änderung, Filter nach ack, Entprellen
 - Hilfsfunktionen: getState (beliebige Datenpunkte), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, Änderungserkennung (hasChanged...)
+- Ausgewählte Elemente ausrichten und verteilen
 - Rückgängig/Wiederholen (Strg+Z, Strg+Y), Kopieren/Ausschneiden/Einfügen von Zuständen und Funktionsblöcken (Strg+C, Strg+X, Strg+V), auch zwischen Charts, und eine Warnung bei ungespeicherten Änderungen
 - **Code anzeigen**: das aus dem Chart generierte JavaScript, das genau zeigt, wie der Adapter es ausführt
 

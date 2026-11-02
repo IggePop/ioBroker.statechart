@@ -13,9 +13,30 @@ import {
     useReactFlow,
 } from "@xyflow/react";
 import type { OnConnect, OnEdgesChange, OnNodeDrag, OnNodesChange } from "@xyflow/react";
-import { Box, Divider, GlobalStyles, IconButton, Tab, Tabs, Toolbar, Tooltip } from "@mui/material";
+import {
+    Box,
+    Divider,
+    GlobalStyles,
+    IconButton,
+    ListItemIcon,
+    ListItemText,
+    Menu,
+    MenuItem,
+    Tab,
+    Tabs,
+    Toolbar,
+    Tooltip,
+} from "@mui/material";
 import {
     Add as AddIcon,
+    AlignHorizontalCenter as AlignCenterXIcon,
+    AlignHorizontalLeft as AlignLeftIcon,
+    AlignHorizontalRight as AlignRightIcon,
+    AlignVerticalBottom as AlignBottomIcon,
+    AlignVerticalCenter as AlignCenterYIcon,
+    AlignVerticalTop as AlignTopIcon,
+    ViewColumn as DistributeXIcon,
+    ViewStream as DistributeYIcon,
     Code as CodeIcon,
     ContentCopy as CopyIcon,
     ContentPaste as PasteIcon,
@@ -69,6 +90,7 @@ import {
     DEFAULT_NOTE_WIDTH,
     DEFAULT_STATE_HEIGHT,
     DEFAULT_STATE_WIDTH,
+    alignRects,
     findDropParent,
     flowToChart,
     getExclusiveParentIds,
@@ -78,7 +100,7 @@ import {
     pasteClipboard,
     reparentNodes,
 } from "../flow-model";
-import type { ChartFlowNode, ClipboardContent, Rect, TransitionFlowEdge } from "../flow-model";
+import type { Alignment, ChartFlowNode, ClipboardContent, Rect, TransitionFlowEdge } from "../flow-model";
 import { getParallelOffsets } from "../floating-edges";
 import { getDeclarations, validateChart } from "../../../src/lib/chart-validation";
 
@@ -116,6 +138,18 @@ function saveShowLive(show: boolean): void {
         // only a convenience
     }
 }
+
+/** The entries of the menu for aligning the selected nodes */
+const ALIGNMENTS: { alignment: Alignment; title: string; icon: React.ReactNode }[] = [
+    { alignment: "left", title: "Align left", icon: <AlignLeftIcon fontSize="small" /> },
+    { alignment: "centerX", title: "Align centers horizontally", icon: <AlignCenterXIcon fontSize="small" /> },
+    { alignment: "right", title: "Align right", icon: <AlignRightIcon fontSize="small" /> },
+    { alignment: "top", title: "Align top", icon: <AlignTopIcon fontSize="small" /> },
+    { alignment: "centerY", title: "Align centers vertically", icon: <AlignCenterYIcon fontSize="small" /> },
+    { alignment: "bottom", title: "Align bottom", icon: <AlignBottomIcon fontSize="small" /> },
+    { alignment: "distributeX", title: "Distribute horizontally", icon: <DistributeXIcon fontSize="small" /> },
+    { alignment: "distributeY", title: "Distribute vertically", icon: <DistributeYIcon fontSize="small" /> },
+];
 
 /**
  * A button of the toolbar: only an icon, the title is shown as tooltip
@@ -286,6 +320,43 @@ function ChartEditorInner({
         },
         [reactFlow],
     );
+
+    /** The button which opened the menu for aligning the selected nodes */
+    const [alignMenu, setAlignMenu] = useState<HTMLElement | null>(null);
+    const alignButton = useRef<HTMLSpanElement>(null);
+
+    /**
+     * Aligns or distributes the selected nodes. Their absolute positions are changed, also of nodes inside other
+     * selected nodes, and converted back to positions relative to their parents.
+     *
+     * @param alignment How they are aligned
+     */
+    const align = (alignment: Alignment): void => {
+        setAlignMenu(null);
+        const rects = new Map<string, Rect>();
+        for (const node of nodes) {
+            const rect = node.selected ? getRect(node.id) : null;
+            if (rect) {
+                rects.set(node.id, rect);
+            }
+        }
+        const moved = alignRects(rects, alignment);
+        if (!moved.size) {
+            return;
+        }
+        /** the new absolute position of a node, or the current one */
+        const absolute = (id: string): { x: number; y: number } | null => moved.get(id) ?? getRect(id);
+        record();
+        setNodes(nds =>
+            nds.map(n => {
+                const position = moved.get(n.id);
+                const parent = n.parentId ? absolute(n.parentId) : { x: 0, y: 0 };
+                return position && parent
+                    ? { ...n, position: { x: position.x - parent.x, y: position.y - parent.y } }
+                    : n;
+            }),
+        );
+    };
 
     const onNodeDrag = useCallback<OnNodeDrag<ChartFlowNode>>(
         (_event, node, dragged) => {
@@ -875,6 +946,33 @@ function ChartEditorInner({
                         flexItem
                         sx={{ mx: 0.5 }}
                     />
+                    {/* the anchor of the menu */}
+                    <span ref={alignButton}>
+                        <ToolButton
+                            title={I18n.t("Align the selected elements")}
+                            icon={<AlignLeftIcon />}
+                            disabled={selectedNodes.length < 2}
+                            onClick={() => setAlignMenu(alignButton.current)}
+                        />
+                    </span>
+                    <Menu
+                        anchorEl={alignMenu}
+                        open={!!alignMenu}
+                        onClose={() => setAlignMenu(null)}
+                    >
+                        {ALIGNMENTS.map(({ alignment, title, icon }) => (
+                            <MenuItem
+                                key={alignment}
+                                dense
+                                // distributing needs one in the middle
+                                disabled={alignment.startsWith("distribute") && selectedNodes.length < 3}
+                                onClick={() => align(alignment)}
+                            >
+                                <ListItemIcon>{icon}</ListItemIcon>
+                                <ListItemText>{I18n.t(title)}</ListItemText>
+                            </MenuItem>
+                        ))}
+                    </Menu>
                     <ToolButton
                         title={I18n.t("Show code")}
                         icon={<CodeIcon />}
