@@ -26,6 +26,8 @@ function createHost(states: Record<string, any> = {}) {
         sendTo: (...args: any[]) => host.messages.push(args),
         location: null as { latitude: number; longitude: number } | null,
         getLocation: () => host.location,
+        /** reads a state with ack and time stamps, see RuntimeHost.getState */
+        getState: undefined as ((id: string) => Promise<ioBroker.State | null>) | undefined,
         /** info and debug messages */
         infos: [] as string[],
         onActiveChange: (active: { names: string }) => host.active.push(active.names),
@@ -704,6 +706,99 @@ describe("chart-runtime => temporal logic", () => {
         // the 60 ms started before the restart
         await wait(45);
         expect(host.active.at(-1)).to.equal("Off");
+    });
+});
+
+describe("chart-runtime => getState() and at() every day", () => {
+    let runtime: ChartRuntime | undefined;
+    afterEach(() => runtime?.stop());
+
+    it("reads states at the start and keeps them up to date, without waking up the chart", async () => {
+        const chart = createLightChart();
+        chart.transitions = [
+            {
+                id: "t1",
+                source: "off",
+                target: "on",
+                label: 'motion[getState("test.0.lux").val < 50 && getState("test.0.none") === null]',
+            },
+        ];
+        chart.states[0].during = "count++;";
+        const host = createHost({ "test.0.motion": false, "test.0.lux": 100 });
+        runtime = new ChartRuntime("light", chart, host);
+        expect(runtime.subscribedStateIds).to.deep.equal(["test.0.motion", "test.0.lux", "test.0.none"]);
+        await runtime.start();
+        runtime.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("Off");
+        const wakeups = runtime.sandbox.count;
+        runtime.handleStateChange("test.0.lux", { val: 20, ack: true, ts: 1, lc: 1, from: "", q: 0 });
+        expect(runtime.sandbox.count).to.equal(wakeups);
+        runtime.handleInput("test.0.motion", true);
+        expect(host.active.at(-1)).to.equal("On");
+    });
+
+    it("returns ack and time stamps, and rejects IDs which are not known at the start", async () => {
+        const chart = createLightChart();
+        chart.symbols.push({ name: "result", scope: "local", initial: null });
+        chart.states[0].entry = 'result = getState("test.0.lux"); const id = "test.0.lux"; getState(id + "x");';
+        const host = createHost();
+        host.getState = async () => ({ val: 7, ack: true, ts: 5, lc: 3, from: "", q: 0 });
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        expect(runtime.sandbox.result).to.deep.equal({ val: 7, ack: true, ts: 5, lc: 3 });
+        expect(host.warnings.join(" ")).to.include("getState() can only read states whose ID is written as text");
+    });
+
+    /**
+     * @param time A time of today
+     * @returns the time in "HH:mm:ss"
+     */
+    const timeOfDay = (time: number): string => new Date(time).toTimeString().substring(0, 8);
+
+    it("at(time of day) wakes up the chart at that time", async () => {
+        // a second after now, unless the day ends: then the test would wait until tomorrow
+        const due = Date.now() + 1000;
+        if (new Date(due).getDate() !== new Date().getDate()) {
+            return;
+        }
+        const chart = createLightChart();
+        // without the way back after 50 ms
+        chart.transitions = [{ id: "t1", source: "off", target: "on", label: `at("${timeOfDay(due)}")` }];
+        const host = createHost({ "test.0.motion": false });
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        expect(host.active.at(-1)).to.equal("Off");
+        await wait(due - Date.now() + 100);
+        expect(host.active.at(-1)).to.equal("On");
+    });
+
+    it("finds the next astro event and the next time of day", () => {
+        const chart = createLightChart();
+        const host = createHost();
+        host.location = { latitude: 52.52, longitude: 13.4 };
+        const r = new ChartRuntime("light", chart, host);
+        const noon = new Date(2026, 5, 21, 12, 0, 0).getTime();
+        const sunset = r.getNextDailyTime({ operator: "at", time: "sunset" }, noon) as number;
+        expect(new Date(sunset).getDate()).to.equal(21);
+        expect(new Date(sunset).getHours()).to.be.within(20, 22);
+        // 30 minutes before, the day after
+        const before = r.getNextDailyTime({ operator: "at", time: "sunset", offsetMinutes: -30 }, sunset) as number;
+        expect(new Date(before).getDate()).to.equal(22);
+        // a time of day which has passed today is taken from tomorrow
+        const morning = r.getNextDailyTime({ operator: "at", time: "06:30" }, noon) as number;
+        expect(new Date(morning).toString()).to.include("Jun 22 2026 06:30:00");
+        // no sunset in polar summer
+        host.location = { latitude: 78.2, longitude: 15.6 };
+        expect(r.getNextDailyTime({ operator: "at", time: "sunset" }, noon)).to.equal(null);
+    });
+
+    it("reports a missing location for astro events", async () => {
+        const chart = createLightChart();
+        chart.transitions[0].label = 'at("sunset")';
+        const host = createHost();
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        expect(host.warnings.join(" ")).to.include("Off -> On: No location");
     });
 });
 

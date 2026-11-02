@@ -6,7 +6,7 @@ import type { SunTimes } from "suncalc";
 import { createActor, createMachine } from "xstate";
 import type { AnyActor, AnyStateMachine } from "xstate";
 import { isTimeBetween } from "./chart-helpers";
-import { MAX_SUPER_STEPS, TIME_UNITS, parseTransitionLabel } from "./chart-model";
+import { MAX_SUPER_STEPS, TIME_OF_DAY, TIME_UNITS, parseTransitionLabel } from "./chart-model";
 import type { Chart, ChartState, ChartSymbol, ChartTransition, TemporalExpression } from "./chart-model";
 import { ChartStructure } from "./chart-structure";
 import { getDeclarations, prepareHelperCalls, validateChart } from "./chart-validation";
@@ -17,6 +17,8 @@ const SCRIPT_TIMEOUT_MS = 1000;
 
 /** Longer delays are not supported by setTimeout() */
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Version of the persisted data, increase on incompatible changes */
 const PERSISTED_VERSION = 1;
@@ -107,6 +109,8 @@ export interface HistoryEntry {
 export interface RuntimeHost {
     /** Reads the current value of a state */
     readState: (stateId: string) => Promise<any>;
+    /** Reads a state with its ack flag and time stamps, for getState(), falls back to readState() */
+    getState?: (stateId: string) => Promise<ioBroker.State | null | undefined>;
     /** Writes the value of a state */
     writeState: (stateId: string, val: any, ack?: boolean) => Promise<void>;
     /** Sends a message to an adapter */
@@ -148,6 +152,24 @@ interface CheckedTransition {
     /** The condition of after(n, unit, condition) */
     temporalCondition: vm.Script | null;
     condition: vm.Script | null;
+}
+
+/** What getState() returns, like the JavaScript adapter */
+export interface StateSnapshot {
+    val: any;
+    ack: boolean;
+    /** Time of the last update (ms since 1970) */
+    ts: number;
+    /** Time of the last change (ms since 1970) */
+    lc: number;
+}
+
+/**
+ * @param state A state of ioBroker
+ * @returns the part of it which getState() returns, null if the state does not exist
+ */
+function toSnapshot(state: ioBroker.State | null | undefined): StateSnapshot | null {
+    return state ? { val: state.val, ack: !!state.ack, ts: state.ts, lc: state.lc } : null;
 }
 
 /** A timer which may be re-armed, see ChartRuntime.scheduleAt() */
@@ -234,6 +256,10 @@ export class ChartRuntime {
     readonly preparedCode = new Map<string, string>();
     /** the variables used by hasChanged() etc. */
     readonly changeVariables = new Set<string>();
+    /** the IDs of the states read by getState(), they are read at the start and then kept up to date */
+    readonly readStateIds = new Set<string>();
+    /** the states read by getState(), null if a state does not exist */
+    readonly stateCache = new Map<string, StateSnapshot | null>();
     /** their values at the start of the previous wakeup, null before the second wakeup */
     previousValues: Map<string, any> | null = null;
     /** their values at the start of the current wakeup, null before the first one */
@@ -298,6 +324,9 @@ export class ChartRuntime {
             for (const name of quoted.names) {
                 this.changeVariables.add(name);
             }
+            for (const id of quoted.stateIds) {
+                this.readStateIds.add(id);
+            }
             this.preparedCode.set(key, prepared);
         }
         return prepared;
@@ -311,11 +340,38 @@ export class ChartRuntime {
     }
 
     /**
+     * IDs of all states whose changes must be passed to handleStateChange(): the inputs and the states read by
+     * getState()
+     */
+    get subscribedStateIds(): string[] {
+        return [...new Set([...this.inputStateIds, ...this.readStateIds])];
+    }
+
+    /**
      * @param options Start options
      * @param options.restore Continue with the persisted state, if the chart was not changed since
      */
     async start(options: { restore?: boolean } = {}): Promise<void> {
         this.logProblems();
+        for (const id of this.readStateIds) {
+            try {
+                let state;
+                if (this.host.getState) {
+                    state = await this.host.getState(id);
+                } else {
+                    const val = await this.host.readState(id);
+                    // without ack and time stamps, undefined: the state does not exist
+                    state =
+                        val === undefined
+                            ? null
+                            : ({ val, ack: true, ts: this.now(), lc: this.now() } as ioBroker.State);
+                }
+                this.stateCache.set(id, toSnapshot(state));
+            } catch (err) {
+                this.host.log.warn(`[${this.chart.name}] Cannot read ${id}: ${err.message}`);
+                this.stateCache.set(id, null);
+            }
+        }
         for (const symbol of this.chart.symbols) {
             if (symbol.scope === "local") {
                 // a copy, so actions changing an object or array do not change the chart model
@@ -551,7 +607,13 @@ export class ChartRuntime {
         const timers: Timer[] = [];
         this.timers.set(id, timers);
         for (const transition of this.temporalTransitions.get(id) || []) {
-            const { operator, ms, condition } = transition.temporal as TemporalExpression;
+            const { operator, ms, condition, time } = transition.temporal as TemporalExpression;
+            if (time !== undefined) {
+                const timer: Timer = {};
+                timers.push(timer);
+                this.scheduleDaily(id, transition, timer, this.now());
+                continue;
+            }
             // before() needs no timer, counting expressions wait for their input, and the timer of
             // after(n, unit, condition) starts when the condition is true
             if (ms === undefined || operator === "before" || condition !== undefined) {
@@ -583,6 +645,73 @@ export class ChartRuntime {
             }
             this.scheduleAt(due, timer, () => fire(due));
         }
+    }
+
+    /**
+     * Starts the timer of at("sunset", offset) or at("22:30") for the next time, which wakes up the chart
+     *
+     * @param stateId ID of the source state
+     * @param transition The transition
+     * @param timer Gets the handle of the timeout
+     * @param after The timer is started for the next time after this one (ms since 1970)
+     */
+    scheduleDaily(stateId: string, transition: CheckedTransition, timer: Timer, after: number): void {
+        let due;
+        try {
+            due = this.getNextDailyTime(transition.temporal as TemporalExpression, after);
+        } catch (err) {
+            this.host.log.warn(`[${this.chart.name}] ${transition.where}: ${err.message}`);
+            return;
+        }
+        if (due === null) {
+            // e.g. no sunset for a week in polar regions: checked again tomorrow
+            this.scheduleAt(after + DAY_MS, timer, () =>
+                this.scheduleDaily(stateId, transition, timer, after + DAY_MS),
+            );
+            return;
+        }
+        this.scheduleAt(due, timer, () => {
+            this.firedTimers.add(transition.id);
+            try {
+                this.wakeup(null);
+            } finally {
+                this.firedTimers.delete(transition.id);
+            }
+            // the next day, unless the wakeup left the state
+            if (this.timers.get(stateId)?.includes(timer)) {
+                this.scheduleDaily(stateId, transition, timer, Math.max(due, this.now()));
+            }
+        });
+    }
+
+    /**
+     * @param temporal at("sunset", offset) or at("22:30")
+     * @param after The time is searched after this one (ms since 1970)
+     * @returns the next time (ms since 1970), null if there is none in the next week (astro events in polar regions)
+     * @throws {Error} for astro events if no location is configured
+     */
+    getNextDailyTime(temporal: TemporalExpression, after: number): number | null {
+        const time = temporal.time as string;
+        const offset = (temporal.offsetMinutes ?? 0) * 60_000;
+        const day = new Date(after);
+        // yesterday as well: with a positive offset, the time of yesterday may still come
+        day.setDate(day.getDate() - 1);
+        for (let i = 0; i < 9; i++) {
+            let at: number | null;
+            if (TIME_OF_DAY.test(time)) {
+                const [hours, minutes, seconds = 0] = time.split(":").map(Number);
+                at = new Date(day).setHours(hours, minutes, seconds, 0);
+            } else {
+                // noon, so the astro events are those of this day
+                const event = this.getSunTimes(new Date(new Date(day).setHours(12, 0, 0, 0)))[time];
+                at = event instanceof Date ? event.getTime() : null;
+            }
+            if (at !== null && at + offset > after) {
+                return at + offset;
+            }
+            day.setDate(day.getDate() + 1);
+        }
+        return null;
     }
 
     /**
@@ -692,6 +821,16 @@ export class ChartRuntime {
                 }
                 return new Date(time.getTime() + (Number(offsetMinutes) || 0) * 60_000);
             },
+            getState: (id: string) => {
+                if (!this.stateCache.has(id)) {
+                    throw new Error(
+                        `getState() can only read states whose ID is written as text, e.g. getState("${id}")`,
+                    );
+                }
+                const state = this.stateCache.get(id);
+                // a copy, so the code cannot change the cache
+                return state ? { ...state } : null;
+            },
             elapsed: (unit = TIME_UNITS.sec) => {
                 const entered = this.context === null ? undefined : this.enteredAt.get(this.context);
                 if (entered === undefined) {
@@ -733,6 +872,19 @@ export class ChartRuntime {
             throw new Error("No location (latitude/longitude) configured in the ioBroker system settings");
         }
         return SunCalc.getTimes(date, location.latitude, location.longitude);
+    }
+
+    /**
+     * Must be called when one of the subscribedStateIds is updated
+     *
+     * @param stateId ID of the updated state
+     * @param state The new state
+     */
+    handleStateChange(stateId: string, state: ioBroker.State): void {
+        if (this.readStateIds.has(stateId)) {
+            this.stateCache.set(stateId, toSnapshot(state));
+        }
+        this.handleInput(stateId, state.val, { ack: state.ack });
     }
 
     /**

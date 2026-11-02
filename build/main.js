@@ -132,6 +132,7 @@ class Statechart extends utils.Adapter {
     }
     const runtime = new import_chart_runtime.ChartRuntime(chartId, chart, {
       readState: async (id) => (await this.getForeignStateAsync(id))?.val ?? null,
+      getState: (id) => this.getForeignStateAsync(id),
       writeState: async (id, val, ack = false) => {
         await this.setForeignStateAsync(id, val, ack);
       },
@@ -349,7 +350,7 @@ class Statechart extends utils.Adapter {
    * Subscribes to all inputs of the running charts and unsubscribes from the ones no longer used
    */
   updateSubscriptions() {
-    const needed = new Set([...this.runtimes.values()].flatMap((runtime) => runtime.inputStateIds));
+    const needed = new Set([...this.runtimes.values()].flatMap((runtime) => runtime.subscribedStateIds));
     for (const id of needed) {
       if (!this.subscribedInputs.has(id)) {
         this.subscribeForeignStates(id);
@@ -422,7 +423,7 @@ class Statechart extends utils.Adapter {
       return;
     }
     for (const runtime of this.runtimes.values()) {
-      runtime.handleInput(id, state.val, { ack: state.ack });
+      runtime.handleStateChange(id, state);
     }
   }
 }

@@ -103,6 +103,7 @@ describe("chart-validation => change detection", () => {
         ).to.deep.equal({
             code: 'hasChangedTo("motion", true) && !hasChanged("light") && motion',
             names: ["motion", "light"],
+            stateIds: [],
         });
         expect(prepareHelperCalls("if (hasChanged(count)) { log(count); }", "statements", noId).code).to.equal(
             'if (hasChanged("count")) { log(count); }',
@@ -111,7 +112,22 @@ describe("chart-validation => change detection", () => {
         expect(prepareHelperCalls("hasChanged(motion", "expression", noId)).to.deep.equal({
             code: "hasChanged(motion",
             names: [],
+            stateIds: [],
         });
+    });
+
+    it("collects the IDs of the states read by getState()", () => {
+        const code = 'getState("a.0.x").val > 1 && getState("b.0.y")?.ack && getState("a.0.x").val < 5';
+        expect(prepareHelperCalls(code, "expression", noId).stateIds).to.deep.equal(["a.0.x", "b.0.y"]);
+    });
+
+    it("requires the ID of getState() as text", () => {
+        const code = 'getState("a.0.x").val + getState(prefix + "y").val + getState().val';
+        expect(summarize(validateCode(code, "expression", symbols), code)).to.deep.equal([
+            'error: getState() needs the ID of the state as text, e.g. getState("0_userdata.0.temperature") @prefix + "y"',
+            'error: getState() needs the ID of the state as text, e.g. getState("0_userdata.0.temperature") @getState()',
+            'error: Unknown variable "prefix" @prefix',
+        ]);
     });
 
     it("gives each duration() call an ID", () => {

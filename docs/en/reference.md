@@ -32,11 +32,19 @@ the source state, in the units `msec`, `sec` and `min`:
 | `at(n, unit)` | exactly once: in the wakeup of its timer after *n* units, not later | `at(10, min)` |
 | `every(n, unit)` | every *n* units, in the wakeup of its timer | `every(15, min){count++;}` |
 | `after(n, unit, condition)` | as soon as the condition has been true for *n* units without interruption. A timer wakes up the chart exactly then | `after(5, min, !motion)` |
+| `at("event", minutes)` | every day at an astro event, optionally shifted by minutes (negative: before), in the wakeup of its timer | `at("sunset", -30)` |
+| `at("HH:mm")` | every day at this time | `at("22:30")[!window]` |
 
 The same operators can count the wakeups by an input instead of the time, e.g. `after(3, button)` is valid on the
 third and every further wakeup by `button` since entering the state, `at(3, button)` only on the third,
 `every(2, button)` on every second one and `before(3, button)` on the first two. These transitions are only checked
 on the wakeups by that input, the wakeup which entered the state does not count.
+
+`at("sunset")` and `at("22:30")` are not measured from entering the state: while the state is active, they are valid
+once a day at that time. Astro events: `sunrise`, `sunriseEnd`, `goldenHourEnd`, `solarNoon`, `goldenHour`,
+`sunsetStart`, `sunset`, `dusk`, `nauticalDusk`, `night`, `nadir`, `nightEnd`, `nauticalDawn`, `dawn`, calculated
+for the location of the ioBroker system settings. If an event does not happen on a day (polar regions), the
+transition is not valid that day.
 
 The condition of `after(n, unit, condition)` is checked on every wakeup, so it should depend on inputs and variables,
 not on functions like `isTimeBetween()` which change without a wakeup. In conditions and actions, `elapsed(unit)` and
@@ -114,12 +122,14 @@ In conditions, actions and function blocks:
 | `hasChanged(variable)` | true if the variable has changed, see below |
 | `hasChangedFrom(variable, value)` | true if the variable has changed and its previous value was `value` |
 | `hasChangedTo(variable, value)` | true if the variable has changed to `value`, e.g. `hasChangedTo(button, true)` for a rising edge |
+| `getState("id")` | reads any ioBroker state: `{ val, ack, ts, lc }`, `null` if it does not exist, e.g. `[getState("0_userdata.0.lux").val < 50]`. The ID must be written as text: the adapter reads these states when the chart starts and keeps them up to date. Unlike inputs, they do not wake up the chart |
 | `elapsed(unit)` | time since the state was entered (in conditions of transitions: the source state), unit `sec` (default), `msec` or `min`, e.g. `[elapsed(min) > 10]` |
 | `duration(condition, unit)` | time the condition has been true without interruption, measured on the wakeups, unit `sec` (default), `msec` or `min`. It does not wake up the chart, for that use `after(n, unit, condition)` |
 
-`isDaytime()` and `astroTime()` use the location of the ioBroker system settings. To read other states, add
-them as inputs: their variables are always up to date and wake up the chart. Time based functions do not wake up
-the chart by themselves, they are evaluated when it wakes up.
+`isDaytime()` and `astroTime()` use the location of the ioBroker system settings. States which should wake up the
+chart when they change are added as inputs, `getState()` is for states which are only needed in a condition or an
+action. Time based functions do not wake up the chart by themselves, they are evaluated when it wakes up, for a
+time of day use `at("22:30")`.
 
 **Change detection** works like in Stateflow: it compares the value of the variable at the start of the current
 wakeup with its value at the start of the previous wakeup. Inputs, outputs and locals can be checked. An update

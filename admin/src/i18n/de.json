@@ -22,7 +22,7 @@
     "Delete state": "Zustand löschen",
     "Transition": "Übergang",
     "Label": "Beschriftung",
-    "labelHelp": "event[bedingung]{aktion}, jeder Teil ist optional. Event: Name eines Eingangs oder ein Zeitausdruck wie after(5, sec), before(...), at(...), every(...), after(3, eingang) oder after(5, min, bedingung)",
+    "labelHelp": "event[bedingung]{aktion}, jeder Teil ist optional. Event: Name eines Eingangs oder ein Zeitausdruck wie after(5, sec), before(...), at(...), every(...), after(3, eingang), after(5, min, bedingung) oder at(\"sunset\", -30)",
     "Priority": "Priorität",
     "priorityHelp": "Übergänge desselben Zustands werden in dieser Reihenfolge geprüft",
     "Delete transition": "Übergang löschen",
@@ -136,6 +136,8 @@
     "No variables": "Noch keine",
     "No state selected": "Kein Datenpunkt ausgewählt",
     "Wake up options": "Optionen zum Aufwecken",
-    "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)": "Ungültiger Zeitausdruck \"%s\", erwartet z.B. after(5, sec), every(10, min), after(3, taster) oder after(5, min, bedingung)",
-    "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unbekannter Eingang \"%s\", verwende eine Zeiteinheit (msec, sec, min) oder den Namen eines Eingangs"
+    "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unbekannter Eingang \"%s\", verwende eine Zeiteinheit (msec, sec, min) oder den Namen eines Eingangs",
+    "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "Ungültiger Zeitausdruck \"%s\", erwartet z.B. after(5, sec), every(10, min), after(3, taster), after(5, min, bedingung) oder at(\"sunset\", -30)",
+    "Unknown time \"%s\", use a time like \"22:30\" or one of: %s": "Unbekannte Zeit \"%s\", verwende eine Uhrzeit wie \"22:30\" oder eins von: %s",
+    "getState() needs the ID of the state as text, e.g. getState(\"0_userdata.0.temperature\")": "getState() braucht die ID des Datenpunkts als Text, z.B. getState(\"0_userdata.0.temperatur\")"
 }

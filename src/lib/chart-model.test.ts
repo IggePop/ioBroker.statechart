@@ -219,6 +219,18 @@ describe("chart-model => parseTransitionLabel", () => {
         expect(label.substring(from, to)).to.equal('!motion && isTimeBetween("22:00", "06:00")');
     });
 
+    it("parses at() with an astro event or a time of day", () => {
+        expect(parseTransitionLabel('at("sunset", -30)[light]')).to.deep.equal({
+            temporal: { operator: "at", time: "sunset", offsetMinutes: -30 },
+            condition: "light",
+        });
+        expect(parseTransitionLabel("at('22:30')")).to.deep.equal({ temporal: { operator: "at", time: "22:30" } });
+        expect(() => parseTransitionLabel('at("sundown")')).to.throw(/Unknown time "sundown", use a time like "22:30"/);
+        expect(() => parseTransitionLabel('at("25:00")')).to.throw(/Unknown time "25:00"/);
+        expect(() => parseTransitionLabel('after("sunset")')).to.throw(/Invalid temporal expression/);
+        expect(() => parseTransitionLabel('at("sunset", soon)')).to.throw(/Invalid temporal expression/);
+    });
+
     it("rejects invalid labels", () => {
         for (const invalid of [
             "after(5)",

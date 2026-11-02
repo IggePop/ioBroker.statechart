@@ -23,7 +23,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Graphical editor as its own entry in the admin side bar
 - States with `entry`, `during` and `exit` actions, nested and parallel states (AND)
 - Transitions with labels in the well-known syntax `event[condition]{action}`
-- Temporal logic like in Stateflow: `after(5, sec)`, `before`, `at`, `every`, counting inputs, `after(5, min, condition)`, `elapsed()`, `duration()`
+- Temporal logic like in Stateflow: `after(5, sec)`, `before`, `at`, `every`, counting inputs, `after(5, min, condition)`, `elapsed()`, `duration()`, and every day at a time or an astro event: `at("sunset", -30)`
 - Function blocks with your own JavaScript functions, usable in all conditions and actions
 - Inputs and outputs mapped to any ioBroker states
 - Live view: the active state is highlighted in the editor, the current values of the variables are shown, taken
@@ -33,7 +33,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Import and export of charts as JSON files
 - Comments on states, transitions and function blocks, and notes on the canvas
 - Per input: wake up on every update or only on changes, filter by ack, debounce
-- Helper functions: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
+- Helper functions: getState (any state), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
 - Undo/redo (Ctrl+Z, Ctrl+Y), copy/cut/paste of states and function blocks (Ctrl+C, Ctrl+X, Ctrl+V), also between charts, and a warning about unsaved changes
 - **Show code**: the JavaScript generated from the chart, showing exactly how the adapter executes it
 
@@ -110,6 +110,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) `getState("id")` reads any state in conditions and actions, `at("sunset", -30)` and `at("22:30")` are valid every day at an astro event or a time of day
 * (Igge) control states per chart: `enabled` pauses and starts it, `reset` restarts it in its initial state, `event` wakes it up with the event of an input
 * (Igge) more temporal logic: `before`, `at` and `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)` for conditions which are true for a time, and the helpers `elapsed()` and `duration()`
 * (Igge) the variables are grouped by kind and shown as compact lines, a click shows the settings of a variable, a search appears with many variables

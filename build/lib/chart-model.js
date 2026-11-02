@@ -18,11 +18,13 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var chart_model_exports = {};
 __export(chart_model_exports, {
+  ASTRO_EVENTS: () => ASTRO_EVENTS,
   CHART_MODEL_VERSION: () => CHART_MODEL_VERSION,
   EXPORT_FORMAT: () => EXPORT_FORMAT,
   LabelSyntaxError: () => LabelSyntaxError,
   MAX_SUPER_STEPS: () => MAX_SUPER_STEPS,
   TEMPORAL_OPERATORS: () => TEMPORAL_OPERATORS,
+  TIME_OF_DAY: () => TIME_OF_DAY,
   TIME_UNITS: () => TIME_UNITS,
   createChart: () => createChart,
   createExport: () => createExport,
@@ -91,7 +93,24 @@ function readEnclosed(text, start, open, close) {
   }
   throw new LabelSyntaxError('Missing "%s"', [close], start, text.length);
 }
-const INVALID_TEMPORAL = 'Invalid temporal expression "%s", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)';
+const ASTRO_EVENTS = [
+  "sunrise",
+  "sunriseEnd",
+  "goldenHourEnd",
+  "solarNoon",
+  "goldenHour",
+  "sunsetStart",
+  "sunset",
+  "dusk",
+  "nauticalDusk",
+  "night",
+  "nadir",
+  "nightEnd",
+  "nauticalDawn",
+  "dawn"
+];
+const TIME_OF_DAY = /^([01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+const INVALID_TEMPORAL = 'Invalid temporal expression "%s", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at("sunset", -30)';
 function splitArguments(text, from, to) {
   const args = [];
   let depth = 0;
@@ -129,6 +148,26 @@ function parseTemporal(text, operator, from, open, end) {
     throw new LabelSyntaxError(INVALID_TEMPORAL, [text.substring(from, end)], from, end);
   };
   const args = splitArguments(text, open + 1, end - 1);
+  const quoted = /^(["'])(.*)\1$/.exec(args[0]?.text ?? "");
+  if (quoted) {
+    const time = quoted[2].trim();
+    if (operator !== "at" || args.length > 2) {
+      fail();
+    }
+    if (!ASTRO_EVENTS.includes(time) && !TIME_OF_DAY.test(time)) {
+      throw new LabelSyntaxError(
+        'Unknown time "%s", use a time like "22:30" or one of: %s',
+        [time, ASTRO_EVENTS.join(", ")],
+        args[0].from,
+        args[0].from + args[0].text.length
+      );
+    }
+    const temporal = { operator, time };
+    if (args.length === 2) {
+      temporal.offsetMinutes = /^[-+]?\d+(?:\.\d+)?$/.test(args[1].text) ? parseFloat(args[1].text) : fail();
+    }
+    return { temporal };
+  }
   const number = /^\d+(?:\.\d+)?$/.test(args[0]?.text) ? parseFloat(args[0].text) : fail();
   const unit = args[1]?.text ?? "";
   if (operator === "every" && number === 0) {
@@ -407,11 +446,13 @@ function parseExport(text) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  ASTRO_EVENTS,
   CHART_MODEL_VERSION,
   EXPORT_FORMAT,
   LabelSyntaxError,
   MAX_SUPER_STEPS,
   TEMPORAL_OPERATORS,
+  TIME_OF_DAY,
   TIME_UNITS,
   createChart,
   createExport,

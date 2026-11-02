@@ -126,7 +126,25 @@ function validateCode(code, kind, symbols, offset = 0, functionNames = []) {
   const diagnostics = [];
   walk.simple(parsed.ast, {
     CallExpression(node) {
-      if (node.callee.type !== "Identifier" || !import_chart_helpers.CHANGE_HELPERS.has(node.callee.name)) {
+      if (node.callee.type !== "Identifier") {
+        return;
+      }
+      if (node.callee.name === "getState" && !declared.has("getState")) {
+        const arg2 = node.arguments[0];
+        if (!(arg2?.type === "Literal" && typeof arg2.value === "string" && arg2.value.trim())) {
+          const { start, end } = arg2 ?? node;
+          diagnostics.push(
+            createDiagnostic(
+              start + offset,
+              end + offset,
+              "error",
+              'getState() needs the ID of the state as text, e.g. getState("0_userdata.0.temperature")'
+            )
+          );
+        }
+        return;
+      }
+      if (!import_chart_helpers.CHANGE_HELPERS.has(node.callee.name)) {
         return;
       }
       const arg = node.arguments[0];
@@ -246,9 +264,10 @@ function getFunctionNames(chart) {
 function prepareHelperCalls(code, kind, createCallId) {
   const parsed = code.trim() ? parseCode(code, kind) : null;
   if (!parsed || "diagnostic" in parsed) {
-    return { code, names: [] };
+    return { code, names: [], stateIds: [] };
   }
   const names = /* @__PURE__ */ new Set();
+  const stateIds = /* @__PURE__ */ new Set();
   const replacements = [];
   walk.simple(parsed.ast, {
     CallExpression(node) {
@@ -256,7 +275,11 @@ function prepareHelperCalls(code, kind, createCallId) {
         return;
       }
       const arg = node.arguments[0];
-      if (node.callee.name === "duration") {
+      if (node.callee.name === "getState") {
+        if (arg?.type === "Literal" && typeof arg.value === "string") {
+          stateIds.add(arg.value);
+        }
+      } else if (node.callee.name === "duration") {
         const at = code.indexOf("(", node.callee.end) + 1;
         const id = JSON.stringify(createCallId());
         replacements.push({ start: at, end: at, text: node.arguments.length ? `${id}, ` : id });
@@ -274,7 +297,7 @@ function prepareHelperCalls(code, kind, createCallId) {
   for (const { start, end, text } of replacements.sort((a, b) => b.start - a.start)) {
     result = result.substring(0, start) + text + result.substring(end);
   }
-  return { code: result, names: [...names] };
+  return { code: result, names: [...names], stateIds: [...stateIds] };
 }
 function validateChart(chart) {
   const functionNames = getFunctionNames(chart);

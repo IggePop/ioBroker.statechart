@@ -158,11 +158,11 @@ export function generateChartCode(chart: Chart, chartId: string): string {
                 .filter(Boolean)
                 .join(", ");
             lines.push(
-                `let ${symbol.name} = getState(${JSON.stringify(symbol.stateId)}); // input, wakes up the chart ${trigger}`,
+                `let ${symbol.name} = getState(${JSON.stringify(symbol.stateId)})?.val; // input, wakes up the chart ${trigger}`,
             );
         } else {
             lines.push(
-                `let ${symbol.name} = getState(${JSON.stringify(symbol.stateId)}); // output, see writeChangedOutputs()`,
+                `let ${symbol.name} = getState(${JSON.stringify(symbol.stateId)})?.val; // output, see writeChangedOutputs()`,
             );
         }
     }
@@ -485,12 +485,12 @@ export function generateChartCode(chart: Chart, chartId: string): string {
         "}",
         "",
         "// Provided by the adapter:",
-        "// getState(id)        current value of an ioBroker state",
         "// isActive(stateId)   true if the state of the chart is active",
         "// entryCount(stateId) how often the state was entered",
         "// timeInState(stateId) milliseconds since the state was entered; when it reaches the delay of an",
         "//                     after(n, unit) or at(n, unit) of the state, a timer calls wakeup(null)",
-        "// timerFired(id)      true in the wakeup(null) of the timer of at(n, unit) or every(n, unit) of the transition",
+        '// timerFired(id)      true in the wakeup(null) of the timer of at(n, unit), every(n, unit) or at("sunset")',
+        '//                     of the transition; at("sunset", offset) and at("22:30") have a timer for every day',
         "// inputCount(stateId, input)",
         "//                     the wakeups by the input since the state was entered, for e.g. after(3, button)",
         "// trueFor(id)         milliseconds the condition of after(n, unit, condition) of the transition has been true,",

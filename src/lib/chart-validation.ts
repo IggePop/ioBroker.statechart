@@ -149,7 +149,26 @@ export function validateCode(
     // the change detection needs a variable of the chart, not any value
     walk.simple(parsed.ast, {
         CallExpression(node) {
-            if (node.callee.type !== "Identifier" || !CHANGE_HELPERS.has(node.callee.name)) {
+            if (node.callee.type !== "Identifier") {
+                return;
+            }
+            if (node.callee.name === "getState" && !declared.has("getState")) {
+                // the states are read at the start, so their IDs must be known
+                const arg = node.arguments[0];
+                if (!(arg?.type === "Literal" && typeof arg.value === "string" && arg.value.trim())) {
+                    const { start, end } = arg ?? node;
+                    diagnostics.push(
+                        createDiagnostic(
+                            start + offset,
+                            end + offset,
+                            "error",
+                            'getState() needs the ID of the state as text, e.g. getState("0_userdata.0.temperature")',
+                        ),
+                    );
+                }
+                return;
+            }
+            if (!CHANGE_HELPERS.has(node.callee.name)) {
                 return;
             }
             const arg = node.arguments[0];
@@ -313,22 +332,25 @@ export function getFunctionNames(chart: Chart): string[] {
  * - hasChanged(), hasChangedFrom() and hasChangedTo() need the name of the variable in their first argument,
  *   it is replaced by the name in quotes
  * - duration() measures each call on its own, an ID of the call is added as first argument
+ * - getState() reads the states which are loaded at the start, their IDs are collected
  *
  * @param code The code
  * @param kind Expression or statements
  * @param createCallId Creates the ID of a duration() call
- * @returns the changed code and the names of the variables, the unchanged code if it has syntax errors
+ * @returns the changed code, the names of the variables and the IDs of the states read by getState(),
+ * the unchanged code if it has syntax errors
  */
 export function prepareHelperCalls(
     code: string,
     kind: CodeKind,
     createCallId: () => string,
-): { code: string; names: string[] } {
+): { code: string; names: string[]; stateIds: string[] } {
     const parsed = code.trim() ? parseCode(code, kind) : null;
     if (!parsed || "diagnostic" in parsed) {
-        return { code, names: [] };
+        return { code, names: [], stateIds: [] };
     }
     const names = new Set<string>();
+    const stateIds = new Set<string>();
     /** the text replacing the code from start to end */
     const replacements: { start: number; end: number; text: string }[] = [];
     walk.simple(parsed.ast, {
@@ -337,7 +359,11 @@ export function prepareHelperCalls(
                 return;
             }
             const arg = node.arguments[0];
-            if (node.callee.name === "duration") {
+            if (node.callee.name === "getState") {
+                if (arg?.type === "Literal" && typeof arg.value === "string") {
+                    stateIds.add(arg.value);
+                }
+            } else if (node.callee.name === "duration") {
                 // after the opening bracket
                 const at = code.indexOf("(", node.callee.end) + 1;
                 const id = JSON.stringify(createCallId());
@@ -356,7 +382,7 @@ export function prepareHelperCalls(
     for (const { start, end, text } of replacements.sort((a, b) => b.start - a.start)) {
         result = result.substring(0, start) + text + result.substring(end);
     }
-    return { code: result, names: [...names] };
+    return { code: result, names: [...names], stateIds: [...stateIds] };
 }
 
 export interface ChartProblem {

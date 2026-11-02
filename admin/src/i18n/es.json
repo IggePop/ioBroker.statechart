@@ -22,7 +22,7 @@
     "Delete state": "Delete state",
     "Transition": "Transition",
     "Label": "Label",
-    "labelHelp": "event[condition]{action}, every part is optional. Event: name of an input, or a temporal expression like after(5, sec), before(...), at(...), every(...), after(3, input) or after(5, min, condition)",
+    "labelHelp": "event[condition]{action}, every part is optional. Event: name of an input, or a temporal expression like after(5, sec), before(...), at(...), every(...), after(3, input), after(5, min, condition) or at(\"sunset\", -30)",
     "Priority": "Priority",
     "priorityHelp": "Transitions of the same state are checked in this order",
     "Delete transition": "Delete transition",
@@ -136,6 +136,8 @@
     "No variables": "None yet",
     "No state selected": "No state selected",
     "Wake up options": "Wake up options",
-    "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)": "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)",
-    "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input"
+    "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input",
+    "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)",
+    "Unknown time \"%s\", use a time like \"22:30\" or one of: %s": "Unknown time \"%s\", use a time like \"22:30\" or one of: %s",
+    "getState() needs the ID of the state as text, e.g. getState(\"0_userdata.0.temperature\")": "getState() needs the ID of the state as text, e.g. getState(\"0_userdata.0.temperature\")"
 }

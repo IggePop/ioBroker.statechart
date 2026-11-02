@@ -40,7 +40,9 @@ describe("chart-codegen => generateChartCode", () => {
 
     it("contains variables, function blocks and the machine", () => {
         const code = generateChartCode(createChart(), "heating");
-        expect(code).to.include('let temp = getState("test.0.temp"); // input, wakes up the chart on every update');
+        expect(code).to.include(
+            'let temp = getState("test.0.temp")?.val; // input, wakes up the chart on every update',
+        );
         expect(code).to.include("let count = 0; // local");
         expect(code).to.include("const written = { heating };");
         expect(code).to.include("function tooWarm(t) {\n    return t > 22;\n}");

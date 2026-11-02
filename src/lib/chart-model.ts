@@ -190,9 +190,15 @@ export const TEMPORAL_OPERATORS: TemporalOperator[] = ["after", "before", "at", 
  * - every(n, unit): every n units
  * - op(n, input): the same, counting the wakeups by the input instead of the time
  * - after(n, unit, condition): as soon as the condition is true for n units without interruption
+ * - at("sunset", offsetMinutes) or at("22:30"): every day at an astro event or a time of day, not measured from
+ *   entering the state
  */
 export interface TemporalExpression {
     operator: TemporalOperator;
+    /** at(...) every day: name of an astro event (see ASTRO_EVENTS) or a time of day "HH:mm" */
+    time?: string;
+    /** at(...) every day: minutes added to the time, may be negative */
+    offsetMinutes?: number;
     /** Time based: the time in milliseconds */
     ms?: number;
     /** Counting: the number of wakeups by the input */
@@ -342,9 +348,30 @@ function readEnclosed(
     throw new LabelSyntaxError('Missing "%s"', [close], start, text.length);
 }
 
+/** Astro events which can be used in at("sunset") and astroTime("sunset"), as calculated by suncalc */
+export const ASTRO_EVENTS = [
+    "sunrise",
+    "sunriseEnd",
+    "goldenHourEnd",
+    "solarNoon",
+    "goldenHour",
+    "sunsetStart",
+    "sunset",
+    "dusk",
+    "nauticalDusk",
+    "night",
+    "nadir",
+    "nightEnd",
+    "nauticalDawn",
+    "dawn",
+];
+
+/** A time of day, "HH:mm" or "HH:mm:ss" */
+export const TIME_OF_DAY = /^([01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+
 /** Message for invalid temporal expressions */
 const INVALID_TEMPORAL =
-    'Invalid temporal expression "%s", expected e.g. after(5, sec), every(10, min), after(3, button) or after(5, min, condition)';
+    'Invalid temporal expression "%s", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at("sunset", -30)';
 
 /**
  * Splits the arguments of a call at the commas outside of brackets and strings
@@ -409,6 +436,27 @@ function parseTemporal(
         throw new LabelSyntaxError(INVALID_TEMPORAL, [text.substring(from, end)], from, end);
     };
     const args = splitArguments(text, open + 1, end - 1);
+    const quoted = /^(["'])(.*)\1$/.exec(args[0]?.text ?? "");
+    if (quoted) {
+        // every day at an astro event or a time of day: at("sunset", -30)
+        const time = quoted[2].trim();
+        if (operator !== "at" || args.length > 2) {
+            fail();
+        }
+        if (!ASTRO_EVENTS.includes(time) && !TIME_OF_DAY.test(time)) {
+            throw new LabelSyntaxError(
+                'Unknown time "%s", use a time like "22:30" or one of: %s',
+                [time, ASTRO_EVENTS.join(", ")],
+                args[0].from,
+                args[0].from + args[0].text.length,
+            );
+        }
+        const temporal: TemporalExpression = { operator, time };
+        if (args.length === 2) {
+            temporal.offsetMinutes = /^[-+]?\d+(?:\.\d+)?$/.test(args[1].text) ? parseFloat(args[1].text) : fail();
+        }
+        return { temporal };
+    }
     const number = /^\d+(?:\.\d+)?$/.test(args[0]?.text) ? parseFloat(args[0].text) : fail();
     const unit = args[1]?.text ?? "";
     // every(0, sec) would never end

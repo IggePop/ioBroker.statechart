@@ -70,7 +70,7 @@ function useCodeTools(symbols: ChartSymbol[], functions: ChartFunction[], declar
                 // the temporal logic operators of transition labels
                 { label: "after", detail: "after(5, sec), after(3, input), after(5, min, condition)" },
                 { label: "before", detail: "before(5, sec), before(3, input)" },
-                { label: "at", detail: "at(5, sec), at(3, input)" },
+                { label: "at", detail: 'at(5, sec), at(3, input), at("sunset", -30), at("22:30")' },
                 { label: "every", detail: "every(10, min), every(3, input)" },
             ],
         };

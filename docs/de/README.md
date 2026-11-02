@@ -15,7 +15,7 @@ Adapter ausgeführt.
 - Grafischer Editor als eigener Eintrag in der Seitenleiste des Admins
 - Zustände mit `entry`-, `during`- und `exit`-Aktionen, verschachtelte und parallele Zustände (UND)
 - Übergänge mit Beschriftungen in der bekannten Syntax `event[bedingung]{aktion}`
-- Zeitlogik wie bei Stateflow: `after(5, sec)`, `before`, `at`, `every`, Zählen von Eingängen, `after(5, min, bedingung)`, `elapsed()`, `duration()`
+- Zeitlogik wie bei Stateflow: `after(5, sec)`, `before`, `at`, `every`, Zählen von Eingängen, `after(5, min, bedingung)`, `elapsed()`, `duration()`, und jeden Tag zu einer Uhrzeit oder einem Astro-Ereignis: `at("sunset", -30)`
 - Funktionsblöcke mit eigenen JavaScript-Funktionen, nutzbar in allen Bedingungen und Aktionen
 - Eingänge und Ausgänge, die mit beliebigen ioBroker-Datenpunkten verbunden sind
 - Live-Ansicht: Der aktive Zustand wird im Editor hervorgehoben, die aktuellen Werte der Variablen werden angezeigt,
@@ -25,7 +25,7 @@ Adapter ausgeführt.
 - Import und Export von Charts als JSON-Dateien
 - Kommentare zu Zuständen, Übergängen und Funktionsblöcken sowie Notizen auf der Zeichenfläche
 - Pro Eingang: Aufwecken bei jeder Aktualisierung oder nur bei Änderung, Filter nach ack, Entprellen
-- Hilfsfunktionen: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, Änderungserkennung (hasChanged...)
+- Hilfsfunktionen: getState (beliebige Datenpunkte), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, Änderungserkennung (hasChanged...)
 - Rückgängig/Wiederholen (Strg+Z, Strg+Y), Kopieren/Ausschneiden/Einfügen von Zuständen und Funktionsblöcken (Strg+C, Strg+X, Strg+V), auch zwischen Charts, und eine Warnung bei ungespeicherten Änderungen
 - **Code anzeigen**: das aus dem Chart generierte JavaScript, das genau zeigt, wie der Adapter es ausführt
 

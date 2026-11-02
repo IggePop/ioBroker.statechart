@@ -32,11 +32,19 @@ Quellzustands gemessen, in den Einheiten `msec`, `sec` und `min`:
 | `at(n, einheit)` | genau einmal: beim Aufwecken durch seinen Timer nach *n* Einheiten, nicht später | `at(10, min)` |
 | `every(n, einheit)` | alle *n* Einheiten, beim Aufwecken durch seinen Timer | `every(15, min){zaehler++;}` |
 | `after(n, einheit, bedingung)` | sobald die Bedingung *n* Einheiten ununterbrochen wahr ist. Ein Timer weckt das Chart genau dann | `after(5, min, !motion)` |
+| `at("ereignis", minuten)` | jeden Tag zu einem Astro-Ereignis, optional um Minuten verschoben (negativ: vorher), beim Aufwecken durch seinen Timer | `at("sunset", -30)` |
+| `at("HH:mm")` | jeden Tag zu dieser Uhrzeit | `at("22:30")[!fenster]` |
 
 Dieselben Operatoren können statt der Zeit das Aufwecken durch einen Eingang zählen: `after(3, taster)` gilt beim
 dritten und jedem weiteren Aufwecken durch `taster` seit dem Betreten des Zustands, `at(3, taster)` nur beim dritten,
 `every(2, taster)` bei jedem zweiten und `before(3, taster)` bei den ersten beiden. Diese Übergänge werden nur beim
 Aufwecken durch diesen Eingang geprüft, das Aufwecken, das den Zustand betreten hat, zählt nicht mit.
+
+`at("sunset")` und `at("22:30")` werden nicht ab dem Betreten des Zustands gemessen: Solange der Zustand aktiv ist,
+gelten sie einmal am Tag zu dieser Zeit. Astro-Ereignisse: `sunrise`, `sunriseEnd`, `goldenHourEnd`, `solarNoon`,
+`goldenHour`, `sunsetStart`, `sunset`, `dusk`, `nauticalDusk`, `night`, `nadir`, `nightEnd`, `nauticalDawn`, `dawn`,
+berechnet für den Standort aus den ioBroker-Systemeinstellungen. Findet ein Ereignis an einem Tag nicht statt
+(Polargebiete), gilt der Übergang an diesem Tag nicht.
 
 Die Bedingung von `after(n, einheit, bedingung)` wird bei jedem Aufwecken geprüft. Sie sollte daher von Eingängen und
 Variablen abhängen, nicht von Funktionen wie `isTimeBetween()`, die sich ohne Aufwecken ändern. In Bedingungen und
@@ -118,12 +126,14 @@ In Bedingungen, Aktionen und Funktionsblöcken:
 | `hasChanged(variable)` | wahr, wenn sich die Variable geändert hat, siehe unten |
 | `hasChangedFrom(variable, wert)` | wahr, wenn sich die Variable geändert hat und vorher `wert` war |
 | `hasChangedTo(variable, wert)` | wahr, wenn sich die Variable auf `wert` geändert hat, z.B. `hasChangedTo(taster, true)` für eine steigende Flanke |
+| `getState("id")` | liest einen beliebigen ioBroker-Datenpunkt: `{ val, ack, ts, lc }`, `null` wenn es ihn nicht gibt, z.B. `[getState("0_userdata.0.lux").val < 50]`. Die ID muss als Text dastehen: Der Adapter liest diese Datenpunkte beim Start des Charts und hält sie aktuell. Anders als Eingänge wecken sie das Chart nicht |
 | `elapsed(einheit)` | Zeit seit Betreten des Zustands (in Bedingungen von Übergängen: des Quellzustands), Einheit `sec` (Standard), `msec` oder `min`, z.B. `[elapsed(min) > 10]` |
 | `duration(bedingung, einheit)` | Zeit, die die Bedingung ununterbrochen wahr ist, gemessen beim Aufwecken, Einheit `sec` (Standard), `msec` oder `min`. Weckt das Chart nicht, dafür gibt es `after(n, einheit, bedingung)` |
 
-`isDaytime()` und `astroTime()` nutzen den Standort aus den ioBroker-Systemeinstellungen. Andere Datenpunkte liest
-man über Eingänge: Ihre Variablen sind immer aktuell und wecken das Chart. Zeitabhängige Funktionen wecken das
-Chart nicht von selbst, sie werden beim Aufwecken ausgewertet.
+`isDaytime()` und `astroTime()` nutzen den Standort aus den ioBroker-Systemeinstellungen. Datenpunkte, deren Änderung
+das Chart wecken soll, werden als Eingänge angelegt, `getState()` ist für Datenpunkte, die nur in einer Bedingung oder
+Aktion gebraucht werden. Zeitabhängige Funktionen wecken das Chart nicht von selbst, sie werden beim Aufwecken
+ausgewertet, für eine Uhrzeit gibt es `at("22:30")`.
 
 Die **Änderungserkennung** funktioniert wie in Stateflow: Sie vergleicht den Wert der Variablen zu Beginn des
 aktuellen Aufweckens mit ihrem Wert zu Beginn des vorherigen. Eingänge, Ausgänge und lokale Variablen lassen sich

@@ -43,6 +43,7 @@ var import_chart_structure = require("./chart-structure");
 var import_chart_validation = require("./chart-validation");
 const SCRIPT_TIMEOUT_MS = 1e3;
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
+const DAY_MS = 24 * 60 * 60 * 1e3;
 const PERSISTED_VERSION = 1;
 function getChartHash(chart) {
   const logic = {
@@ -63,6 +64,9 @@ function getChartHash(chart) {
     functions: (chart.functions || []).map((fn) => fn.code)
   };
   return import_node_crypto.default.createHash("sha1").update(JSON.stringify(logic)).digest("hex");
+}
+function toSnapshot(state) {
+  return state ? { val: state.val, ack: !!state.ack, ts: state.ts, lc: state.lc } : null;
 }
 class ChartRuntime {
   constructor(chartId, chart, host) {
@@ -131,6 +135,10 @@ class ChartRuntime {
   preparedCode = /* @__PURE__ */ new Map();
   /** the variables used by hasChanged() etc. */
   changeVariables = /* @__PURE__ */ new Set();
+  /** the IDs of the states read by getState(), they are read at the start and then kept up to date */
+  readStateIds = /* @__PURE__ */ new Set();
+  /** the states read by getState(), null if a state does not exist */
+  stateCache = /* @__PURE__ */ new Map();
   /** their values at the start of the previous wakeup, null before the second wakeup */
   previousValues = null;
   /** their values at the start of the current wakeup, null before the first one */
@@ -179,6 +187,9 @@ class ChartRuntime {
       for (const name of quoted.names) {
         this.changeVariables.add(name);
       }
+      for (const id of quoted.stateIds) {
+        this.readStateIds.add(id);
+      }
       this.preparedCode.set(key, prepared);
     }
     return prepared;
@@ -190,11 +201,33 @@ class ChartRuntime {
     return this.chart.symbols.filter((s) => s.scope === "input" && s.stateId).map((s) => s.stateId);
   }
   /**
+   * IDs of all states whose changes must be passed to handleStateChange(): the inputs and the states read by
+   * getState()
+   */
+  get subscribedStateIds() {
+    return [.../* @__PURE__ */ new Set([...this.inputStateIds, ...this.readStateIds])];
+  }
+  /**
    * @param options Start options
    * @param options.restore Continue with the persisted state, if the chart was not changed since
    */
   async start(options = {}) {
     this.logProblems();
+    for (const id of this.readStateIds) {
+      try {
+        let state;
+        if (this.host.getState) {
+          state = await this.host.getState(id);
+        } else {
+          const val = await this.host.readState(id);
+          state = val === void 0 ? null : { val, ack: true, ts: this.now(), lc: this.now() };
+        }
+        this.stateCache.set(id, toSnapshot(state));
+      } catch (err) {
+        this.host.log.warn(`[${this.chart.name}] Cannot read ${id}: ${err.message}`);
+        this.stateCache.set(id, null);
+      }
+    }
     for (const symbol of this.chart.symbols) {
       if (symbol.scope === "local") {
         this.sandbox[symbol.name] = structuredClone(symbol.initial);
@@ -408,7 +441,13 @@ class ChartRuntime {
     const timers = [];
     this.timers.set(id, timers);
     for (const transition of this.temporalTransitions.get(id) || []) {
-      const { operator, ms, condition } = transition.temporal;
+      const { operator, ms, condition, time } = transition.temporal;
+      if (time !== void 0) {
+        const timer2 = {};
+        timers.push(timer2);
+        this.scheduleDaily(id, transition, timer2, this.now());
+        continue;
+      }
       if (ms === void 0 || operator === "before" || condition !== void 0) {
         continue;
       }
@@ -436,6 +475,69 @@ class ChartRuntime {
       }
       this.scheduleAt(due, timer, () => fire(due));
     }
+  }
+  /**
+   * Starts the timer of at("sunset", offset) or at("22:30") for the next time, which wakes up the chart
+   *
+   * @param stateId ID of the source state
+   * @param transition The transition
+   * @param timer Gets the handle of the timeout
+   * @param after The timer is started for the next time after this one (ms since 1970)
+   */
+  scheduleDaily(stateId, transition, timer, after) {
+    let due;
+    try {
+      due = this.getNextDailyTime(transition.temporal, after);
+    } catch (err) {
+      this.host.log.warn(`[${this.chart.name}] ${transition.where}: ${err.message}`);
+      return;
+    }
+    if (due === null) {
+      this.scheduleAt(
+        after + DAY_MS,
+        timer,
+        () => this.scheduleDaily(stateId, transition, timer, after + DAY_MS)
+      );
+      return;
+    }
+    this.scheduleAt(due, timer, () => {
+      this.firedTimers.add(transition.id);
+      try {
+        this.wakeup(null);
+      } finally {
+        this.firedTimers.delete(transition.id);
+      }
+      if (this.timers.get(stateId)?.includes(timer)) {
+        this.scheduleDaily(stateId, transition, timer, Math.max(due, this.now()));
+      }
+    });
+  }
+  /**
+   * @param temporal at("sunset", offset) or at("22:30")
+   * @param after The time is searched after this one (ms since 1970)
+   * @returns the next time (ms since 1970), null if there is none in the next week (astro events in polar regions)
+   * @throws {Error} for astro events if no location is configured
+   */
+  getNextDailyTime(temporal, after) {
+    const time = temporal.time;
+    const offset = (temporal.offsetMinutes ?? 0) * 6e4;
+    const day = new Date(after);
+    day.setDate(day.getDate() - 1);
+    for (let i = 0; i < 9; i++) {
+      let at;
+      if (import_chart_model.TIME_OF_DAY.test(time)) {
+        const [hours, minutes, seconds = 0] = time.split(":").map(Number);
+        at = new Date(day).setHours(hours, minutes, seconds, 0);
+      } else {
+        const event = this.getSunTimes(new Date(new Date(day).setHours(12, 0, 0, 0)))[time];
+        at = event instanceof Date ? event.getTime() : null;
+      }
+      if (at !== null && at + offset > after) {
+        return at + offset;
+      }
+      day.setDate(day.getDate() + 1);
+    }
+    return null;
   }
   /**
    * Logs the problems found by the validation, the chart is started anyway
@@ -531,6 +633,15 @@ class ChartRuntime {
         }
         return new Date(time.getTime() + (Number(offsetMinutes) || 0) * 6e4);
       },
+      getState: (id) => {
+        if (!this.stateCache.has(id)) {
+          throw new Error(
+            `getState() can only read states whose ID is written as text, e.g. getState("${id}")`
+          );
+        }
+        const state = this.stateCache.get(id);
+        return state ? { ...state } : null;
+      },
       elapsed: (unit = import_chart_model.TIME_UNITS.sec) => {
         const entered = this.context === null ? void 0 : this.enteredAt.get(this.context);
         if (entered === void 0) {
@@ -571,6 +682,18 @@ class ChartRuntime {
       throw new Error("No location (latitude/longitude) configured in the ioBroker system settings");
     }
     return import_suncalc.default.getTimes(date, location.latitude, location.longitude);
+  }
+  /**
+   * Must be called when one of the subscribedStateIds is updated
+   *
+   * @param stateId ID of the updated state
+   * @param state The new state
+   */
+  handleStateChange(stateId, state) {
+    if (this.readStateIds.has(stateId)) {
+      this.stateCache.set(stateId, toSnapshot(state));
+    }
+    this.handleInput(stateId, state.val, { ack: state.ack });
   }
   /**
    * Must be called when an input state is updated

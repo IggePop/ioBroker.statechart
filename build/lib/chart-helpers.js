@@ -53,6 +53,10 @@ const HELPERS = {
     signature: 'astroTime("sunset", offsetMinutes = 0)',
     description: "Time of an astro event today: sunrise, sunset, dawn, dusk, solarNoon, nauticalDawn, nauticalDusk, goldenHour, goldenHourEnd, night, nightEnd"
   },
+  getState: {
+    signature: 'getState("0_userdata.0.temperature")',
+    description: "Reads any ioBroker state: { val, ack, ts, lc }, null if it does not exist. The ID must be written as text. Unlike inputs, the state does not wake up the chart"
+  },
   elapsed: {
     signature: "elapsed(sec)",
     description: "Time since the state was entered (for transitions: the source state), in sec (default), msec or min"
