@@ -7,6 +7,9 @@ updates:
       time: "00:05"
       timezone: Europe/Berlin
     open-pull-requests-limit: 5
+    # new versions are only proposed after some days, to reduce the risk of compromised packages
+    cooldown:
+      default-days: 7
     assignees:
       - IggePop
     versioning-strategy: increase

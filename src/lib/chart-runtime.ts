@@ -129,6 +129,10 @@ export interface RuntimeHost {
     sendTo?: (instance: string, command: string, message: any) => void;
     /** Of the ioBroker system settings */
     getLocation?: () => Location | null;
+    /** Starts a timer, the adapter clears its timers when it is unloaded. Default: the global setTimeout() */
+    setTimeout?: (callback: () => void, ms: number) => unknown;
+    /** Stops a timer started by setTimeout() */
+    clearTimeout?: (handle: unknown) => void;
     /** Called when the active states change */
     onActiveChange: (active: { names: string; ids: string[] }) => void;
     /** Stores the state of the chart, called when it changes */
@@ -188,7 +192,7 @@ function toSnapshot(state: ioBroker.State | null | undefined): StateSnapshot | n
 
 /** A timer which may be re-armed, see ChartRuntime.scheduleAt() */
 interface Timer {
-    handle?: NodeJS.Timeout;
+    handle?: unknown;
     /** When it fires (ms since 1970, in the time of the chart, see ChartRuntime.now()) */
     due?: number;
     callback?: () => void;
@@ -280,7 +284,7 @@ export class ChartRuntime {
     /** the state whose condition or action is executed, used by elapsed() and duration() */
     context: string | null = null;
     /** timers of inputs with debounce, by variable name */
-    readonly debounceTimers = new Map<string, NodeJS.Timeout>();
+    readonly debounceTimers = new Map<string, unknown>();
     /** JSON of the last persisted data, to persist only changes */
     lastPersisted = "";
     /** name paths of the active leaf states, like the "activeState" state */
@@ -653,11 +657,36 @@ export class ChartRuntime {
     }
 
     /**
+     * Starts a timer with the functions of the host, so the adapter can clear it when it is unloaded
+     *
+     * @param callback Called when the time has come
+     * @param ms The delay
+     * @returns the handle to stop it
+     */
+    startTimeout(callback: () => void, ms: number): unknown {
+        return this.host.setTimeout ? this.host.setTimeout(callback, ms) : globalThis.setTimeout(callback, ms);
+    }
+
+    /**
+     * @param handle The handle of a timer started by startTimeout(), may be undefined
+     */
+    stopTimeout(handle: unknown): void {
+        if (handle === undefined) {
+            return;
+        }
+        if (this.host.clearTimeout) {
+            this.host.clearTimeout(handle);
+        } else {
+            globalThis.clearTimeout(handle as NodeJS.Timeout);
+        }
+    }
+
+    /**
      * @param timer The timer to stop, may be undefined
      */
     cancelTimer(timer: Timer | undefined): void {
         if (timer) {
-            clearTimeout(timer.handle);
+            this.stopTimeout(timer.handle);
             this.scheduled.delete(timer);
         }
     }
@@ -693,12 +722,12 @@ export class ChartRuntime {
      * @param callback Called at the time
      */
     scheduleAt(due: number, timer: Timer, callback: () => void): void {
-        clearTimeout(timer.handle);
+        this.stopTimeout(timer.handle);
         timer.due = due;
         timer.callback = callback;
         this.scheduled.add(timer);
         const remaining = due - this.now();
-        timer.handle = setTimeout(
+        timer.handle = this.startTimeout(
             () => {
                 if (remaining > MAX_TIMEOUT_MS && due - this.now() > 0) {
                     this.scheduleAt(due, timer, callback);
@@ -851,14 +880,14 @@ export class ChartRuntime {
         this.actor?.stop();
         this.actor = null;
         for (const timer of this.scheduled) {
-            clearTimeout(timer.handle);
+            this.stopTimeout(timer.handle);
         }
         this.scheduled.clear();
         this.timers.clear();
         this.expired.clear();
         this.durationTimers.clear();
         for (const timer of this.debounceTimers.values()) {
-            clearTimeout(timer);
+            this.stopTimeout(timer);
         }
         this.debounceTimers.clear();
         this.delayedWrites.clear();
@@ -1181,10 +1210,10 @@ export class ChartRuntime {
             const debounceMs = symbol.debounceMs || 0;
             if (debounceMs > 0) {
                 // wake up only after the input was quiet for the debounce time, with its last value
-                clearTimeout(this.debounceTimers.get(symbol.name));
+                this.stopTimeout(this.debounceTimers.get(symbol.name));
                 this.debounceTimers.set(
                     symbol.name,
-                    setTimeout(() => {
+                    this.startTimeout(() => {
                         this.debounceTimers.delete(symbol.name);
                         this.applyInput(symbol, val);
                     }, debounceMs),

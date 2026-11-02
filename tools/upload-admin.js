@@ -4,7 +4,7 @@
  * Writes the admin files directly into the file storage of the dev-server ioBroker.
  *
  * "dev-server upload" cannot be used while "dev-server watch" runs (on Windows the adapter directory is locked),
- * and "dev-server watch" does not synchronize the admin directory when jsonConfig is used.
+ * and "dev-server watch" does not synchronize the admin directory of this adapter.
  * "iobroker upload" would also update the instance object, which makes ioBroker start a second adapter process.
  * So only the files are written, objects are not touched. After changes of io-package.json use "dev-server upload".
  */

@@ -28,32 +28,6 @@
         "pl": "zmieniono nazwę z „statemachine” na „statechart”, ponieważ npm nie akceptuje starej nazwy (zbyt podobnej do istniejącego pakietu)",
         "uk": "перейменовано з «state-machine» на «statechart», оскільки npm не приймає старе ім'я (занадто схоже на існуючий пакет)",
         "zh-cn": "从 “状态机” 重命名为 “状态图”，因为 npm 不接受旧名称（与现有包太相似）"
-      },
-      "0.1.0": {
-        "en": "initial release\ngraphical chart editor in the admin side bar: states, transitions, nested states, function blocks, notes\ntransition labels in Stateflow syntax event[condition]{action}, timers with after(n, unit)\nexecution with Stateflow semantics (outer before inner transitions, inner transitions)\ncharts continue in their state after a restart of the adapter\nper input: wake up on updates or changes, filter by ack, debounce\nhelper functions: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime\ncode editor with syntax highlighting, error checks and completion, generated code view\nundo/redo, copy/paste, import/export of charts as JSON",
-        "de": "erste Version\nGrafikeditor in der Admin-Seitenleiste: Zustände, Übergänge, Funktionsblöcke, Notizen\nÜbergangslabel in Stateflow-Syntax event [condition] {action}, Timer mit after (n, unit)\nAusführung mit Stateflow-Semantik (außen vor inneren, inneren Übergängen)\nCharts bleiben auch nach einem Adapter-Neustart\npro Eingabe: Bei Änderungen wecken, nach Ack filtern, entprellen\nHilfsfunktionen: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime\nCode-Editor mit Syntaxhervorhebung, Fehlerprüfung und -vervollständigung\nUndo/Redo, Copy/Paste, Import/Export von Charts als JSON",
-        "ru": "первоначальный релиз\nграфический редактор диаграмм в боковой панели администратора: состояния, переходы, вложенные состояния, функциональные блоки, заметки\nметки переходов в синтаксическом событии Stateflow [условие] {action}, таймеры со значением после (n, единица измерения)\nвыполнение с использованием семантики Stateflow (внешний вид перед внутренними переходами, внутренние переходы)\nграфики остаются в своем состоянии после перезапуска адаптера\nза каждый вход: отслеживание обновлений или изменений, фильтрация по пакету, отмена\nвспомогательные функции: setState, setStateDelayed, SendTo, isTimeBetween, isDaytime, AstroTime\nредактор кода с подсветкой синтаксиса, проверкой и заполнением ошибок, сгенерированным представлением кода\nотмена/повтор, копирование/вставка, импорт/экспорт диаграмм в формате JSON",
-        "pt": "versão inicial\neditor gráfico na barra de administração: estados, transições, blocos de funções, notas\nrótulos de transição na sintaxe Stateflow event [condition] {action}, timers com after (n, unit)\nexecução com semântica Stateflow (externa antes da interna, interna)\nos gráficos continuam após o reinício do adaptador\npor entrada: ativar atualizações, filtrar por ack, debater\nfunções auxiliares: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime\neditor de código com realce de sintaxe, verificação e conclusão de erros, código gerado\nundo/redo, copie/cole, importe gráficos em JSON",
-        "nl": "eerste uitgave\ngrafische grafiekeditor in de zijbalk van de beheerder: staten, overgangen, geneste staten, functieblokken, notities\novergangslabels in de syntaxisgebeurtenis van Stateflow [conditie] {action}, timers met after (n, unit)\nuitvoering met Stateflow-semantiek (externe voor innerlijke overgangen, innerlijke overgangen)\nde kaarten blijven in hun staat na een herstart van de adapter\nper ingang: wakker worden bij updates of wijzigingen, filteren op ack, debounce\nhulpfuncties: setState, setState Delayed, SendTo, iTime Between, IsDaytime, AstroTime\ncode-editor met syntaxisaccentuering, foutcontroles en -aanvulling, gegenereerde codeweergave\ngrafieken ongedaan maken/opnieuw uitvoeren, kopiëren/plakken, importeren/exporteren als JSON",
-        "fr": "sortie initiale\néditeur de graphiques dans la barre d'administration : états, transitions, états imbriqués, blocs de fonctions, notes\nlibellés de transition dans Stateflow Syntax Event [condition] {action}, minuteurs après (n, unit)\nexécution avec la sémantique Stateflow (transitions extérieures avant intérieures)\nles cartes restent en l'état après le redémarrage de l'adaptateur\npar entrée : réveil en cas de mise à jour, filtre par ack, rebond\nfonctions auxiliaires : SetState, SetStateDelayed, SendTo, IsTimeBetween, IsDaytime, AstroTime\néditeur de code avec surlignage syntaxique, vérification des erreurs et saisie, vue du code généré\nannuler/rétablir, copier/coller, importer/exporter des graphiques au JSON",
-        "it": "prima versione\neditor grafico nella barra admin: stati, transizioni, stati annidati, blocchi funzione, note\netichette di transizione in sintassi Stateflow [condizione] {azione}, timer con dopo (n, unità)\nesecuzione con semantica Stateflow (esterna prima delle transizioni interne)\ni grafici restano così dopo il riavvio dell'adattatore\nper input: attiva le modifiche, filtra per ack, debounce\nfunzioni ausiliarie: setState, setStateDelayed, sendTo, isTimeBetween, isDayTime\neditor di codice con evidenziazione della sintassi, errori e vista generata\nannulla/redo, copia/incolla, import/export grafici in JSON",
-        "es": "versión inicial\neditor gráfico de gráficos en la barra de administración: estados, transiciones, anidados, bloques de funciones, notas\netiquetas de transición en Stateflow sintaxis event [condition] {action}, temporizadores con after (n, unit)\nejecución con la semántica de Stateflow (exterior antes que transiciones interiores)\nlos gráficos siguen en su estado tras reiniciar el adaptador\npor entrada: despertarse con cambios, filtrar por ack, rebote\nfunciones auxiliares: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime\neditor de código con resaltado de sintaxis, comprobación y finalización de errores, vista de código generada\ndeshacer, copiar y pegar, importar y exportar gráficos como JSON",
-        "pl": "wstępne wydanie\ngraficzny edytor wykresów na pasku bocznym administratora: stany, przejścia, stany zagnieżdżone, bloki funkcyjne, notatki\netykiety przejścia w zdarzeniu składni Stateflow [warunek] {action}, timery z after (n, unit)\nwykonanie z semantyką Stateflow (przejścia zewnętrzne przed wewnętrznymi, przejścia wewnętrzne)\nwykresy są kontynuowane w swoim stanie po ponownym uruchomieniu adaptera\nna wejście: budzić się przy aktualizacjach lub zmianach, filtrować według ack, rozbić\nfunkcje pomocnicze: setState, setStateDelayed, sendTo, istimeBetween, IsDaytime, AstroTime\nedytor kodu z podświetleniem składni, sprawdzaniem błędów i uzupełnianiem, generowanym widokiem kodu\ncofnij/powtórz, kopiuj/wklej, importu/eksportuj wykresy jako JSON",
-        "uk": "первинний випуск\nграфічний редактор діаграм в бічній панелі адміністратора: стани, переходи, вкладені стани, функціональні блоки, примітки\nмітки переходу в події синтаксису Stateflow [умова] {дія}, таймери з після (n, одиниця)\nвиконання з семантикою Stateflow (зовнішні перед внутрішніми переходами, внутрішні переходи)\nграфіки продовжуються в своєму стані після перезавантаження адаптера\nза вхід: прокидатися від оновлень або змін, фільтрувати за ack, debounce\nдопоміжні функції: setState, setStateLayed, SendTo, IsBetween, IsDaytime, AstroTime\nредактор коду з підсвічуванням синтаксису, перевіркою помилок і завершенням, переглядом згенерованого коду\nскасування/повторити, копіювати/вставити, імпорту/експортувати діаграми як JSON",
-        "zh-cn": "初始版本\n管理员侧栏中的图形图表编辑器：状态、过渡、嵌套状态、功能块、注释\nStateflow 语法中的过渡标签 event [condition] {action}，带有 after (n，单位) 的计时器\n使用 Stateflow 语义执行（内部过渡之前的外层，内部过渡）\n重新启动适配器后，图表继续保持其状态\n每个输入：更新或更改时唤醒，按 ack 过滤，去抖动\n辅助函数：setState、setStateDelayed、sendTo、isTimeBetween、isDayTime、AstroTime\n具有语法突出显示、错误检查和完成功能、生成的代码视图的代码编辑器\n撤消/重做、复制/粘贴、将图表导入/导出为 JSON"
-      },
-      "0.0.1": {
-        "en": "initial release",
-        "de": "Erstveröffentlichung",
-        "ru": "Начальная версия",
-        "pt": "lançamento inicial",
-        "nl": "Eerste uitgave",
-        "fr": "Première version",
-        "it": "Versione iniziale",
-        "es": "Versión inicial",
-        "pl": "Pierwsze wydanie",
-        "uk": "Початкова версія",
-        "zh-cn": "首次出版"
       }
     },
     "titleLang": {
@@ -86,7 +60,6 @@
       "Igge <mail@igge.org>"
     ],
     "keywords": [
-      "ioBroker",
       "state machine",
       "statechart",
       "automation",
@@ -110,7 +83,7 @@
     "connectionType": "local",
     "dataSource": "poll",
     "adminUI": {
-      "config": "json",
+      "config": "none",
       "tab": "materialize"
     },
     "adminTab": {
@@ -127,14 +100,11 @@
     ],
     "globalDependencies": [
       {
-        "admin": ">=7.6.17"
+        "admin": ">=7.6.20"
       }
     ]
   },
-  "native": {
-    "option1": true,
-    "option2": "42"
-  },
+  "native": {},
   "objects": [],
   "instanceObjects": []
 }

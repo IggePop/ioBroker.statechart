@@ -182,7 +182,10 @@ class Statechart extends utils.Adapter {
           const state = await this.getStateAsync(`charts.${chartId}.snapshot`);
           return typeof state?.val === "string" && state.val ? JSON.parse(state.val) : null;
         },
-        log: this.log
+        log: this.log,
+        // the timers of the adapter are cleared when it is unloaded
+        setTimeout: (callback, ms) => this.setTimeout(callback, ms),
+        clearTimeout: (handle) => this.clearTimeout(handle)
       },
       simulated
     );
@@ -204,7 +207,7 @@ class Statechart extends utils.Adapter {
     runtime.breakpoints = new Set(breakpoints);
     this.simulations.set(
       chartId,
-      setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS)
+      this.setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS)
     );
     try {
       await runtime.start();
@@ -236,7 +239,7 @@ class Statechart extends utils.Adapter {
    * @param chartId Chart ID
    */
   endSimulationTimer(chartId) {
-    clearTimeout(this.simulations.get(chartId));
+    this.clearTimeout(this.simulations.get(chartId));
     this.simulations.delete(chartId);
   }
   /**
@@ -273,10 +276,10 @@ class Statechart extends utils.Adapter {
     };
     const simulating = this.simulations.has(chartId);
     if (simulating) {
-      clearTimeout(this.simulations.get(chartId));
+      this.clearTimeout(this.simulations.get(chartId));
       this.simulations.set(
         chartId,
-        setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS)
+        this.setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS)
       );
     }
     const runtime = this.runtimes.get(chartId);
@@ -566,7 +569,7 @@ class Statechart extends utils.Adapter {
   onUnload(callback) {
     try {
       for (const timer of this.simulations.values()) {
-        clearTimeout(timer);
+        this.clearTimeout(timer);
       }
       this.simulations.clear();
       for (const runtime of this.runtimes.values()) {

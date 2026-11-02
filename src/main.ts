@@ -31,7 +31,7 @@ class Statechart extends utils.Adapter {
     /** the last events of each chart by chart ID, newest last, also stored in charts.<chart>.history */
     private histories = new Map<string, HistoryEntry[]>();
     /** charts which run as simulation (their runtime is in runtimes), with the timer which ends the simulation */
-    private simulations = new Map<string, NodeJS.Timeout>();
+    private simulations = new Map<string, ioBroker.Timeout | undefined>();
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -194,6 +194,9 @@ class Statechart extends utils.Adapter {
                     return typeof state?.val === "string" && state.val ? JSON.parse(state.val) : null;
                 },
                 log: this.log,
+                // the timers of the adapter are cleared when it is unloaded
+                setTimeout: (callback, ms) => this.setTimeout(callback, ms),
+                clearTimeout: handle => this.clearTimeout(handle as ioBroker.Timeout | undefined),
             },
             simulated,
         );
@@ -218,7 +221,7 @@ class Statechart extends utils.Adapter {
         // registered before the start, so the start can be cancelled like a running simulation
         this.simulations.set(
             chartId,
-            setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS),
+            this.setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS),
         );
         try {
             await runtime.start();
@@ -252,7 +255,7 @@ class Statechart extends utils.Adapter {
      * @param chartId Chart ID
      */
     private endSimulationTimer(chartId: string): void {
-        clearTimeout(this.simulations.get(chartId));
+        this.clearTimeout(this.simulations.get(chartId));
         this.simulations.delete(chartId);
     }
 
@@ -302,10 +305,10 @@ class Statechart extends utils.Adapter {
         const simulating = this.simulations.has(chartId);
         if (simulating) {
             // every message of the editor keeps the simulation alive
-            clearTimeout(this.simulations.get(chartId));
+            this.clearTimeout(this.simulations.get(chartId));
             this.simulations.set(
                 chartId,
-                setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS),
+                this.setTimeout(() => this.onSimulationTimeout(chartId), SIMULATION_TIMEOUT_MS),
             );
         }
         const runtime = this.runtimes.get(chartId);
@@ -615,7 +618,7 @@ class Statechart extends utils.Adapter {
     private onUnload(callback: () => void): void {
         try {
             for (const timer of this.simulations.values()) {
-                clearTimeout(timer);
+                this.clearTimeout(timer);
             }
             this.simulations.clear();
             for (const runtime of this.runtimes.values()) {

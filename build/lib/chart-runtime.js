@@ -445,11 +445,34 @@ class ChartRuntime {
     this.durationTimers.delete(id);
   }
   /**
+   * Starts a timer with the functions of the host, so the adapter can clear it when it is unloaded
+   *
+   * @param callback Called when the time has come
+   * @param ms The delay
+   * @returns the handle to stop it
+   */
+  startTimeout(callback, ms) {
+    return this.host.setTimeout ? this.host.setTimeout(callback, ms) : globalThis.setTimeout(callback, ms);
+  }
+  /**
+   * @param handle The handle of a timer started by startTimeout(), may be undefined
+   */
+  stopTimeout(handle) {
+    if (handle === void 0) {
+      return;
+    }
+    if (this.host.clearTimeout) {
+      this.host.clearTimeout(handle);
+    } else {
+      globalThis.clearTimeout(handle);
+    }
+  }
+  /**
    * @param timer The timer to stop, may be undefined
    */
   cancelTimer(timer) {
     if (timer) {
-      clearTimeout(timer.handle);
+      this.stopTimeout(timer.handle);
       this.scheduled.delete(timer);
     }
   }
@@ -483,12 +506,12 @@ class ChartRuntime {
    * @param callback Called at the time
    */
   scheduleAt(due, timer, callback) {
-    clearTimeout(timer.handle);
+    this.stopTimeout(timer.handle);
     timer.due = due;
     timer.callback = callback;
     this.scheduled.add(timer);
     const remaining = due - this.now();
-    timer.handle = setTimeout(
+    timer.handle = this.startTimeout(
       () => {
         if (remaining > MAX_TIMEOUT_MS && due - this.now() > 0) {
           this.scheduleAt(due, timer, callback);
@@ -625,14 +648,14 @@ class ChartRuntime {
     this.actor?.stop();
     this.actor = null;
     for (const timer of this.scheduled) {
-      clearTimeout(timer.handle);
+      this.stopTimeout(timer.handle);
     }
     this.scheduled.clear();
     this.timers.clear();
     this.expired.clear();
     this.durationTimers.clear();
     for (const timer of this.debounceTimers.values()) {
-      clearTimeout(timer);
+      this.stopTimeout(timer);
     }
     this.debounceTimers.clear();
     this.delayedWrites.clear();
@@ -926,10 +949,10 @@ class ChartRuntime {
       }
       const debounceMs = symbol.debounceMs || 0;
       if (debounceMs > 0) {
-        clearTimeout(this.debounceTimers.get(symbol.name));
+        this.stopTimeout(this.debounceTimers.get(symbol.name));
         this.debounceTimers.set(
           symbol.name,
-          setTimeout(() => {
+          this.startTimeout(() => {
             this.debounceTimers.delete(symbol.name);
             this.applyInput(symbol, val);
           }, debounceMs)

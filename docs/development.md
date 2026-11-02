@@ -52,6 +52,7 @@ Node.js 22.
 | `src/lib/chart-model.ts` | Chart model (shared by adapter and editor) and parser of the transition labels |
 | `src/lib/chart-runtime.ts` | Execution of a chart with XState |
 | `src/lib/chart-validation.ts` | Checks of conditions, actions and function blocks |
+| `src/lib/chart-analysis.ts` | Static check of the chart: unreachable states, transitions never taken, unused variables |
 | `src/lib/chart-codegen.ts` | Code shown by "Show code" in the editor |
 | `admin/src/` | Editor (React, React Flow, CodeMirror) |
-| `admin/jsonConfig.json` | Instance settings |
+| `admin/tab_m.html`, `admin/tab.css` | Page of the admin tab, the editor is loaded into it |
