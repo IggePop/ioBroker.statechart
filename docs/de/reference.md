@@ -1,0 +1,244 @@
+# ioBroker.statechart: Referenz
+
+[Übersicht](README.md) | [English](../en/reference.md)
+
+## Beschriftung von Übergängen
+
+```
+event[bedingung]{aktion}
+```
+
+Alle Teile sind optional und dürfen über mehrere Zeilen gehen.
+
+| Teil | Bedeutung | Beispiel |
+|---|---|---|
+| `event` | Name eines Eingangs: Der Übergang wird nur geprüft, wenn sich dieser Eingang ändert | `motion` |
+| `after(n, einheit)` | Statt eines Events: ein Zeitausdruck, siehe unten | `after(30, sec)` |
+| `[bedingung]` | JavaScript-Ausdruck, der Übergang wird nur genommen, wenn er wahr ist | `[temp > 21 && !fenster]` |
+| `{aktion}` | JavaScript, wird ausgeführt, wenn der Übergang genommen wird | `{zaehler++; licht = true;}` |
+
+Ohne Event wird ein Übergang bei jeder Änderung eines beliebigen Eingangs geprüft. Hat ein Zustand
+mehrere ausgehende Übergänge, werden sie in der Reihenfolge ihrer **Priorität** geprüft (steht am Pfeil).
+
+### Zeitlogik
+
+Statt eines Events kann ein Übergang wie bei Stateflow einen Zeitausdruck haben. Die Zeit wird ab dem Betreten des
+Quellzustands gemessen, in den Einheiten `msec`, `sec` und `min`:
+
+| Ausdruck | Gültig | Beispiel |
+|---|---|---|
+| `after(n, einheit)` | ab *n* Einheiten. Ein Timer weckt das Chart, danach wird die Bedingung bei jedem weiteren Aufwecken erneut geprüft | `after(30, sec)[!motion]` |
+| `before(n, einheit)` | während der ersten *n* Einheiten, ohne Timer | `before(5, sec)[taster]` |
+| `at(n, einheit)` | genau einmal: beim Aufwecken durch seinen Timer nach *n* Einheiten, nicht später | `at(10, min)` |
+| `every(n, einheit)` | alle *n* Einheiten, beim Aufwecken durch seinen Timer | `every(15, min){zaehler++;}` |
+| `after(n, einheit, bedingung)` | sobald die Bedingung *n* Einheiten ununterbrochen wahr ist. Ein Timer weckt das Chart genau dann | `after(5, min, !motion)` |
+
+Dieselben Operatoren können statt der Zeit das Aufwecken durch einen Eingang zählen: `after(3, taster)` gilt beim
+dritten und jedem weiteren Aufwecken durch `taster` seit dem Betreten des Zustands, `at(3, taster)` nur beim dritten,
+`every(2, taster)` bei jedem zweiten und `before(3, taster)` bei den ersten beiden. Diese Übergänge werden nur beim
+Aufwecken durch diesen Eingang geprüft, das Aufwecken, das den Zustand betreten hat, zählt nicht mit.
+
+Die Bedingung von `after(n, einheit, bedingung)` wird bei jedem Aufwecken geprüft. Sie sollte daher von Eingängen und
+Variablen abhängen, nicht von Funktionen wie `isTimeBetween()`, die sich ohne Aufwecken ändern. In Bedingungen und
+Aktionen liefern `elapsed(einheit)` und `duration(bedingung, einheit)` die Zeiten als Zahl (siehe Hilfsfunktionen).
+Die Zähler und die Zeiten von `after(n, einheit, bedingung)` laufen nach einem Neustart des Adapters weiter.
+
+## Wann Eingänge das Chart aufwecken
+
+Jeder Eingang hat im Reiter **Variablen** unter **Optionen zum Aufwecken** drei Einstellungen (gleich sichtbar, wenn
+eine davon vom Standard abweicht):
+
+| Einstellung | Werte | Standard |
+|---|---|---|
+| **Aufwecken bei** | jeder Aktualisierung / nur bei Wertänderung | jeder Aktualisierung |
+| **Bestätigt (ack)** | egal / nur bestätigte Werte (`ack=true`) / nur Befehle (`ack=false`) | egal |
+| **Entprellen (ms)** | das Chart wird erst geweckt, wenn der Eingang so lange keine Aktualisierung bekommen hat, mit dem letzten Wert | 0 (aus) |
+
+Aktualisierungen, die wegen ack aussortiert werden, ändern die Variable nicht. Sie enthält dann z.B. nur bestätigte Werte.
+
+## Aktionen
+
+Aktionen und Bedingungen sind JavaScript. Alle Variablen des Charts sind direkt über ihren Namen
+verfügbar, dazu `Math`, `Date`, `JSON` usw. sowie `log("Text")` zum Schreiben ins ioBroker-Log.
+
+| Aktion | Wird ausgeführt |
+|---|---|
+| `entry` | beim Betreten des Zustands |
+| `during` | bei jedem Aufwecken des Charts, solange der Zustand aktiv ist und keiner seiner ausgehenden Übergänge genommen wird |
+| `exit` | beim Verlassen des Zustands |
+
+## Verschachtelte Zustände
+
+Lass einen Zustand über einem anderen los, um ihn zum **Unterzustand** zu machen, und zieh ihn wieder
+heraus, um das rückgängig zu machen. Beim Ziehen wird der Zustand hervorgehoben, in den er verschoben
+würde. Jede Ebene hat ihren eigenen Startzustand (Punkt mit Pfeil).
+
+- Beim Betreten eines Superstates wird auch sein Start-Unterzustand betreten (oder der Unterzustand,
+  auf den der Übergang zeigt). Beim Verlassen wird zuerst der aktive Unterzustand verlassen.
+- Bei jedem Aufwecken wird jeder aktive Zustand in dieser Reihenfolge bearbeitet, beginnend mit dem äußersten:
+  1. Übergänge, die den Zustand verlassen, 2. seine `during`-Aktion, 3. seine **inneren Übergänge**,
+  4. sein aktiver Unterzustand. Die Übergänge eines Superstates haben also Vorrang vor denen seiner Unterzustände.
+- Ein Übergang von einem Zustand zu einem seiner eigenen Unterzustände ist ein **innerer Übergang**
+  (Punkt am Anfang): Der Zustand bleibt aktiv, nur sein aktiver Unterzustand wird verlassen, seine
+  eigenen `entry`/`exit` laufen nicht. Mit der Option **Elternzustand verlassen und neu betreten** wird
+  er stattdessen verlassen und neu betreten.
+
+## Parallele Zustände
+
+Mit der Option **Unterzustände sind parallel (UND)** eines Zustands sind alle seine Unterzustände gleichzeitig aktiv
+statt genau einer, z.B. „Heizung“ und „Fenster“ in einem Zustand „Zuhause“. Die Option **Zustände der obersten Ebene
+sind parallel (UND)** des Charts macht dasselbe für die oberste Ebene. Wie bei Stateflow haben parallele Zustände einen
+gestrichelten Rahmen und zeigen oben rechts ihre Position in der Ausführungsreihenfolge. Sie haben keinen Startzustand.
+
+- Beim Betreten des Elternzustands werden alle parallelen Zustände betreten (jeder mit seinem Start-Unterzustand), in
+  ihrer Ausführungsreihenfolge. Beim Verlassen werden sie in umgekehrter Reihenfolge verlassen.
+- Bei jedem Aufwecken wird nach dem Elternzustand (seinen Übergängen und seiner `during`-Aktion) jeder parallele
+  Zustand in seiner Ausführungsreihenfolge bearbeitet, siehe oben. Ein Übergang in einem von ihnen hält die anderen
+  nicht auf, jeder kann also im selben Aufwecken einen Übergang nehmen. Ein Übergang, der den Elternzustand verlässt,
+  beendet die Bearbeitung der übrigen.
+- Die Ausführungsreihenfolge wird in den Eigenschaften der parallelen Zustände festgelegt: kleinere zuerst, Zustände
+  ohne Zahl nach den anderen.
+- Übergänge zwischen parallelen Zuständen oder zwischen ihren Unterzuständen sind nicht möglich, beide sind ohnehin
+  aktiv.
+- `activeState` enthält alle aktiven Zustände, durch Kommas getrennt, z.B. `Zuhause.Heizung.An, Zuhause.Fenster.Zu`.
+
+## Hilfsfunktionen
+
+In Bedingungen, Aktionen und Funktionsblöcken:
+
+| Funktion | Zweck |
+|---|---|
+| `log(text, stufe)` | schreibt ins ioBroker-Log, Stufe `"debug"`, `"info"` (Standard), `"warn"` oder `"error"` |
+| `setState(id, wert, ack)` | schreibt einen beliebigen Datenpunkt, `ack` ist standardmäßig `false` |
+| `setStateDelayed(id, wert, ms, ack)` | schreibt verzögert, wird beim Anhalten des Charts verworfen |
+| `sendTo(instanz, befehl, nachricht)` | sendet eine Nachricht an einen Adapter, z.B. `sendTo("telegram.0", "send", { text: "Fenster offen" })` |
+| `isTimeBetween("22:00", "06:00")` | wahr, wenn die aktuelle Uhrzeit im Bereich liegt, auch über Mitternacht |
+| `isDaytime()` | wahr zwischen Sonnenaufgang und Sonnenuntergang |
+| `astroTime("sunset", minuten)` | Zeitpunkt eines Astro-Ereignisses heute als `Date`: `sunrise`, `sunset`, `dawn`, `dusk`, `solarNoon`, ... |
+| `hasChanged(variable)` | wahr, wenn sich die Variable geändert hat, siehe unten |
+| `hasChangedFrom(variable, wert)` | wahr, wenn sich die Variable geändert hat und vorher `wert` war |
+| `hasChangedTo(variable, wert)` | wahr, wenn sich die Variable auf `wert` geändert hat, z.B. `hasChangedTo(taster, true)` für eine steigende Flanke |
+| `elapsed(einheit)` | Zeit seit Betreten des Zustands (in Bedingungen von Übergängen: des Quellzustands), Einheit `sec` (Standard), `msec` oder `min`, z.B. `[elapsed(min) > 10]` |
+| `duration(bedingung, einheit)` | Zeit, die die Bedingung ununterbrochen wahr ist, gemessen beim Aufwecken, Einheit `sec` (Standard), `msec` oder `min`. Weckt das Chart nicht, dafür gibt es `after(n, einheit, bedingung)` |
+
+`isDaytime()` und `astroTime()` nutzen den Standort aus den ioBroker-Systemeinstellungen. Andere Datenpunkte liest
+man über Eingänge: Ihre Variablen sind immer aktuell und wecken das Chart. Zeitabhängige Funktionen wecken das
+Chart nicht von selbst, sie werden beim Aufwecken ausgewertet.
+
+Die **Änderungserkennung** funktioniert wie in Stateflow: Sie vergleicht den Wert der Variablen zu Beginn des
+aktuellen Aufweckens mit ihrem Wert zu Beginn des vorherigen. Eingänge, Ausgänge und lokale Variablen lassen sich
+prüfen. Eine Aktualisierung mit demselben Wert ist keine Änderung, ebenso wenig ein Aufwecken durch einen anderen
+Eingang oder einen Timer. `[hasChangedTo(taster, true)]` ist also nur einmal pro Tastendruck wahr. Beim Aufwecken
+nach dem Start hat sich noch nichts geändert. Ändert eine Aktion eine lokale Variable, sieht man das erst beim
+nächsten Aufwecken, auch im Super-Step. Objekte und Arrays werden nach ihrem Inhalt verglichen.
+
+## Funktionsblöcke
+
+**Funktion hinzufügen** legt einen Block für eigenes JavaScript an. Er wird beim Start des Charts
+einmal ausgeführt. Alle darin deklarierten Funktionen und Konstanten können in jeder Bedingung und
+Aktion des Charts verwendet werden:
+
+```js
+const LIMIT = 22;
+
+function zuWarm(temp) {
+    return temp > LIMIT;
+}
+```
+
+Beschriftung eines Übergangs: `[zuWarm(temperatur)]{heizung = false;}`
+
+## Kommentare und Notizen
+
+- **Kommentar:** Zustände, Übergänge, Funktionsblöcke und das Chart selbst haben in ihren Eigenschaften ein Feld
+  **Kommentar**. Eine Sprechblase auf der Zeichenfläche zeigt, dass es einen Kommentar gibt, der Kommentar erscheint
+  als Tooltip.
+- **Notizen** (Symbol **Notiz hinzufügen** in der Werkzeugleiste) sind freie Texte auf der Zeichenfläche, wie
+  Haftzettel. Lass eine Notiz über einem Zustand los, dann bewegt sie sich mit ihm.
+
+Kommentare und Notizen haben keinen Einfluss auf die Ausführung. Sie stehen im generierten Code und in exportierten
+Dateien, und wenn sie sich ändern, wird der Zustand nach einem Neustart trotzdem wiederhergestellt.
+
+## Ein laufendes Chart beobachten
+
+Während ein Chart läuft, zeigt der Editor, was es tut:
+
+- Die **aktiven Zustände** haben einen grünen Rahmen.
+- **Live-Werte** (Tafel oben links auf der Zeichenfläche, ein- und ausgeschaltet mit dem letzten Symbol der
+  Werkzeugleiste): die aktuellen Werte aller Variablen. Sie stehen auch in der Zeile jeder Variable im Reiter **Variablen**.
+- Ein **Übergang leuchtet kurz auf**, wenn das Chart ihn nimmt.
+- Der Reiter **Verlauf** listet die Starts des Charts und die genommenen Übergänge, der neueste zuerst: wann, von
+  welchem Zustand zu welchem, ausgelöst durch welchen Eingang oder einen Timer (`after`), und welche Zustände danach
+  aktiv waren. Ein Klick auf einen Übergang wählt ihn im Chart aus. Der Adapter behält die letzten 200 Ereignisse,
+  auch bei geschlossenem Editor und über einen Neustart hinweg. **Verlauf leeren** löscht sie.
+
+Live-Werte und Verlauf kommen vom laufenden Chart. Sie beziehen sich also auf das gespeicherte Chart, nicht auf
+ungespeicherte Änderungen im Editor.
+
+## Import und Export
+
+- **Chart exportieren** (letztes Symbol in der Werkzeugleiste des Editors) speichert das Chart als JSON-Datei, mit
+  ungespeicherten Änderungen.
+- **Alle Charts exportieren** (Symbol über der Chart-Liste) speichert alle gespeicherten Charts in einer Datei.
+- **Charts importieren** (Symbol über der Chart-Liste) fügt die Charts einer solchen Datei als neue Charts hinzu,
+  vorhandene Charts werden nicht verändert. Die Datei wird vorher geprüft (Aufbau, IDs, Verweise zwischen Zuständen
+  und Übergängen).
+
+Importierte Charts sind **angehalten**: Ihre Variablen können auf Datenpunkte eines anderen Systems verweisen. Prüfe sie
+im Reiter **Variablen** und starte das Chart dann mit dem Knopf in der Chart-Liste.
+
+## Vom Adapter angelegte Datenpunkte
+
+Für jedes Chart legt der Adapter unter `statechart.<instanz>.charts.<chart>` an:
+
+| Datenpunkt | Inhalt |
+|---|---|
+| `activeState` | Name des aktiven Zustands, verschachtelte Zustände als `Eltern.Kind`, parallele durch Kommas getrennt |
+| `activeStateIds` | IDs aller aktiven Zustände als JSON |
+| `snapshot` | Gespeicherter Zustand des Charts (aktive Zustände, wann sie betreten wurden, lokale Variablen), siehe unten |
+| `values` | Aktuelle Werte aller Variablen als JSON, `{}` wenn das Chart nicht läuft |
+| `history` | Die letzten 200 Ereignisse (Starts und genommene Übergänge) als JSON. Schreiben ohne ack leert ihn |
+
+Das Chart selbst ist im Objekt `statechart.<instanz>.charts.<chart>` gespeichert.
+
+## Neustart des Adapters
+
+Nach einem Neustart des Adapters oder von ioBroker macht jedes Chart in den Zuständen weiter, die
+vorher aktiv waren, mit seinen lokalen Variablen. Die entry-Aktionen laufen nicht noch einmal, und Timer
+laufen mit ihrer Restzeit weiter. Ein Timer, der abgelaufen ist, während der Adapter gestoppt war, greift
+gleich nach dem Start. Wie nach jedem Start wacht das Chart dann einmal auf, so werden Änderungen der
+Eingänge während des Stopps bemerkt.
+
+Im Startzustand beginnt das Chart stattdessen, wenn es zwischendurch geändert wurde (Positionen im
+Editor zählen nicht), nach dem Speichern im Editor, nach dem Anhalten und wenn die Option **Zustand nach
+Neustart wiederherstellen** in den Chart-Eigenschaften ausgeschaltet ist. Variablen, die in
+Funktionsblöcken deklariert sind, werden nicht wiederhergestellt.
+
+## Ausführung und Unterschiede zu anderen Statechart-Werkzeugen
+
+- Der Adapter führt die Charts mit [XState](https://stately.ai/docs/xstate) aus.
+- Jede Änderung eines Eingangs weckt das Chart einmal auf, ebenso ein ablaufendes `after(...)` und der Start des
+  Charts (auch nach dem Wiederherstellen). Übergänge ohne Event, z.B. ohne Beschriftung, werden bei jedem Aufwecken
+  geprüft und greifen deshalb direkt nach dem Start, wenn ihre Bedingung wahr ist.
+- Standardmäßig wird pro Aufwecken nur ein Übergang genommen, ein folgender wartet auf das nächste Aufwecken. Mit der
+  Chart-Option **Weiterschalten, bis kein Übergang mehr gilt (Super-Step)** wird das Chart nach einem Übergang sofort
+  erneut geprüft, bis kein Übergang mehr gilt, wie bei der Super-Step-Semantik von Stateflow. Das Event eines
+  Eingangs zählt nur für den ersten Übergang eines Aufweckens, during-Aktionen können mehrmals laufen. Zum Schutz vor
+  Schleifen werden pro Aufwecken höchstens 100 Übergänge genommen, danach wird eine Warnung geloggt.
+- `{aktion}` wird während des Übergangs ausgeführt, also nach `exit` des alten und vor `entry` des
+  neuen Zustands. Eine eigene Condition Action und `/aktion` werden (noch) nicht unterstützt.
+- Übergänge werden wie bei Stateflow ausgewählt (außen vor innen, siehe oben), XState führt sie nur aus.
+  Reines XState würde die Übergänge der Unterzustände zuerst prüfen.
+- Zeitlogik wird in Echtzeit gemessen, nicht in Zeitschritten: Bedingungen werden nur beim Aufwecken geprüft.
+  `after(n, einheit, bedingung)` ersetzt das bei Stateflow übliche `[duration(bedingung) > n]`, das ein Aufwecken
+  zum richtigen Zeitpunkt bräuchte.
+- Bedingungen und Aktionen sind JavaScript, nicht MATLAB- oder C-Syntax.
+
+## Einschränkungen
+
+- History- und Verbindungspunkte werden noch nicht unterstützt.
+- Beim Löschen eines Superstates werden auch seine Unterzustände gelöscht.
+- Ungespeicherte Änderungen gehen verloren, wenn ein anderes Chart ausgewählt wird.
+- Bedingungen und Aktionen laufen in einem eigenen JavaScript-Kontext mit 1 Sekunde Zeitlimit, das
+  ist aber **keine Sicherheits-Sandbox**: Wer Charts bearbeiten darf, kann im Adapter beliebigen Code
+  ausführen, wie beim JavaScript-Adapter auch.
