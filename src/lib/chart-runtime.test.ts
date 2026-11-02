@@ -496,7 +496,7 @@ describe("chart-runtime => temporal transitions and restoring after a restart", 
         expect(host.active).to.deep.equal(["On"]);
     });
 
-    it("ignores comments and notes for the hash, but not the logic", () => {
+    it("ignores comments, notes and the layout for the hash, but not the logic", () => {
         const chart = createLightChart();
         const hash = getChartHash(chart);
         const documented = createLightChart();
@@ -504,6 +504,7 @@ describe("chart-runtime => temporal transitions and restoring after a restart", 
         documented.states[0].comment = "Light is off";
         documented.transitions[0].comment = "Motion switches it on";
         documented.notes = [{ id: "n1", text: "A note", x: 0, y: 0 }];
+        documented.transitions[0].labelOffset = { x: 20, y: -10 };
         expect(getChartHash(documented)).to.equal(hash);
         documented.transitions[0].label = "motion";
         expect(getChartHash(documented)).not.to.equal(hash);

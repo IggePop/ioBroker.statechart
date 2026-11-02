@@ -104,6 +104,8 @@ export interface ChartTransition {
     sourceAnchor?: EdgeAnchor;
     /** Where the arrow ends on the border of the target state, automatic if missing (editor only) */
     targetAnchor?: EdgeAnchor;
+    /** Moves the label away from the middle of the arrow, set by dragging it (editor only) */
+    labelOffset?: { x: number; y: number };
 }
 
 /** A point on the border of a state, set by dragging an end of a transition in the editor */
@@ -713,7 +715,10 @@ function normalizeChart(data: any, where: string): Chart {
         if (transition.priority !== undefined && !Number.isFinite(transition.priority)) {
             fail(`${at}: "priority" is no number`);
         }
-        return { ...transition };
+        const { labelOffset, ...rest } = transition;
+        // only the position of the label, an invalid one is dropped instead of rejecting the chart
+        const validOffset = isObject(labelOffset) && Number.isFinite(labelOffset.x) && Number.isFinite(labelOffset.y);
+        return { ...rest, ...(validOffset ? { labelOffset: { x: labelOffset.x, y: labelOffset.y } } : {}) };
     });
 
     const symbolNames = new Set<string>();

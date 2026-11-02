@@ -116,6 +116,21 @@ describe("chart-model => export and import", () => {
         expect(importError(c => (c.states[1].order = "first"))).to.match(/state on: "order" is no number/);
     });
 
+    it("keeps a valid label offset of a transition and drops an invalid one", () => {
+        const [chart] = parseExport(
+            JSON.stringify({
+                states: [{ id: "a" }],
+                transitions: [
+                    { id: "t1", source: "a", target: "a", labelOffset: { x: 10, y: -5, z: 1 } },
+                    { id: "t2", source: "a", target: "a", labelOffset: { x: "10", y: 0 } },
+                ],
+                symbols: [],
+            }),
+        );
+        expect(chart.transitions[0].labelOffset).to.deep.equal({ x: 10, y: -5 });
+        expect(chart.transitions[1]).to.not.have.property("labelOffset");
+    });
+
     it("keeps parallel states and history junctions and does not store the defaults", () => {
         const [chart] = parseExport(
             JSON.stringify({

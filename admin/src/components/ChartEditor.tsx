@@ -409,6 +409,33 @@ function ChartEditorInner({
         [record],
     );
 
+    /** Moves the label of a transition away from the middle of its arrow, undefined puts it back */
+    const moveLabel = useCallback(
+        (id: string, offset: { x: number; y: number } | undefined) => {
+            record(`transition:${id}:labelOffset`);
+            setEdges(eds =>
+                eds.map(e =>
+                    e.id === id && e.data
+                        ? { ...e, data: { ...e.data, transition: { ...e.data.transition, labelOffset: offset } } }
+                        : e,
+                ),
+            );
+        },
+        [record],
+    );
+
+    /** Selects a transition by its label, and shows its properties after a double click */
+    const selectByLabel = useCallback(
+        (id: string, properties: boolean) => {
+            setNodes(nds => nds.map(n => (n.selected ? { ...n, selected: false } : n)));
+            setEdges(eds => eds.map(e => (e.selected === (e.id === id) ? e : { ...e, selected: e.id === id })));
+            if (properties) {
+                showProperties();
+            }
+        },
+        [showProperties],
+    );
+
     /** Moves an end of a transition to another state (its grip was dropped on it) */
     const reconnectTransition = useCallback(
         (id: string, end: EdgeEnd, stateId: string) => {
@@ -778,10 +805,12 @@ function ChartEditorInner({
                     onAnchorChange: changeAnchor,
                     onReconnect: reconnectTransition,
                     onReconnectPreview: setDropTarget,
+                    onLabelMove: moveLabel,
+                    onSelect: selectByLabel,
                 },
             } as TransitionFlowEdge;
         });
-    }, [edges, nodes, problems, flashing, breakpoints, changeAnchor, reconnectTransition]);
+    }, [edges, nodes, problems, flashing, breakpoints, changeAnchor, reconnectTransition, moveLabel, selectByLabel]);
 
     /**
      * Selects a transition, e.g. from the history

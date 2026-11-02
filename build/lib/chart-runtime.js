@@ -58,6 +58,7 @@ function getChartHash(chart) {
         targetHandle: _t,
         sourceAnchor: _sa,
         targetAnchor: _ta,
+        labelOffset: _lo,
         comment: _c,
         ...transition
       }) => transition

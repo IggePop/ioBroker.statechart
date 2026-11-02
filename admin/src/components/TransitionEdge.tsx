@@ -53,6 +53,11 @@ function getLoopPath(sx: number, sy: number, tx: number, ty: number, side: Posit
     return [path, (sx + tx) / 2 + dx * out * 0.75, (sy + ty) / 2 + dy * out * 0.75];
 }
 
+/** A label dropped closer to the middle of its arrow goes back there */
+const LABEL_SNAP = 8;
+/** From this distance on, a moved label is connected to its arrow by a line */
+const LEADER_FROM = 30;
+
 /** Which end of a transition */
 export type EdgeEnd = "source" | "target";
 
@@ -76,6 +81,10 @@ type TransitionEdgeProps = EdgeProps<
         onReconnect?: (id: string, end: EdgeEnd, stateId: string) => void;
         /** Called while an end is dragged over another state, to highlight it (null: over no other state) */
         onReconnectPreview?: (stateId: string | null) => void;
+        /** Moves the label away from the middle of the arrow, undefined puts it back */
+        onLabelMove?: (id: string, offset: Point | undefined) => void;
+        /** Selects the transition (click on the label), and shows its properties (double click) */
+        onSelect?: (id: string, showProperties: boolean) => void;
     }>
 >;
 
@@ -202,6 +211,9 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     const targetAnchor = isValidAnchor(transition?.targetAnchor) ? transition.targetAnchor : undefined;
     /** an end dragged over another state: the edge is drawn to the pointer */
     const [preview, setPreview] = useState<{ end: EdgeEnd; point: Point } | null>(null);
+    /** the offset of the label while it is dragged, it is stored when it is dropped */
+    const [labelDrag, setLabelDrag] = useState<Point | null>(null);
+    const { screenToFlowPosition } = useReactFlow();
 
     // floating edges: the ends are on the borders of the states, facing each other, unless the user fixed them
     // by dragging. The handles are only used to create transitions, and for the side of self transitions.
@@ -234,6 +246,63 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
         const from = preview.end === "source" ? end : start;
         path = `M ${from.x} ${from.y} L ${preview.point.x} ${preview.point.y}`;
     }
+
+    const labelOffset = labelDrag ?? transition?.labelOffset ?? { x: 0, y: 0 };
+    /** where the label belongs to, the middle of the arrow */
+    const anchor = { x: labelX, y: labelY };
+    labelX += labelOffset.x;
+    labelY += labelOffset.y;
+
+    /**
+     * Drags the label. A click without moving selects the transition, like a click on the arrow.
+     *
+     * @param e The event
+     */
+    const onLabelPointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
+        if (e.button !== 0) {
+            return;
+        }
+        // React Flow must neither pan nor select something else
+        e.stopPropagation();
+        const label = e.currentTarget;
+        label.setPointerCapture(e.pointerId);
+        const startScreen = { x: e.clientX, y: e.clientY };
+        const startFlow = screenToFlowPosition(startScreen);
+        const startOffset = transition?.labelOffset ?? { x: 0, y: 0 };
+        let moved = false;
+        let offset = startOffset;
+        const move = (ev: PointerEvent): void => {
+            // small movements of a click are no drag
+            if (!moved && Math.hypot(ev.clientX - startScreen.x, ev.clientY - startScreen.y) < 4) {
+                return;
+            }
+            moved = true;
+            const position = screenToFlowPosition({ x: ev.clientX, y: ev.clientY });
+            offset = {
+                x: Math.round(startOffset.x + position.x - startFlow.x),
+                y: Math.round(startOffset.y + position.y - startFlow.y),
+            };
+            setLabelDrag(offset);
+        };
+        const stop = (ev: PointerEvent): void => {
+            label.removeEventListener("pointermove", move);
+            label.removeEventListener("pointerup", stop);
+            label.removeEventListener("pointercancel", stop);
+            setLabelDrag(null);
+            if (ev.type !== "pointerup") {
+                return;
+            }
+            if (!moved) {
+                data?.onSelect?.(id, false);
+            } else {
+                // dropped near the middle: back to the automatic position
+                data?.onLabelMove?.(id, Math.hypot(offset.x, offset.y) < LABEL_SNAP ? undefined : offset);
+            }
+        };
+        label.addEventListener("pointermove", move);
+        label.addEventListener("pointerup", stop);
+        label.addEventListener("pointercancel", stop);
+    };
 
     const problemColor = getProblemColor(data?.problems);
     const text = `${data?.showPriority ? `${transition?.priority ?? "?"}: ` : ""}${transition?.label || ""}`;
@@ -270,6 +339,19 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                     style={{ fill: "var(--xy-edge-stroke, var(--xy-edge-stroke-default))" }}
                 />
             )}
+            {Math.hypot(labelOffset.x, labelOffset.y) >= LEADER_FROM && !preview && (
+                // a moved label is connected to its arrow by a thin line
+                <path
+                    d={`M ${anchor.x} ${anchor.y} L ${labelX} ${labelY}`}
+                    style={{
+                        stroke: "var(--xy-edge-stroke, var(--xy-edge-stroke-default))",
+                        strokeWidth: 1,
+                        strokeDasharray: "2 3",
+                        fill: "none",
+                        pointerEvents: "none",
+                    }}
+                />
+            )}
             {showGrips && loopAnchor && (
                 <EndGrip
                     point={preview?.point ?? loopAnchor}
@@ -300,10 +382,16 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                 <EdgeLabelRenderer>
                     <Box
                         className="nodrag nopan"
+                        title={data?.onLabelMove ? I18n.t("labelDragHint") : undefined}
+                        onPointerDown={data?.onLabelMove ? onLabelPointerDown : undefined}
+                        onDoubleClick={() => data?.onSelect?.(id, true)}
                         sx={{
                             position: "absolute",
                             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
                             pointerEvents: "all",
+                            cursor: data?.onLabelMove ? "move" : undefined,
+                            // the selected transition is also shown at its label
+                            boxShadow: selected ? 2 : 0,
                             bgcolor: "background.paper",
                             color: problemColor ?? "text.primary",
                             border: 1,

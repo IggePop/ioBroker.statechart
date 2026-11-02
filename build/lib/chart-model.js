@@ -358,7 +358,9 @@ function normalizeChart(data, where) {
     if (transition.priority !== void 0 && !Number.isFinite(transition.priority)) {
       fail(`${at}: "priority" is no number`);
     }
-    return { ...transition };
+    const { labelOffset, ...rest } = transition;
+    const validOffset = isObject(labelOffset) && Number.isFinite(labelOffset.x) && Number.isFinite(labelOffset.y);
+    return { ...rest, ...validOffset ? { labelOffset: { x: labelOffset.x, y: labelOffset.y } } : {} };
   });
   const symbolNames = /* @__PURE__ */ new Set();
   const symbols = data.symbols.map((symbol, i) => {

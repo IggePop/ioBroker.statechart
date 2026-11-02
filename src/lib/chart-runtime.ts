@@ -63,6 +63,7 @@ export function getChartHash(chart: Chart): string {
                 targetHandle: _t,
                 sourceAnchor: _sa,
                 targetAnchor: _ta,
+                labelOffset: _lo,
                 comment: _c,
                 ...transition
             }) => transition,

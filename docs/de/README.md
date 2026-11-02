@@ -63,7 +63,9 @@ Voraussetzungen: Node.js 22 oder neuer, js-controller 6.0.11 oder neuer, Admin 7
    beginnen und enden dort, wo sich die Zustände gegenüberliegen, und folgen ihnen beim Verschieben. Um ein Ende
    an einer anderen Stelle festzulegen, den Übergang auswählen und den runden Griff am Ende am Rand entlang ziehen
    (Doppelklick: wieder automatisch). Um einen Übergang an einen anderen Zustand umzuhängen, den Griff auf diesen
-   Zustand ziehen: Beschriftung und alle anderen Eigenschaften bleiben erhalten.
+   Zustand ziehen: Beschriftung und alle anderen Eigenschaften bleiben erhalten. Eine Beschriftung lässt sich
+   verschieben, z.B. wenn sie eine andere verdeckt; eine verschobene Beschriftung bleibt durch eine dünne Linie mit
+   ihrem Pfeil verbunden.
 6. Einen Zustand oder Übergang anklicken (oder doppelklicken), um rechts seine Aktionen bzw. seine
    Beschriftung zu bearbeiten.
 7. **Speichern** klicken. Neue Charts sind angehalten: Starte das Chart mit ▶ in der Chart-Liste. Nach dem

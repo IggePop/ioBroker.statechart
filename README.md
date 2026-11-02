@@ -71,6 +71,7 @@ Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.17 o
    end where the states face each other and follow them when they are moved. To fix an end at another place,
    select the transition and drag the round grip at the end along the border (double click: automatic again). To
    move a transition to another state, drop the grip on that state: its label and all other properties are kept.
+   Drag a label to move it, e.g. if it covers another one; a moved label stays connected to its arrow by a thin line.
 6. Select a state or transition (or double click it) to edit its actions or label on the right.
 7. Click **Save**. New charts are paused: start the chart with ▶ in the chart list. After saving, the adapter
    restarts a running chart immediately.
@@ -119,6 +120,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) control states per chart: `enabled` pauses and starts it, `reset` restarts it in its initial state, `event` wakes it up with the event of an input
 * (Igge) more temporal logic: `before`, `at` and `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)` for conditions which are true for a time, and the helpers `elapsed()` and `duration()`
 * (Igge) the variables are grouped by kind and shown as compact lines, a click shows the settings of a variable, a search appears with many variables
+* (Igge) the labels of transitions can be moved by dragging them
 * (Igge) static check of the chart: states which never become active or are never left, transitions which are never taken, conditions which are never true, unused variables
 * (Igge) history junction: entering a state returns to its last active sub state
 * (Igge) parallel states (AND): all sub states of a state, or all top level states, are active at the same time and are processed in their execution order

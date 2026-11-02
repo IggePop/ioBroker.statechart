@@ -413,10 +413,12 @@ function TransitionProperties({
                 <Button
                     variant="outlined"
                     size="small"
-                    disabled={!transition.sourceAnchor && !transition.targetAnchor}
-                    onClick={() => onChange({ sourceAnchor: undefined, targetAnchor: undefined })}
+                    disabled={!transition.sourceAnchor && !transition.targetAnchor && !transition.labelOffset}
+                    onClick={() =>
+                        onChange({ sourceAnchor: undefined, targetAnchor: undefined, labelOffset: undefined })
+                    }
                 >
-                    {I18n.t("Set ends automatically")}
+                    {I18n.t("Place ends and label automatically")}
                 </Button>
                 <Typography
                     variant="caption"
