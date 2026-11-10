@@ -1,8 +1,20 @@
 diff --git a/node_modules/@iobroker/dev-server/dist/index.js b/node_modules/@iobroker/dev-server/dist/index.js
-index 063ae06..26107b9 100644
+index 063ae06..2099b2a 100755
 --- a/node_modules/@iobroker/dev-server/dist/index.js
 +++ b/node_modules/@iobroker/dev-server/dist/index.js
-@@ -1024,7 +1024,10 @@ class DevServer {
+@@ -570,6 +570,11 @@ class DevServer {
+         // start express
+         this.log.notice(`Starting web server on port ${this.config.adminPort}`);
+         const server = app.listen(this.config.adminPort);
++        // http-proxy adds an error handler to the socket of the browser only after the upgrade of the
++        // proxied WebSocket succeeded. A reset of the connection before (ECONNRESET) would crash the dev-server.
++        server.on('upgrade', (_req, socket) => {
++            socket.on('error', error => this.log.debug(`WebSocket connection error: ${error}`));
++        });
+         let exiting = false;
+         process.on('SIGINT', () => {
+             this.log.notice('dev-server is exiting...');
+@@ -1024,7 +1029,10 @@ class DevServer {
                  }
              });
              watcher.on('unlink', (filename) => {

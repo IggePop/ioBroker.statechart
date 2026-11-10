@@ -15,7 +15,7 @@ and the code generator directly from `src/lib/`, so they are shared by both.
 
 | Script | Description |
 |---|---|
-| `dev-server` | Runs [`dev-server`](https://github.com/ioBroker/dev-server) with the given command. Before, it applies the patches in `patches/`: the dev-server uses `wmic.exe` to find the adapter process, which no longer exists in Windows 11 25H2 |
+| `dev-server` | Runs [`dev-server`](https://github.com/ioBroker/dev-server) with the given command. Before, it applies the patches in `patches/`: the dev-server uses `wmic.exe` to find the adapter process, which no longer exists in Windows 11 25H2, and a WebSocket connection reset by the browser (`ECONNRESET`) would crash it |
 | `build` / `watch` | Build the adapter (`src` to `build`) and the tab (`admin/src` to `admin/build`), with type check |
 | `build:ts` / `watch:ts` | Build only the adapter |
 | `build:react` / `watch:react` | Build only the tab |
