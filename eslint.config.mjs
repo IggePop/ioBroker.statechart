@@ -19,7 +19,9 @@ export default [
             'admin/blockly.js',
             '**/adapter-config.d.ts',
             'widgets/**/*.js',
-            'admin/build'
+            'admin/build',
+            // the bundle of the tab built by "watch:react" for the dev-server
+            'admin/.watch',
         ],
     },
     // the admin UI is a React app, which runs in the browser
