@@ -18,6 +18,11 @@ Model your automations as **state machines** (statecharts) in a graphical editor
 chart editors known from model based development. States, transitions with events, conditions and
 actions, timers and function blocks are drawn in the ioBroker admin and executed by the adapter.
 
+![The editor with an alarm system: nested and parallel states, timers, a function block, a note and the live values](docs/screenshot_main.png)
+
+*An alarm system as example: exit and entry delay, alarm with siren and notification in parallel, the live values
+of the running chart on the top left, the variables on the right.*
+
 ### Features
 
 - Graphical editor as its own entry in the admin side bar

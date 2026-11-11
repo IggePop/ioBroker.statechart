@@ -10,6 +10,11 @@ Bilde deine Automatisierungen als **Zustandsautomaten** (Statecharts) in einem g
 Bedingungen und Aktionen, Timer und Funktionsblöcke werden im ioBroker-Admin gezeichnet und vom
 Adapter ausgeführt.
 
+![Der Editor mit einer Alarmanlage: verschachtelte und parallele Zustände, Timer, ein Funktionsblock, eine Notiz und die Live-Werte](../screenshot_main.png)
+
+*Eine Alarmanlage als Beispiel: Ausgangs- und Eingangsverzögerung, Alarm mit Sirene und Benachrichtigung parallel,
+oben links die Live-Werte des laufenden Charts, rechts die Variablen.*
+
 ### Funktionen
 
 - Grafischer Editor als eigener Eintrag in der Seitenleiste des Admins
