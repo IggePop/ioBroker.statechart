@@ -19,6 +19,62 @@ export const DEFAULT_FUNCTION_HEIGHT = 120;
 export const DEFAULT_NOTE_WIDTH = 200;
 export const DEFAULT_NOTE_HEIGHT = 100;
 
+/** Background color of states without their own color (ChartState.color) */
+export const DEFAULT_STATE_COLOR = "#fcf3cf";
+
+/** Colors offered for states, light enough for black text. The first one is the default. */
+export const STATE_COLORS = [
+    DEFAULT_STATE_COLOR, // yellow
+    "#d6eaf8", // blue
+    "#d5f5e3", // green
+    "#fde3cf", // orange
+    "#fadbd8", // red
+    "#e8daef", // purple
+    "#eaeded", // gray
+    "#ffffff", // white
+];
+
+/**
+ * @param color Background color of a state, see ChartState.color
+ * @param dark The editor uses the dark theme
+ * @param depth Nesting depth of the state, 0 for top level states
+ * @returns the color to show. Every second level (sub states of top level states, their sub sub sub states...)
+ *   is darker, so nested states stand out from their parents, also with the same color. In the dark theme, a dark
+ *   shade of the color is shown, so the light text stays readable, and every second level is lighter.
+ */
+export function stateBackground(color: string | undefined, dark: boolean, depth = 0): string {
+    const hex = color || DEFAULT_STATE_COLOR;
+    const alternate = depth % 2 === 1;
+    const channels = [1, 3, 5].map(i => parseInt(hex.substring(i, i + 2), 16));
+    let rgb: number[];
+    if (dark) {
+        // mix the color with the dark background of the editor: 25%, or 35% on every second level
+        const share = alternate ? 0.35 : 0.25;
+        rgb = channels.map(c => c * share + 0x1e * (1 - share));
+    } else {
+        rgb = alternate ? channels.map(c => c * 0.9) : channels;
+    }
+    return `#${rgb.map(c => Math.round(c).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/**
+ * @param nodes The nodes of React Flow
+ * @returns the nesting depth of each node by ID, 0 for nodes without parent
+ */
+export function getNestingDepths(nodes: { id: string; parentId?: string }[]): Map<string, number> {
+    const byId = new Map(nodes.map(n => [n.id, n]));
+    const depths = new Map<string, number>();
+    for (const node of nodes) {
+        let depth = 0;
+        // the limit protects against cycles in broken charts
+        for (let parent = node.parentId; parent && depth < nodes.length; depth++) {
+            parent = byId.get(parent)?.parentId;
+        }
+        depths.set(node.id, depth);
+    }
+    return depths;
+}
+
 /** Node types which can be placed in a state (and move together with it) */
 const NESTABLE_TYPES = ["state", "note"];
 

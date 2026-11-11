@@ -20,6 +20,7 @@ var chart_model_exports = {};
 __export(chart_model_exports, {
   ASTRO_EVENTS: () => ASTRO_EVENTS,
   CHART_MODEL_VERSION: () => CHART_MODEL_VERSION,
+  COLOR_PATTERN: () => COLOR_PATTERN,
   EXPORT_FORMAT: () => EXPORT_FORMAT,
   LabelSyntaxError: () => LabelSyntaxError,
   MAX_SUPER_STEPS: () => MAX_SUPER_STEPS,
@@ -37,6 +38,7 @@ __export(chart_model_exports, {
 module.exports = __toCommonJS(chart_model_exports);
 const CHART_MODEL_VERSION = 1;
 const MAX_SUPER_STEPS = 100;
+const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const TEMPORAL_OPERATORS = ["after", "before", "at", "every"];
 const TIME_UNITS = {
   msec: 1,
@@ -316,6 +318,9 @@ function normalizeChart(data, where) {
     if (state.order !== void 0 && !Number.isFinite(state.order)) {
       fail(`${at}: "order" is no number`);
     }
+    if (state.color !== void 0 && !(typeof state.color === "string" && COLOR_PATTERN.test(state.color))) {
+      fail(`${at}: "color" is no color like "#d6eaf8"`);
+    }
     const { parallel, history, ...rest } = state;
     return {
       ...rest,
@@ -451,6 +456,7 @@ function parseExport(text) {
 0 && (module.exports = {
   ASTRO_EVENTS,
   CHART_MODEL_VERSION,
+  COLOR_PATTERN,
   EXPORT_FORMAT,
   LabelSyntaxError,
   MAX_SUPER_STEPS,

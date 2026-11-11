@@ -46,7 +46,8 @@ function FunctionNode({ data, selected }: FunctionNodeProps): React.JSX.Element 
                     borderStyle: problems ? "dashed" : "solid",
                     borderColor,
                     borderRadius: 0,
-                    bgcolor: "background.paper",
+                    // light gray, so function blocks stand out from the states, a dark gray in the dark theme
+                    bgcolor: theme => theme.palette.grey[theme.palette.mode === "dark" ? 800 : 200],
                     display: "flex",
                     flexDirection: "column",
                     overflow: "hidden",

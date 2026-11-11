@@ -34,7 +34,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Static check of the chart: states which never become active, transitions which are never taken, unused variables
 - Several independent charts per instance, which can be paused, reset and woken up by states (e.g. from vis)
 - Import and export of charts as JSON files
-- Comments on states, transitions and function blocks, and notes on the canvas
+- Comments on states, transitions and function blocks, notes on the canvas, and a color per state
 - Per input: wake up on every update or only on changes, filter by ack, debounce
 - Helper functions: getState (any state), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
 - Align and distribute the selected elements
@@ -115,6 +115,8 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) the color of each state can be chosen, light yellow by default, every second level of nested states is darker, function blocks have a light gray background
+* (Igge) transitions are black (white in the dark theme), the selected one blue, and their labels have no background
 * (Igge) fixed: the labels of transitions inside a superstate were hidden behind it, and the labels of several transitions between the same states covered each other
 * (Igge) simulation: advance the time (e.g. to the next timer), pause, single steps and breakpoints on states and transitions
 * (Igge) simulation: the chart runs as shown in the editor without writing outputs, the inputs are set by hand

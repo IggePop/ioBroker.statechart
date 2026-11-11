@@ -16,6 +16,7 @@ import type {
 } from "../../../src/lib/chart-model";
 import CodeEditor from "./CodeEditor";
 import type { Completion } from "./CodeEditor";
+import { DEFAULT_STATE_COLOR, STATE_COLORS } from "../flow-model";
 
 interface CodeTools {
     validateAction: (code: string) => Diagnostic[];
@@ -105,6 +106,80 @@ function CommentField({
             // an empty comment is removed, so it does not appear in the stored chart
             onChange={e => onChange(e.target.value || undefined)}
         />
+    );
+}
+
+/**
+ * Background color of a state: the predefined colors and a field for any other color
+ *
+ * @param props Component properties
+ * @param props.value The color as "#rrggbb", undefined for the default color
+ * @param props.onChange Called with the new color, undefined for the default color
+ */
+function ColorField({
+    value,
+    onChange,
+}: {
+    value: string | undefined;
+    onChange: (color: string | undefined) => void;
+}): React.JSX.Element {
+    const current = (value || DEFAULT_STATE_COLOR).toLowerCase();
+    const isCustom = !STATE_COLORS.includes(current);
+    const swatch = {
+        width: 24,
+        height: 24,
+        p: 0,
+        borderRadius: "50%",
+        border: 1,
+        borderColor: "divider",
+        cursor: "pointer",
+        // the selected color is outlined
+        outlineOffset: 2,
+    };
+    return (
+        <Box>
+            <Typography
+                variant="caption"
+                color="text.secondary"
+            >
+                {I18n.t("Color")}
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mt: 0.5 }}>
+                {STATE_COLORS.map(color => (
+                    <Box
+                        key={color}
+                        component="button"
+                        type="button"
+                        title={color === DEFAULT_STATE_COLOR ? I18n.t("Default color") : color}
+                        aria-pressed={color === current}
+                        // the default color is stored as undefined, so it does not appear in the chart
+                        onClick={() => onChange(color === DEFAULT_STATE_COLOR ? undefined : color)}
+                        sx={{
+                            ...swatch,
+                            bgcolor: color,
+                            outline: color === current ? 2 : 0,
+                            outlineColor: theme => theme.palette.primary.main,
+                        }}
+                    />
+                ))}
+                <Box
+                    component="input"
+                    type="color"
+                    title={I18n.t("Custom color")}
+                    value={current}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        onChange(e.target.value === DEFAULT_STATE_COLOR ? undefined : e.target.value)
+                    }
+                    sx={{
+                        ...swatch,
+                        borderRadius: 1,
+                        bgcolor: "background.paper",
+                        outline: isCustom ? 2 : 0,
+                        outlineColor: theme => theme.palette.primary.main,
+                    }}
+                />
+            </Box>
+        </Box>
     );
 }
 
@@ -244,6 +319,10 @@ function StateProperties({
                 label={I18n.t("Name")}
                 value={state.name}
                 onChange={e => onChange({ name: e.target.value })}
+            />
+            <ColorField
+                value={state.color}
+                onChange={color => onChange({ color })}
             />
             {executionOrder === undefined ? (
                 <FormControlLabel

@@ -413,7 +413,8 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                             cursor: data?.onLabelMove ? "move" : undefined,
                             // the selected transition is also shown at its label
                             boxShadow: selected ? 2 : 0,
-                            bgcolor: "background.paper",
+                            // transparent, so the label does not cover the states and the background
+                            bgcolor: "transparent",
                             color: problemColor ?? "text.primary",
                             border: 1,
                             borderColor: problemColor ?? "transparent",

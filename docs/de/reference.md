@@ -181,8 +181,12 @@ Beschriftung eines Übergangs: `[zuWarm(temperatur)]{heizung = false;}`
   als Tooltip.
 - **Notizen** (Symbol **Notiz hinzufügen** in der Werkzeugleiste) sind freie Texte auf der Zeichenfläche, wie
   Haftzettel. Lass eine Notiz über einem Zustand los, dann bewegt sie sich mit ihm.
+- **Farbe:** Zustände sind hellgelb, unter **Farbe** in ihren Eigenschaften lässt sich eine andere Farbe wählen, z.B.
+  um zusammengehörige Zustände oder Fehlerzustände hervorzuheben. Jede zweite Ebene verschachtelter Zustände
+  (Unterzustände, deren Unter-Unter-Unterzustände usw.) ist etwas dunkler, damit sie sich vom Elternzustand abhebt.
+  Funktionsblöcke haben immer einen hellgrauen Hintergrund. Im dunklen Theme werden die Farben abgedunkelt.
 
-Kommentare und Notizen haben keinen Einfluss auf die Ausführung. Sie stehen im generierten Code und in exportierten
+Kommentare, Notizen und Farben haben keinen Einfluss auf die Ausführung. Sie stehen im generierten Code und in exportierten
 Dateien, und wenn sie sich ändern, wird der Zustand nach einem Neustart trotzdem wiederhergestellt.
 
 ## Prüfung des Charts

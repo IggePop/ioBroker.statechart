@@ -174,8 +174,12 @@ Transition label: `[tooWarm(temperature)]{heating = false;}`
   A speech bubble on the canvas shows that there is a comment, the comment is shown as tooltip.
 - **Notes** (icon **Add note** in the toolbar) are free texts on the canvas, like sticky notes. Drop a note into a
   state, so it moves together with it.
+- **Color:** states are light yellow, another color can be chosen under **Color** in their properties, e.g. to highlight
+  states which belong together or error states. Every second level of nested states (sub states, their sub sub sub
+  states and so on) is a bit darker, so it stands out from its parent. Function blocks always have a light gray
+  background. In the dark theme, the colors are darkened.
 
-Comments and notes have no influence on the execution. They are included in the generated code and in exported
+Comments, notes and colors have no influence on the execution. They are included in the generated code and in exported
 files, and changing them does not prevent restoring the state after a restart.
 
 ## Checking the chart

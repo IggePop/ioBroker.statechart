@@ -50,8 +50,8 @@ function getChartHash(chart) {
   const logic = {
     initial: chart.initial,
     symbols: chart.symbols,
-    // comments and notes are only documentation
-    states: chart.states.map(({ x: _x, y: _y, width: _w, height: _h, comment: _c, ...state }) => state),
+    // comments, notes and colors are only documentation
+    states: chart.states.map(({ x: _x, y: _y, width: _w, height: _h, comment: _c, color: _co, ...state }) => state),
     transitions: chart.transitions.map(
       ({
         sourceHandle: _s,

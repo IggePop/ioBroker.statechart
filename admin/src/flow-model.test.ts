@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { alignRects } from "./flow-model";
+import { DEFAULT_STATE_COLOR, alignRects, getNestingDepths, stateBackground } from "./flow-model";
 import type { Rect } from "./flow-model";
 
 /** Three rectangles of different sizes, "a" is the leftmost and topmost */
@@ -51,5 +51,38 @@ describe("flow-model => alignRects", () => {
     it("does nothing with less than two rectangles", () => {
         const rects = new Map([["a", { x: 5, y: 5, width: 10, height: 10 }]]);
         expect(alignRects(rects, "left").size).to.equal(0);
+    });
+});
+
+describe("flow-model => stateBackground", () => {
+    it("uses the color in the light theme and a dark shade of it in the dark theme", () => {
+        expect(stateBackground(undefined, false)).to.equal(DEFAULT_STATE_COLOR);
+        expect(stateBackground("#fde3cf", false)).to.equal("#fde3cf");
+        // 25% of the color, 75% of the background #1e1e1e
+        expect(stateBackground("#ffffff", true)).to.equal("#565656");
+        expect(stateBackground("#000000", true)).to.equal("#171717");
+    });
+
+    it("alternates between the color and a darker one on the nesting levels", () => {
+        expect(stateBackground("#fcf3cf", false, 0)).to.equal("#fcf3cf");
+        // 90% of each channel
+        expect(stateBackground("#fcf3cf", false, 1)).to.equal("#e3dbba");
+        expect(stateBackground("#fcf3cf", false, 2)).to.equal("#fcf3cf");
+        expect(stateBackground("#fcf3cf", false, 3)).to.equal("#e3dbba");
+        // in the dark theme, 35% instead of 25% of the color: lighter
+        expect(stateBackground("#ffffff", true, 1)).to.equal("#6d6d6d");
+        expect(stateBackground("#ffffff", true, 2)).to.equal("#565656");
+    });
+});
+
+describe("flow-model => getNestingDepths", () => {
+    it("counts the parents of each node", () => {
+        const depths = getNestingDepths([
+            { id: "a" },
+            { id: "b", parentId: "a" },
+            { id: "c", parentId: "b" },
+            { id: "d" },
+        ]);
+        expect(Object.fromEntries(depths)).to.deep.equal({ a: 0, b: 1, c: 2, d: 0 });
     });
 });

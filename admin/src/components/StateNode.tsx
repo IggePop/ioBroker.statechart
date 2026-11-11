@@ -1,9 +1,10 @@
 import React, { memo } from "react";
 import { Handle, NodeResizer, Position } from "@xyflow/react";
 import type { Node, NodeProps } from "@xyflow/react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartState } from "../../../src/lib/chart-model";
+import { stateBackground } from "../flow-model";
 import CommentBadge from "./CommentBadge";
 import ProblemBadge, { getProblemColor } from "./ProblemBadge";
 import type { ProblemList } from "./ProblemBadge";
@@ -64,11 +65,14 @@ type StateNodeProps = NodeProps<
         breakpoint?: boolean;
         /** The state has a history junction which is used, i.e. it has exclusive sub states */
         history?: boolean;
+        /** Nesting depth, 0 for top level states, every second level is darker */
+        depth?: number;
     }>
 >;
 
 function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
-    const { state, isInitial, isActive, isDropTarget, problems, order, breakpoint, history } = data;
+    const { state, isInitial, isActive, isDropTarget, problems, order, breakpoint, history, depth } = data;
+    const theme = useTheme();
     let borderColor = "text.secondary";
     if (isDropTarget) {
         borderColor = "primary.main";
@@ -114,7 +118,9 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                     borderColor,
                     borderRadius: 3,
                     // a state shows that the dragged state is moved into it when it is dropped
-                    bgcolor: isDropTarget ? "action.selected" : "background.paper",
+                    bgcolor: isDropTarget
+                        ? "action.selected"
+                        : stateBackground(state.color, theme.palette.mode === "dark", depth),
                     boxShadow: isActive ? 6 : 0,
                     px: 1,
                     py: 0.5,

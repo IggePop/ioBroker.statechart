@@ -94,6 +94,7 @@ import {
     findDropParent,
     flowToChart,
     getExclusiveParentIds,
+    getNestingDepths,
     getExecutionOrder,
     getInitialStateIds,
     isDescendantNode,
@@ -831,6 +832,7 @@ function ChartEditorInner({
     );
     const executionOrder = useMemo(() => getExecutionOrder(nodes, chart.parallel), [nodes, chart.parallel]);
     const exclusiveParents = useMemo(() => getExclusiveParentIds(nodes), [nodes]);
+    const depths = useMemo(() => getNestingDepths(nodes), [nodes]);
 
     const displayNodes = useMemo(
         () =>
@@ -847,9 +849,10 @@ function ChartEditorInner({
                     // like the runtime, the history junction is only used with exclusive sub states
                     history: n.type === "state" && !!n.data.state.history && exclusiveParents.has(n.id),
                     breakpoint: breakpoints.has(n.id),
+                    depth: depths.get(n.id),
                 } as any,
             })),
-        [nodes, initialIds, executionOrder, exclusiveParents, activeIds, dropTarget, problems, breakpoints],
+        [nodes, initialIds, executionOrder, exclusiveParents, depths, activeIds, dropTarget, problems, breakpoints],
     );
     const displayEdges = useMemo(() => {
         const outgoing: Record<string, number> = {};
@@ -905,6 +908,9 @@ function ChartEditorInner({
         setNodes(nds => nds.map(n => (n.selected ? { ...n, selected: false } : n)));
         setEdges(eds => eds.map(e => ({ ...e, selected: e.id === id })));
     };
+
+    /** Color of the transitions and their arrowheads */
+    const edgeColor = theme.palette.mode === "dark" ? theme.palette.common.white : theme.palette.common.black;
 
     return (
         <Box sx={{ display: "flex", height: "100%", minHeight: 0 }}>
@@ -1066,6 +1072,15 @@ function ChartEditorInner({
                         elevateEdgesOnSelect
                         connectionMode={ConnectionMode.Loose}
                         colorMode={theme.palette.mode}
+                        // black transitions instead of the gray of React Flow (white in the dark theme), the
+                        // selected one in the primary color
+                        style={
+                            {
+                                "--xy-edge-stroke": edgeColor,
+                                "--xy-edge-stroke-selected": theme.palette.primary.main,
+                            } as React.CSSProperties
+                        }
+                        defaultMarkerColor={edgeColor}
                         snapToGrid
                         snapGrid={[10, 10]}
                         deleteKeyCode={["Delete", "Backspace"]}

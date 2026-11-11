@@ -21,7 +21,7 @@ function createTestChart(): Chart {
         ],
         states: [
             { id: "off", name: "Off", x: 0, y: 0 },
-            { id: "on", name: "On", entry: "count++;", x: 200, y: 0 },
+            { id: "on", name: "On", entry: "count++;", color: "#fde3cf", x: 200, y: 0 },
             { id: "dim", name: "Dim", parent: "on", x: 10, y: 40 },
         ],
         transitions: [{ id: "t1", source: "off", target: "on", label: "motion[motion]", priority: 1 }],
@@ -114,6 +114,8 @@ describe("chart-model => export and import", () => {
         expect(importError(c => (c.symbols[0].ack = "maybe"))).to.match(/invalid ack filter "maybe"/);
         expect(importError(c => (c.symbols[0].debounceMs = -5))).to.match(/"debounceMs" is no number of 0 or more/);
         expect(importError(c => (c.states[1].order = "first"))).to.match(/state on: "order" is no number/);
+        expect(importError(c => (c.states[1].color = "blue"))).to.match(/state on: "color" is no color/);
+        expect(importError(c => (c.states[1].color = "#fff"))).to.match(/state on: "color" is no color/);
     });
 
     it("keeps a valid label offset of a transition and drops an invalid one", () => {

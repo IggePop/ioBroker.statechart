@@ -68,6 +68,8 @@ export interface ChartState {
     exit?: string;
     /** Free text for the documentation, no influence on the execution */
     comment?: string;
+    /** Background color in the editor as "#rrggbb", the default color (light yellow) if missing (editor only) */
+    color?: string;
     /** Position in the editor, relative to the parent state */
     x: number;
     /** Position in the editor, relative to the parent state */
@@ -77,6 +79,9 @@ export interface ChartState {
     /** Size in the editor */
     height?: number;
 }
+
+/** Format of ChartState.color */
+export const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 export interface ChartTransition {
     /** Unique and stable ID inside the chart */
@@ -669,6 +674,9 @@ function normalizeChart(data: any, where: string): Chart {
         }
         if (state.order !== undefined && !Number.isFinite(state.order)) {
             fail(`${at}: "order" is no number`);
+        }
+        if (state.color !== undefined && !(typeof state.color === "string" && COLOR_PATTERN.test(state.color))) {
+            fail(`${at}: "color" is no color like "#d6eaf8"`);
         }
         const { parallel, history, ...rest } = state;
         return {
