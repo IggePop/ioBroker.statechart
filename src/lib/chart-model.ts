@@ -178,6 +178,8 @@ export interface Chart {
     initial?: string;
     /** The top level states are parallel (AND), see ChartState.parallel */
     parallel?: boolean;
+    /** Transitions are drawn with horizontal and vertical lines and right angles instead of curves (editor only) */
+    orthogonalTransitions?: boolean;
     symbols: ChartSymbol[];
     states: ChartState[];
     transitions: ChartTransition[];
@@ -794,6 +796,9 @@ function normalizeChart(data: any, where: string): Chart {
     }
     if (chart.parallel !== true) {
         delete chart.parallel;
+    }
+    if (chart.orthogonalTransitions !== true) {
+        delete chart.orthogonalTransitions;
     }
     return chart;
 }

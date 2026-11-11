@@ -1,5 +1,12 @@
 import React, { memo, useState } from "react";
-import { BaseEdge, EdgeLabelRenderer, getBezierPath, useInternalNode, useReactFlow } from "@xyflow/react";
+import {
+    BaseEdge,
+    EdgeLabelRenderer,
+    getBezierPath,
+    getSmoothStepPath,
+    useInternalNode,
+    useReactFlow,
+} from "@xyflow/react";
 import type { Edge, EdgeProps, InternalNode, Position } from "@xyflow/react";
 import { Box, useTheme } from "@mui/material";
 import { I18n } from "@iobroker/adapter-react-v5";
@@ -54,6 +61,9 @@ function getLoopPath(sx: number, sy: number, tx: number, ty: number, side: Posit
     return [path, (sx + tx) / 2 + dx * out * 0.75, (sy + ty) / 2 + dy * out * 0.75];
 }
 
+/** Right-angled transitions: distance from the state before the first bend, if the target is behind the start */
+const ORTHOGONAL_OFFSET = 20;
+
 /** A label dropped closer to the middle of its arrow goes back there */
 const LABEL_SNAP = 8;
 /** From this distance on, a moved label is connected to its arrow by a line */
@@ -73,6 +83,8 @@ type TransitionEdgeProps = EdgeProps<
         offset?: number;
         /** vertical position of the label relative to the middle between the edges, see getLabelStackOffsets */
         labelStack?: number;
+        /** right angles instead of a curve, see Chart.orthogonalTransitions */
+        orthogonal?: boolean;
         /** the transition was just taken by the running chart */
         flash?: boolean;
         /** the simulation stops when the transition is taken */
@@ -245,11 +257,22 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     } else {
         const ends =
             sourceBox && targetBox
-                ? getFloatingEdgeEnds(sourceBox, targetBox, data?.nesting, data?.offset, sourceAnchor, targetAnchor)
+                ? getFloatingEdgeEnds(
+                      sourceBox,
+                      targetBox,
+                      data?.nesting,
+                      data?.offset,
+                      sourceAnchor,
+                      targetAnchor,
+                      data?.orthogonal,
+                  )
                 : { sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition };
         start = { x: ends.sourceX, y: ends.sourceY };
         end = { x: ends.targetX, y: ends.targetY };
-        [path, labelX, labelY] = getBezierPath(ends);
+        // right angles: horizontal and vertical lines with slightly rounded corners, otherwise a curve
+        [path, labelX, labelY] = data?.orthogonal
+            ? getSmoothStepPath({ ...ends, borderRadius: 8, offset: ORTHOGONAL_OFFSET })
+            : getBezierPath(ends);
         if (data?.labelStack !== undefined && sourceBox && targetBox) {
             // several edges between the same states: their labels are stacked instead of covering each other
             const length = Math.hypot(end.x - start.x, end.y - start.y) || 1;

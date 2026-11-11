@@ -121,6 +121,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) chart option "Right-angled transitions": the arrows consist of horizontal and vertical lines instead of curves
 * (Igge) the list of charts and the properties panel can be collapsed with the arrow on their border
 * (Igge) the color of each state can be chosen, light yellow by default, every second level of nested states is darker, function blocks have a light gray background
 * (Igge) transitions are black (white in the dark theme), the selected one blue, and their labels have no background

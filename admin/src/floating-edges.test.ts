@@ -9,6 +9,7 @@ import {
     getParallelOffsets,
     isValidAnchor,
     nearestAnchor,
+    straightEnds,
 } from "./floating-edges";
 
 const box = (
@@ -107,6 +108,45 @@ describe("floating-edges => getParallelOffsets", () => {
         const down = getFloatingEdgeEnds(box(0, 0), box(300, 0), undefined, offsets.get("t1"));
         const up = getFloatingEdgeEnds(box(300, 0), box(0, 0), undefined, offsets.get("t2"));
         expect(down.sourceY).to.not.equal(up.targetY);
+    });
+});
+
+describe("floating-edges => straightEnds", () => {
+    it("connects nodes one above the other in the middle of their overlap", () => {
+        // x ranges 0..100 and 60..160 overlap in 60..100
+        expect(straightEnds(box(0, 0), box(60, 200))).to.deep.equal({
+            sourceX: 80,
+            sourceY: 50,
+            sourcePosition: Position.Bottom,
+            targetX: 80,
+            targetY: 200,
+            targetPosition: Position.Top,
+        });
+        expect(straightEnds(box(60, 200), box(0, 0))).to.include({ sourceY: 200, targetY: 50, sourceX: 80 });
+    });
+
+    it("connects nodes side by side in the middle of their overlap", () => {
+        // y ranges 0..50 and 30..80 overlap in 30..50
+        expect(straightEnds(box(0, 0), box(300, 30))).to.deep.equal({
+            sourceX: 100,
+            sourceY: 40,
+            sourcePosition: Position.Right,
+            targetX: 300,
+            targetY: 40,
+            targetPosition: Position.Left,
+        });
+    });
+
+    it("returns null for diagonal or overlapping nodes", () => {
+        expect(straightEnds(box(0, 0), box(300, 200))).to.equal(null);
+        expect(straightEnds(box(0, 0), box(50, 20))).to.equal(null);
+    });
+
+    it("is only used for right-angled edges", () => {
+        const curved = getFloatingEdgeEnds(box(0, 0), box(60, 200));
+        const orthogonal = getFloatingEdgeEnds(box(0, 0), box(60, 200), undefined, 0, undefined, undefined, true);
+        expect(curved.sourceX).to.not.equal(curved.targetX);
+        expect(orthogonal.sourceX).to.equal(orthogonal.targetX);
     });
 });
 

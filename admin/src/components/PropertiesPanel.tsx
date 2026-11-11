@@ -624,6 +624,16 @@ function ChartProperties({
                     {I18n.t("superStepHelp", String(MAX_SUPER_STEPS))}
                 </Typography>
             </Box>
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={!!chart.orthogonalTransitions}
+                        // the default is stored as undefined, so it does not appear in the chart
+                        onChange={e => onChange({ orthogonalTransitions: e.target.checked || undefined })}
+                    />
+                }
+                label={I18n.t("Right-angled transitions")}
+            />
             <Typography
                 variant="body2"
                 color="text.secondary"

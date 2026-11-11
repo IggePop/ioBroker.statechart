@@ -891,6 +891,7 @@ function ChartEditorInner({
                     nesting: toChild ? "toChild" : toParent ? "toParent" : undefined,
                     offset: offsets.get(e.id),
                     labelStack: labelStack.get(e.id),
+                    orthogonal: !!chart.orthogonalTransitions,
                     problems: problems.get(e.id),
                     flash: flashing.has(e.id),
                     breakpoint: breakpoints.has(e.id),
@@ -902,7 +903,18 @@ function ChartEditorInner({
                 },
             } as TransitionFlowEdge;
         });
-    }, [edges, nodes, problems, flashing, breakpoints, changeAnchor, reconnectTransition, moveLabel, selectByLabel]);
+    }, [
+        edges,
+        nodes,
+        chart.orthogonalTransitions,
+        problems,
+        flashing,
+        breakpoints,
+        changeAnchor,
+        reconnectTransition,
+        moveLabel,
+        selectByLabel,
+    ]);
 
     /**
      * Selects a transition, e.g. from the history

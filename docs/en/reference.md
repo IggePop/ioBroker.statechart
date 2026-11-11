@@ -178,6 +178,9 @@ Transition label: `[tooWarm(temperature)]{heating = false;}`
   states which belong together or error states. Every second level of nested states (sub states, their sub sub sub
   states and so on) is a bit darker, so it stands out from its parent. Function blocks always have a light gray
   background. In the dark theme, the colors are darkened.
+- **Right-angled transitions:** with this option in the properties of the chart, the arrows consist of horizontal
+  and vertical lines instead of curves. States side by side or one above the other are connected by a straight line,
+  in the middle of the range where they overlap.
 
 Comments, notes and colors have no influence on the execution. They are included in the generated code and in exported
 files, and changing them does not prevent restoring the state after a restart.

@@ -157,6 +157,14 @@ describe("chart-model => export and import", () => {
         expect(exclusive).to.not.have.property("parallel");
     });
 
+    it("keeps right-angled transitions and does not store the default", () => {
+        const empty = { states: [], transitions: [], symbols: [] };
+        const [orthogonal] = parseExport(JSON.stringify({ ...empty, orthogonalTransitions: true }));
+        expect(orthogonal.orthogonalTransitions).to.equal(true);
+        const [curved] = parseExport(JSON.stringify({ ...empty, orthogonalTransitions: "yes" }));
+        expect(curved).to.not.have.property("orthogonalTransitions");
+    });
+
     it("imports notes and comments", () => {
         const chart = createTestChart();
         chart.comment = "About the chart";

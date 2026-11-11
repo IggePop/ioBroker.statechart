@@ -429,6 +429,9 @@ function normalizeChart(data, where) {
   if (chart.parallel !== true) {
     delete chart.parallel;
   }
+  if (chart.orthogonalTransitions !== true) {
+    delete chart.orthogonalTransitions;
+  }
   return chart;
 }
 function parseExport(text) {

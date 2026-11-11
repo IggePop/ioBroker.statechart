@@ -185,6 +185,9 @@ Beschriftung eines Übergangs: `[zuWarm(temperatur)]{heizung = false;}`
   um zusammengehörige Zustände oder Fehlerzustände hervorzuheben. Jede zweite Ebene verschachtelter Zustände
   (Unterzustände, deren Unter-Unter-Unterzustände usw.) ist etwas dunkler, damit sie sich vom Elternzustand abhebt.
   Funktionsblöcke haben immer einen hellgrauen Hintergrund. Im dunklen Theme werden die Farben abgedunkelt.
+- **Rechtwinklige Übergänge:** Mit dieser Option in den Eigenschaften des Charts bestehen die Pfeile aus waagerechten
+  und senkrechten Linien statt aus Kurven. Zustände nebeneinander oder untereinander werden mit einer geraden Linie
+  verbunden, in der Mitte des Bereichs, in dem sie sich überlappen.
 
 Kommentare, Notizen und Farben haben keinen Einfluss auf die Ausführung. Sie stehen im generierten Code und in exportierten
 Dateien, und wenn sie sich ändern, wird der Zustand nach einem Neustart trotzdem wiederhergestellt.

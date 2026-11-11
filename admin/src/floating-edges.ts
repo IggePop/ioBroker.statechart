@@ -223,6 +223,8 @@ export function nearestAnchor(box: Box, point: Point): EdgeAnchor {
  * @param offset Moves the edge sideways, see shift(). Not used if an end is fixed by an anchor.
  * @param sourceAnchor Fixes the start on the border of the source, set by the user
  * @param targetAnchor Fixes the end on the border of the target, set by the user
+ * @param orthogonal The edge is drawn with right angles: nodes side by side or one above the other are connected by
+ *   a straight line, see straightEnds()
  */
 export function getFloatingEdgeEnds(
     source: Box,
@@ -231,8 +233,9 @@ export function getFloatingEdgeEnds(
     offset = 0,
     sourceAnchor?: EdgeAnchor,
     targetAnchor?: EdgeAnchor,
+    orthogonal = false,
 ): EdgeEnds {
-    const auto = getAutomaticEnds(source, target, nesting, offset);
+    const auto = getAutomaticEnds(source, target, nesting, offset, orthogonal);
     const fixedSource = isValidAnchor(sourceAnchor) ? anchorPoint(source, sourceAnchor) : null;
     const fixedTarget = isValidAnchor(targetAnchor) ? anchorPoint(target, targetAnchor) : null;
     if (!fixedSource && !fixedTarget) {
@@ -274,12 +277,14 @@ export function getFloatingEdgeEnds(
  * @param target The target node
  * @param nesting See getFloatingEdgeEnds()
  * @param offset Moves the edge sideways, see shift()
+ * @param orthogonal See getFloatingEdgeEnds()
  */
 function getAutomaticEnds(
     source: Box,
     target: Box,
     nesting: "toChild" | "toParent" | undefined,
     offset: number,
+    orthogonal: boolean,
 ): EdgeEnds {
     let ends: EdgeEnds;
     if (nesting === "toChild") {
@@ -304,9 +309,10 @@ function getAutomaticEnds(
             targetPosition: OPPOSITE[parentPoint.side],
         };
     } else {
+        const straight = orthogonal ? straightEnds(source, target) : null;
         const s = borderPoint(source, center(target));
         const t = borderPoint(target, center(source));
-        ends = {
+        ends = straight ?? {
             sourceX: s.x,
             sourceY: s.y,
             sourcePosition: s.side,
@@ -316,6 +322,46 @@ function getAutomaticEnds(
         };
     }
     return shift(ends, offset);
+}
+
+/**
+ * Ends for a straight horizontal or vertical line between two nodes which are side by side or one above the other,
+ * in the middle of the range where they overlap
+ *
+ * @param source The source node
+ * @param target The target node
+ * @returns null if the nodes are diagonal to each other, or if they overlap
+ */
+export function straightEnds(source: Box, target: Box): EdgeEnds | null {
+    const overlapX = [Math.max(source.x, target.x), Math.min(source.x + source.width, target.x + target.width)];
+    const overlapY = [Math.max(source.y, target.y), Math.min(source.y + source.height, target.y + target.height)];
+    const below = target.y >= source.y + source.height;
+    const above = target.y + target.height <= source.y;
+    const right = target.x >= source.x + source.width;
+    const left = target.x + target.width <= source.x;
+    if (overlapX[0] < overlapX[1] && (below || above)) {
+        const x = (overlapX[0] + overlapX[1]) / 2;
+        return {
+            sourceX: x,
+            sourceY: below ? source.y + source.height : source.y,
+            sourcePosition: below ? Position.Bottom : Position.Top,
+            targetX: x,
+            targetY: below ? target.y : target.y + target.height,
+            targetPosition: below ? Position.Top : Position.Bottom,
+        };
+    }
+    if (overlapY[0] < overlapY[1] && (right || left)) {
+        const y = (overlapY[0] + overlapY[1]) / 2;
+        return {
+            sourceX: right ? source.x + source.width : source.x,
+            sourceY: y,
+            sourcePosition: right ? Position.Right : Position.Left,
+            targetX: right ? target.x : target.x + target.width,
+            targetY: y,
+            targetPosition: right ? Position.Left : Position.Right,
+        };
+    }
+    return null;
 }
 
 /**
