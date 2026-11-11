@@ -100,6 +100,8 @@
     "Color": "Color",
     "Default color": "Color predeterminado",
     "Custom color": "Color personalizado",
+    "Collapse": "Contraer",
+    "Expand": "Expandir",
     "Wake up on": "despertarse",
     "every update": "cada actualización",
     "value changes only": "solo cambios de valor",

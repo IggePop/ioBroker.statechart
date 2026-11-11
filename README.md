@@ -38,6 +38,7 @@ actions, timers and function blocks are drawn in the ioBroker admin and executed
 - Per input: wake up on every update or only on changes, filter by ack, debounce
 - Helper functions: getState (any state), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
 - Align and distribute the selected elements
+- The list of charts and the properties panel can be resized and collapsed, for more space for the chart
 - Undo/redo (Ctrl+Z, Ctrl+Y), copy/cut/paste of states and function blocks (Ctrl+C, Ctrl+X, Ctrl+V), also between charts, and a warning about unsaved changes
 - **Show code**: the JavaScript generated from the chart, showing exactly how the adapter executes it
 
@@ -115,6 +116,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) the list of charts and the properties panel can be collapsed with the arrow on their border
 * (Igge) the color of each state can be chosen, light yellow by default, every second level of nested states is darker, function blocks have a light gray background
 * (Igge) transitions are black (white in the dark theme), the selected one blue, and their labels have no background
 * (Igge) fixed: the labels of transitions inside a superstate were hidden behind it, and the labels of several transitions between the same states covered each other

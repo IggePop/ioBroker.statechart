@@ -100,6 +100,8 @@
     "Color": "Цвет",
     "Default color": "Цвет по умолчанию",
     "Custom color": "Свой цвет",
+    "Collapse": "Свернуть",
+    "Expand": "Развернуть",
     "Wake up on": "Просыпайся",
     "every update": "каждое обновление",
     "value changes only": "меняется только значение",

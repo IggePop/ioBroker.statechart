@@ -648,6 +648,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                     defaultWidth={240}
                     minWidth={160}
                     maxWidth={600}
+                    label={I18n.t("Charts")}
                 >
                     {this.renderChartList()}
                 </ResizablePanel>

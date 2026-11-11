@@ -100,6 +100,8 @@
     "Color": "Farbe",
     "Default color": "Standardfarbe",
     "Custom color": "Eigene Farbe",
+    "Collapse": "Einklappen",
+    "Expand": "Aufklappen",
     "Wake up on": "Aufwecken bei",
     "every update": "jeder Aktualisierung",
     "value changes only": "nur bei Wertänderung",

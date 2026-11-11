@@ -463,7 +463,12 @@ function ChartEditorInner({
     };
 
     // a double click selects the state/transition (first click) and shows its properties
-    const showProperties = useCallback(() => setPanelTab("properties"), []);
+    /** Counts the double clicks on states and transitions, each one expands the collapsed properties panel */
+    const [propertiesRequest, setPropertiesRequest] = useState(0);
+    const showProperties = useCallback(() => {
+        setPanelTab("properties");
+        setPropertiesRequest(n => n + 1);
+    }, []);
 
     /** Fixes an end of a transition on the border of its state (dragged in the editor), undefined: automatic */
     const changeAnchor = useCallback(
@@ -1121,6 +1126,8 @@ function ChartEditorInner({
                 defaultWidth={360}
                 minWidth={260}
                 maxWidth={900}
+                label={I18n.t("Properties")}
+                expandRequest={propertiesRequest}
             >
                 <Tabs
                     value={panelTab}
