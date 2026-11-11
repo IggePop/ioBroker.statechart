@@ -6,6 +6,7 @@ import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartTransition, EdgeAnchor } from "../../../src/lib/chart-model";
 import {
     DIRECTIONS,
+    LABEL_LINE_HEIGHT,
     anchorPoint,
     getFloatingEdgeEnds,
     getLoopEnds,
@@ -70,6 +71,8 @@ type TransitionEdgeProps = EdgeProps<
         nesting?: "toChild" | "toParent";
         /** moves the edge sideways, if there are several edges between the same states */
         offset?: number;
+        /** vertical position of the label relative to the middle between the edges, see getLabelStackOffsets */
+        labelStack?: number;
         /** the transition was just taken by the running chart */
         flash?: boolean;
         /** the simulation stops when the transition is taken */
@@ -205,8 +208,13 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
         data,
     } = props;
     const transition = data?.transition;
-    const sourceBox = getBox(useInternalNode(source));
-    const targetBox = getBox(useInternalNode(target));
+    const sourceNode = useInternalNode(source);
+    const targetNode = useInternalNode(target);
+    const sourceBox = getBox(sourceNode);
+    const targetBox = getBox(targetNode);
+    // React Flow draws all labels in one layer below the states, so a superstate would cover the labels of the
+    // transitions inside it. A label is above the states it connects, and above their parents.
+    const labelZIndex = Math.max(sourceNode?.internals.z ?? 0, targetNode?.internals.z ?? 0) + 1;
     const sourceAnchor = isValidAnchor(transition?.sourceAnchor) ? transition.sourceAnchor : undefined;
     const targetAnchor = isValidAnchor(transition?.targetAnchor) ? transition.targetAnchor : undefined;
     /** an end dragged over another state: the edge is drawn to the pointer */
@@ -221,6 +229,8 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     let path: string;
     let labelX: number;
     let labelY: number;
+    /** moves the label up or down, if it is stacked with the labels of other edges between the same states */
+    let stackY = 0;
     let start = { x: sourceX, y: sourceY };
     let end = { x: targetX, y: targetY };
     /** where the grip of a self transition is, it moves the whole loop */
@@ -240,6 +250,16 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
         start = { x: ends.sourceX, y: ends.sourceY };
         end = { x: ends.targetX, y: ends.targetY };
         [path, labelX, labelY] = getBezierPath(ends);
+        if (data?.labelStack !== undefined && sourceBox && targetBox) {
+            // several edges between the same states: their labels are stacked instead of covering each other
+            const length = Math.hypot(end.x - start.x, end.y - start.y) || 1;
+            // vertical part of the sideways shift of the edge (see shift() in floating-edges)
+            const shiftY = ((end.x - start.x) / length) * (data.offset ?? 0);
+            // the stack is in the order of the arrows from the smaller to the larger node ID, from top to bottom if
+            // that direction points to the right, from bottom to top otherwise
+            const pointsLeft = (source < target ? 1 : -1) * (end.x - start.x) < 0;
+            stackY = (pointsLeft ? -data.labelStack : data.labelStack) - shiftY;
+        }
     }
     if (preview) {
         // a straight line from the end which stays to the pointer
@@ -251,7 +271,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     /** where the label belongs to, the middle of the arrow */
     const anchor = { x: labelX, y: labelY };
     labelX += labelOffset.x;
-    labelY += labelOffset.y;
+    labelY += labelOffset.y + stackY;
 
     /**
      * Drags the label. A click without moving selects the transition, like a click on the arrow.
@@ -387,6 +407,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                         onDoubleClick={() => data?.onSelect?.(id, true)}
                         sx={{
                             position: "absolute",
+                            zIndex: labelZIndex,
                             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
                             pointerEvents: "all",
                             cursor: data?.onLabelMove ? "move" : undefined,
@@ -400,6 +421,8 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                             px: 0.5,
                             fontFamily: "monospace",
                             fontSize: 12,
+                            // fixed, so the height of a label is known when labels are stacked
+                            lineHeight: `${LABEL_LINE_HEIGHT}px`,
                             whiteSpace: "pre",
                             display: "flex",
                             alignItems: "center",

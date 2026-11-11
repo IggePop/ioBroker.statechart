@@ -101,7 +101,7 @@ import {
     reparentNodes,
 } from "../flow-model";
 import type { Alignment, ChartFlowNode, ClipboardContent, Rect, TransitionFlowEdge } from "../flow-model";
-import { getParallelOffsets } from "../floating-edges";
+import { getLabelStackOffsets, getParallelOffsets, isValidAnchor } from "../floating-edges";
 import { getDeclarations, validateChart } from "../../../src/lib/chart-validation";
 
 // defined outside the component, so React Flow does not re-create them on every render
@@ -855,6 +855,18 @@ function ChartEditorInner({
         const outgoing: Record<string, number> = {};
         edges.forEach(e => (outgoing[e.source] = (outgoing[e.source] || 0) + 1));
         const offsets = getParallelOffsets(edges);
+        // the ends of a transition fixed by the user are not moved sideways, so its label stays on its arrow
+        const labelStack = getLabelStackOffsets(
+            edges
+                .filter(e => !isValidAnchor(e.data?.transition.sourceAnchor))
+                .filter(e => !isValidAnchor(e.data?.transition.targetAnchor))
+                .map(e => ({
+                    id: e.id,
+                    source: e.source,
+                    target: e.target,
+                    lines: (e.data?.transition.label || "").split("\n").length,
+                })),
+        );
         return edges.map(e => {
             const toChild = isDescendantNode(nodes, e.source, e.target);
             const toParent = !toChild && isDescendantNode(nodes, e.target, e.source);
@@ -870,6 +882,7 @@ function ChartEditorInner({
                     inner: toChild && !e.data?.transition.reenterParent,
                     nesting: toChild ? "toChild" : toParent ? "toParent" : undefined,
                     offset: offsets.get(e.id),
+                    labelStack: labelStack.get(e.id),
                     problems: problems.get(e.id),
                     flash: flashing.has(e.id),
                     breakpoint: breakpoints.has(e.id),

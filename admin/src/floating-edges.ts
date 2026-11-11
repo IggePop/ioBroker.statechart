@@ -346,19 +346,8 @@ export function getParallelOffsets(
     edges: { id: string; source: string; target: string }[],
     spacing = 16,
 ): Map<string, number> {
-    const groups = new Map<string, { id: string; source: string; target: string }[]>();
-    for (const edge of edges) {
-        if (edge.source === edge.target) {
-            continue;
-        }
-        const key = edge.source < edge.target ? `${edge.source}\n${edge.target}` : `${edge.target}\n${edge.source}`;
-        groups.set(key, [...(groups.get(key) || []), edge]);
-    }
     const offsets = new Map<string, number>();
-    for (const group of groups.values()) {
-        if (group.length < 2) {
-            continue;
-        }
+    for (const group of groupParallelEdges(edges)) {
         group.forEach((edge, i) => {
             // the offset in the direction from the smaller to the larger ID, converted to the edge's own direction
             const offset = (i - (group.length - 1) / 2) * spacing;
@@ -366,4 +355,50 @@ export function getParallelOffsets(
         });
     }
     return offsets;
+}
+
+/**
+ * @param edges All edges
+ * @returns the groups of at least two edges between the same two nodes, in either direction, without self transitions
+ */
+function groupParallelEdges<T extends { source: string; target: string }>(edges: T[]): T[][] {
+    const groups = new Map<string, T[]>();
+    for (const edge of edges) {
+        if (edge.source === edge.target) {
+            continue;
+        }
+        const key = edge.source < edge.target ? `${edge.source}\n${edge.target}` : `${edge.target}\n${edge.source}`;
+        groups.set(key, [...(groups.get(key) || []), edge]);
+    }
+    return [...groups.values()].filter(group => group.length > 1);
+}
+
+/** Height of a line of a transition label, set in its style, so the height of a label is known before rendering */
+export const LABEL_LINE_HEIGHT = 16;
+
+/**
+ * Vertical positions of the labels of edges between the same two nodes. The edges themselves are only a few pixels
+ * apart (see getParallelOffsets), but their labels are much wider: in the middle of their arrows, they would cover
+ * each other. Instead, they are stacked on top of each other, in the order of the arrows.
+ *
+ * @param edges All edges whose labels can be stacked, with the number of lines of their labels
+ * @param gap Vertical space between neighboring labels
+ * @returns the vertical position of the center of the label relative to the middle between the arrows, by edge ID.
+ *   Edges without others between the same nodes are missing.
+ */
+export function getLabelStackOffsets(
+    edges: { id: string; source: string; target: string; lines: number }[],
+    gap = 4,
+): Map<string, number> {
+    const positions = new Map<string, number>();
+    for (const group of groupParallelEdges(edges)) {
+        // the border of a label adds 2 pixels
+        const heights = group.map(edge => Math.max(edge.lines, 1) * LABEL_LINE_HEIGHT + 2);
+        let top = -(heights.reduce((sum, h) => sum + h, 0) + gap * (group.length - 1)) / 2;
+        group.forEach((edge, i) => {
+            positions.set(edge.id, top + heights[i] / 2);
+            top += heights[i] + gap;
+        });
+    }
+    return positions;
 }

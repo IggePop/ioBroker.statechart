@@ -5,6 +5,7 @@ import {
     borderPoint,
     getFloatingEdgeEnds,
     getLoopEnds,
+    getLabelStackOffsets,
     getParallelOffsets,
     isValidAnchor,
     nearestAnchor,
@@ -106,6 +107,22 @@ describe("floating-edges => getParallelOffsets", () => {
         const down = getFloatingEdgeEnds(box(0, 0), box(300, 0), undefined, offsets.get("t1"));
         const up = getFloatingEdgeEnds(box(300, 0), box(0, 0), undefined, offsets.get("t2"));
         expect(down.sourceY).to.not.equal(up.targetY);
+    });
+});
+
+describe("floating-edges => getLabelStackOffsets", () => {
+    it("stacks the labels of edges between the same nodes", () => {
+        const positions = getLabelStackOffsets([
+            { id: "t1", source: "a", target: "b", lines: 1 },
+            { id: "t2", source: "b", target: "a", lines: 2 },
+            { id: "t3", source: "a", target: "c", lines: 1 },
+            { id: "t4", source: "a", target: "a", lines: 1 },
+        ]);
+        expect(positions.has("t3")).to.equal(false, "a single label stays on its arrow");
+        expect(positions.has("t4")).to.equal(false, "self transitions are loops");
+        // heights 18 and 34 with a gap of 4: 56 in all, centered around 0
+        expect(positions.get("t1")).to.equal(-28 + 9);
+        expect(positions.get("t2")).to.equal(-28 + 18 + 4 + 17);
     });
 });
 

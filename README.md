@@ -115,6 +115,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) fixed: the labels of transitions inside a superstate were hidden behind it, and the labels of several transitions between the same states covered each other
 * (Igge) simulation: advance the time (e.g. to the next timer), pause, single steps and breakpoints on states and transitions
 * (Igge) simulation: the chart runs as shown in the editor without writing outputs, the inputs are set by hand
 * (Igge) `getState("id")` reads any state in conditions and actions, `at("sunset", -30)` and `at("22:30")` are valid every day at an astro event or a time of day
