@@ -60,15 +60,26 @@ function SimulatedValue({ value, onChange }: { value: any; onChange: (value: any
                     }
                 }}
                 onBlur={() => setText(null)}
-                sx={{
+                // compact, but with the border colors of an outlined TextField of MUI. A typed value which is not
+                // set yet is marked
+                sx={theme => ({
                     fontFamily: "monospace",
                     fontSize: 12,
                     px: 0.5,
                     border: 1,
-                    borderColor: text === null ? "divider" : "warning.main",
+                    borderColor:
+                        text !== null
+                            ? "warning.main"
+                            : theme.palette.mode === "dark"
+                              ? "rgba(255, 255, 255, 0.23)"
+                              : "rgba(0, 0, 0, 0.23)",
                     borderRadius: 0.5,
                     width: 140,
-                }}
+                    ...(text === null && {
+                        "&:hover": { borderColor: "text.primary" },
+                        "&.Mui-focused": { borderColor: "primary.main" },
+                    }),
+                })}
             />
         </Tooltip>
     );

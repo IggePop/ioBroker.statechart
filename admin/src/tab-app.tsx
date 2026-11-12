@@ -533,7 +533,9 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                     <TextField
                         autoFocus
                         fullWidth
-                        variant="standard"
+                        size="small"
+                        // like the other fields, and with space for the label above the border
+                        sx={{ mt: 1 }}
                         label={I18n.t("Name")}
                         value={this.state.newChartName}
                         onChange={e => this.setState({ newChartName: e.target.value })}

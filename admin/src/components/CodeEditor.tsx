@@ -40,23 +40,21 @@ export function createTheme(theme: Theme, minRows: number): Extension[] {
     return [
         EditorView.theme(
             {
+                // the border is drawn by the surrounding fieldset, like a TextField of MUI
                 "&": {
                     fontSize: "13px",
-                    backgroundColor: theme.palette.background.paper,
                     color: theme.palette.text.primary,
-                    border: `1px solid ${theme.palette.divider}`,
                     borderRadius: "4px",
                 },
-                "&.cm-focused": {
-                    outline: `2px solid ${theme.palette.primary.main}`,
-                    outlineOffset: "-1px",
-                },
+                "&.cm-focused": { outline: "none" },
                 ".cm-content": {
                     fontFamily: "monospace",
                     minHeight: `${minRows * 1.4 + 0.8}em`,
                     caretColor: theme.palette.text.primary,
+                    // the padding of a small TextField
+                    padding: "8.5px 0",
                 },
-                ".cm-line": { lineHeight: "1.4" },
+                ".cm-line": { lineHeight: "1.4", padding: "0 14px" },
                 ".cm-cursor": { borderLeftColor: theme.palette.text.primary },
                 ".cm-placeholder": { color: theme.palette.text.disabled },
                 ".cm-tooltip": {
@@ -181,17 +179,82 @@ export default function CodeEditor({
 
     const diagnostics = useMemo(() => validate(value), [validate, value]);
 
+    // looks like an outlined TextField of MUI: the label in a gap of the border, the border darker on hover and in
+    // the primary color while editing, the helper text indented
+    const borderColor = theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.23)" : "rgba(0, 0, 0, 0.23)";
     return (
         <Box className="nokey">
-            <Typography
-                variant="caption"
-                color="text.secondary"
-                component="div"
-                sx={{ mb: 0.5 }}
+            <Box
+                sx={{
+                    position: "relative",
+                    borderRadius: "4px",
+                    "&:hover fieldset": { borderColor: "text.primary" },
+                    "&:focus-within fieldset": { borderColor: "primary.main", borderWidth: 2 },
+                    "&:focus-within > label": { color: "primary.main" },
+                }}
             >
-                {label}
-            </Typography>
-            <div ref={container} />
+                <Box
+                    component="label"
+                    sx={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        zIndex: 1,
+                        transform: "translate(14px, -9px) scale(0.75)",
+                        transformOrigin: "top left",
+                        fontSize: "1rem",
+                        lineHeight: "1.4375em",
+                        color: "text.secondary",
+                        pointerEvents: "none",
+                        whiteSpace: "nowrap",
+                    }}
+                >
+                    {label}
+                </Box>
+                <div ref={container} />
+                <Box
+                    component="fieldset"
+                    aria-hidden
+                    sx={{
+                        position: "absolute",
+                        inset: "-5px 0 0",
+                        m: 0,
+                        px: 1,
+                        py: 0,
+                        pointerEvents: "none",
+                        borderRadius: "inherit",
+                        border: 1,
+                        borderColor,
+                        minWidth: 0,
+                        overflow: "hidden",
+                        fontSize: "1rem",
+                    }}
+                >
+                    <Box
+                        component="legend"
+                        sx={{
+                            float: "unset",
+                            width: "auto",
+                            overflow: "hidden",
+                            display: "block",
+                            p: 0,
+                            height: 11,
+                            fontSize: "0.75em",
+                            visibility: "hidden",
+                            maxWidth: "100%",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        {/* only the width of the label is used: the gap in the border */}
+                        <Box
+                            component="span"
+                            sx={{ px: "5px", display: "inline-block", opacity: 0, visibility: "visible" }}
+                        >
+                            {label}
+                        </Box>
+                    </Box>
+                </Box>
+            </Box>
             {diagnostics.length ? (
                 diagnostics.map((d, i) => (
                     <Typography
@@ -199,7 +262,7 @@ export default function CodeEditor({
                         variant="caption"
                         component="div"
                         color={`${d.severity}.main`}
-                        sx={{ mt: 0.5 }}
+                        sx={{ mt: "3px", mx: 1.75 }}
                     >
                         {translateDiagnostic(d)}
                     </Typography>
@@ -209,7 +272,7 @@ export default function CodeEditor({
                     variant="caption"
                     component="div"
                     color="text.secondary"
-                    sx={{ mt: 0.5 }}
+                    sx={{ mt: "3px", mx: 1.75 }}
                 >
                     {helperText}
                 </Typography>
