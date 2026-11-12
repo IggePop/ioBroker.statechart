@@ -15,12 +15,15 @@ export type Severity = "error" | "warning" | "info";
 
 /** A problem of the chart as a whole, not at a position in a text */
 export interface Finding {
+    /** What the problem is about */
     kind: "state" | "transition" | "symbol";
     /** ID of the state or transition, name of the variable */
     id: string;
+    /** How severe the problem is */
     severity: Severity;
     /** English message with %s placeholders, used to translate it */
     key: string;
+    /** Values for the %s placeholders of the message */
     args: string[];
 }
 
@@ -321,7 +324,7 @@ function findUnreachable(
     add: (kind: Finding["kind"], id: string, severity: Severity, key: string) => void,
 ): void {
     const reachable = new Set<string>();
-    /** enters a state like the runtime: with its initial sub state, or all of them if they are parallel */
+    // enters a state like the runtime: with its initial sub state, or all of them if they are parallel
     const enterDefault = (id: string): void => {
         if (reachable.has(id)) {
             return;
@@ -333,7 +336,7 @@ function findUnreachable(
             enterDefault(child.id);
         }
     };
-    /** enters the target of a transition with its parents, and their parallel siblings */
+    // enters the target of a transition with its parents, and their parallel siblings
     const enter = (target: string): void => {
         for (const id of structure.getPath(target)) {
             reachable.add(id);

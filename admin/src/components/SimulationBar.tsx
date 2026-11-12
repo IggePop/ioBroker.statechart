@@ -36,6 +36,8 @@ interface SimulationBarProps {
  * Controls of a running simulation: time, pause, steps, advancing the time
  *
  * @param props Component properties
+ * @param props.status State of the simulation from the adapter, null before the first status
+ * @param props.onCommand Sends a command of the simulation to the adapter
  */
 export default function SimulationBar({ status, onCommand }: SimulationBarProps): React.JSX.Element {
     // the simulated time runs on, so it is shown again every second

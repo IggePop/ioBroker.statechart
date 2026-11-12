@@ -6,11 +6,37 @@ import type { Edge, Node } from "@xyflow/react";
 import type { Chart, ChartFunction, ChartNote, ChartState, ChartTransition } from "../../src/lib/chart-model";
 import { sortByOrder } from "../../src/lib/chart-structure";
 
-export type StateFlowNode = Node<{ state: ChartState }, "state">;
-export type FunctionFlowNode = Node<{ fn: ChartFunction }, "function">;
-export type NoteFlowNode = Node<{ note: ChartNote }, "note">;
+/** A state of the chart as node of React Flow */
+export type StateFlowNode = Node<
+    {
+        /** The state in the chart model */
+        state: ChartState;
+    },
+    "state"
+>;
+/** A function block as node of React Flow */
+export type FunctionFlowNode = Node<
+    {
+        /** The function block in the chart model */
+        fn: ChartFunction;
+    },
+    "function"
+>;
+/** A note on the canvas as node of React Flow */
+export type NoteFlowNode = Node<
+    {
+        /** The note in the chart model */
+        note: ChartNote;
+    },
+    "note"
+>;
+/** Any node of the chart */
 export type ChartFlowNode = StateFlowNode | FunctionFlowNode | NoteFlowNode;
-export type TransitionFlowEdge = Edge<{ transition: ChartTransition }>;
+/** A transition as edge of React Flow */
+export type TransitionFlowEdge = Edge<{
+    /** The transition in the chart model */
+    transition: ChartTransition;
+}>;
 
 export const DEFAULT_STATE_WIDTH = 180;
 export const DEFAULT_STATE_HEIGHT = 90;
@@ -224,10 +250,15 @@ export function isDescendantNode(nodes: { id: string; parentId?: string }[], anc
     return false;
 }
 
+/** Absolute position and size of a node */
 export interface Rect {
+    /** Left border */
     x: number;
+    /** Top border */
     y: number;
+    /** Width */
     width: number;
+    /** Height */
     height: number;
 }
 
@@ -425,7 +456,9 @@ export function createId(prefix: string, existing: { id: string }[]): string {
  * Copied states, function blocks and transitions
  */
 export interface ClipboardContent {
+    /** The selected states, function blocks and notes, with the sub states and notes inside copied states */
     nodes: ChartFlowNode[];
+    /** The copied transitions, only between copied states */
     edges: TransitionFlowEdge[];
 }
 

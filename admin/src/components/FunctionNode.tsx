@@ -18,6 +18,10 @@ type FunctionNodeProps = NodeProps<
 
 /**
  * A function block: square corners and a different color than states, no connection points
+ *
+ * @param props Properties of the node from React Flow
+ * @param props.data The function block and its problems
+ * @param props.selected The function block is selected
  */
 function FunctionNode({ data, selected }: FunctionNodeProps): React.JSX.Element {
     const { fn, problems } = data;

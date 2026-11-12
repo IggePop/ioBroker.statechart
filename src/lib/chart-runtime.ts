@@ -73,8 +73,11 @@ export function getChartHash(chart: Chart): string {
     return crypto.createHash("sha1").update(JSON.stringify(logic)).digest("hex");
 }
 
+/** Position of the ioBroker system, for the astro events */
 export interface Location {
+    /** Degrees north, negative for south */
     latitude: number;
+    /** Degrees east, negative for west */
     longitude: number;
 }
 
@@ -145,6 +148,7 @@ export interface RuntimeHost {
     onHistory?: (entries: HistoryEntry[]) => void;
     /** Simulation: called when the status changes */
     onSimulationStatus?: (status: SimulationStatus) => void;
+    /** Writes to the log of the adapter */
     log: Pick<ioBroker.Logger, LogLevel>;
 }
 
@@ -174,7 +178,9 @@ interface CheckedTransition {
 
 /** What getState() returns, like the JavaScript adapter */
 export interface StateSnapshot {
+    /** The value */
     val: any;
+    /** Confirmed by the device or adapter (true), or a command (false) */
     ack: boolean;
     /** Time of the last update (ms since 1970) */
     ts: number;
@@ -536,6 +542,9 @@ export class ChartRuntime {
         }
     }
 
+    /**
+     * Publishes the active states after each transition, and logs errors of the state machine
+     */
     subscribe(): void {
         this.actor?.subscribe({
             next: snapshot => this.publishActiveStates(snapshot.value),
@@ -876,6 +885,9 @@ export class ChartRuntime {
         }
     }
 
+    /**
+     * Stops the state machine and all timers, delayed writes are discarded
+     */
     stop(): void {
         this.actor?.stop();
         this.actor = null;
@@ -1609,6 +1621,10 @@ export class ChartRuntime {
         }
     }
 
+    /**
+     * @returns the configuration of the XState machine: the states with their entry and exit actions, the
+     *   transitions as guarded events
+     */
     buildMachineConfig(): any {
         const structure = this.structure;
 
@@ -1775,6 +1791,9 @@ export class ChartRuntime {
         this.writeChangedOutputs();
     }
 
+    /**
+     * Writes the outputs whose values were changed by actions to their states, in a simulation only records them
+     */
     writeChangedOutputs(): void {
         for (const symbol of this.chart.symbols) {
             if (symbol.scope !== "output" || !symbol.stateId) {

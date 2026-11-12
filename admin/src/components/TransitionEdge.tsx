@@ -140,6 +140,15 @@ interface EndGripProps {
 /**
  * A grip at an end of the selected transition: dragged along the border of its state it fixes the end there,
  * dropped on another state it moves the end to that state
+ *
+ * @param props Component properties, see EndGripProps
+ * @param props.point Where the grip is
+ * @param props.box The state the end is on
+ * @param props.stateId ID of that state
+ * @param props.fixed If the end is fixed by the user
+ * @param props.onChange Called with the new anchor while dragging along the border
+ * @param props.onPreview Called while the grip is dragged over another state
+ * @param props.onReconnect Called when the grip is dropped on another state
  */
 function EndGrip({ point, box, stateId, fixed, onChange, onPreview, onReconnect }: EndGripProps): React.JSX.Element {
     const { screenToFlowPosition } = useReactFlow();
@@ -350,7 +359,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     const problemColor = getProblemColor(data?.problems);
     const text = `${data?.showPriority ? `${transition?.priority ?? "?"}: ` : ""}${transition?.label || ""}`;
     const showGrips = selected && !!data?.onAnchorChange && !!sourceBox && !!targetBox;
-    /** the properties of the grip of one end */
+    // the properties of the grip of one end
     const grip = (gripEnd: EdgeEnd): Omit<EndGripProps, "point" | "box" | "fixed"> => ({
         stateId: gripEnd === "source" ? source : target,
         onChange: anchor => data?.onAnchorChange?.(id, gripEnd, anchor),

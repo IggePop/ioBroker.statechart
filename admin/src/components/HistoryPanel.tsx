@@ -59,6 +59,8 @@ interface HistoryPanelProps {
 
 /**
  * The starts and transitions of the running chart, newest first
+ *
+ * @param props Component properties, see HistoryPanelProps
  */
 export default function HistoryPanel(props: HistoryPanelProps): React.JSX.Element {
     const { history, transitionIds, onSelectTransition, onClear } = props;

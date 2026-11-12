@@ -6,31 +6,45 @@
 import { Position } from "@xyflow/react";
 import type { EdgeAnchor } from "../../src/lib/chart-model";
 
+/** A point in the coordinates of the flow */
 export interface Point {
+    /** Horizontal position */
     x: number;
+    /** Vertical position, pointing down */
     y: number;
 }
 
 /** Absolute position and size of a node */
 export interface Box {
+    /** Left border */
     x: number;
+    /** Top border */
     y: number;
+    /** Width */
     width: number;
+    /** Height */
     height: number;
 }
 
 /** A point on the border of a node and the side it is on */
 export interface BorderPoint extends Point {
+    /** The side of the node the point is on */
     side: Position;
 }
 
 /** Ends of an edge and the direction the curve leaves/enters them, as used by getBezierPath() */
 export interface EdgeEnds {
+    /** Start of the edge */
     sourceX: number;
+    /** Start of the edge */
     sourceY: number;
+    /** Direction in which the edge leaves the start */
     sourcePosition: Position;
+    /** End of the edge */
     targetX: number;
+    /** End of the edge */
     targetY: number;
+    /** Direction from which the edge enters the end */
     targetPosition: Position;
 }
 

@@ -21,7 +21,7 @@ const controllerDir = path.join(profileDir, "node_modules", "iobroker.js-control
 const EXCLUDED = new Set(["src", ".watch"]);
 
 /**
- * @param {string} dir
+ * @param {string} dir The directory to list, with its sub directories
  * @returns {string[]} paths relative to the admin directory, with "/" as separator
  */
 function listFiles(dir) {
@@ -45,8 +45,8 @@ async function main() {
         silly: () => {},
         debug: () => {},
         info: () => {},
-        warn: (/** @type {string} */ msg) => console.warn(msg),
-        error: (/** @type {string} */ msg) => console.error(msg),
+        warn: console.warn,
+        error: console.error,
     };
     const objects = await new Promise((resolve, reject) => {
         const fail = () =>

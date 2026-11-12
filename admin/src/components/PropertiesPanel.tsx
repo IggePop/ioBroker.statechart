@@ -418,6 +418,8 @@ function StateProperties({
  * @param props.transition The transition
  * @param props.toChild If the target is a child of the source
  * @param props.tools Validation and completion
+ * @param props.breakpoint The simulation stops when the transition is taken
+ * @param props.onToggleBreakpoint Sets or removes the breakpoint
  * @param props.onChange Called with the changed properties
  * @param props.onDelete Deletes the transition
  */

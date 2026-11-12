@@ -6,6 +6,7 @@ import type { Severity } from "../../../src/lib/chart-analysis";
 
 /** The translated problems of a state, transition, function block or variable */
 export interface ProblemList {
+    /** The translated messages, shown in the tooltip */
     messages: string[];
     /** The most severe one */
     severity: Severity;

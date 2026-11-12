@@ -334,6 +334,9 @@ class ChartRuntime {
       this.startTimers(id);
     }
   }
+  /**
+   * Publishes the active states after each transition, and logs errors of the state machine
+   */
   subscribe() {
     this.actor?.subscribe({
       next: (snapshot) => this.publishActiveStates(snapshot.value),
@@ -644,6 +647,9 @@ class ChartRuntime {
       log(`[${this.chart.name}] ${where}: ${diagnostic.message}`);
     }
   }
+  /**
+   * Stops the state machine and all timers, delayed writes are discarded
+   */
   stop() {
     this.actor?.stop();
     this.actor = null;
@@ -1313,6 +1319,10 @@ class ChartRuntime {
         return this.firedTimers.has(transition.id);
     }
   }
+  /**
+   * @returns the configuration of the XState machine: the states with their entry and exit actions, the
+   *   transitions as guarded events
+   */
   buildMachineConfig() {
     const structure = this.structure;
     const buildState = (state) => {
@@ -1458,6 +1468,9 @@ ${this.prepareCode(code, "statements")}
 }`, where), where, context);
     this.writeChangedOutputs();
   }
+  /**
+   * Writes the outputs whose values were changed by actions to their states, in a simulation only records them
+   */
   writeChangedOutputs() {
     for (const symbol of this.chart.symbols) {
       if (symbol.scope !== "output" || !symbol.stateId) {

@@ -367,6 +367,14 @@ interface SymbolsEditorProps {
 
 /**
  * The variables of a chart, grouped by scope. Each variable is one line, a click shows its fields below it.
+ *
+ * @param props Component properties, see SymbolsEditorProps
+ * @param props.symbols The variables of the chart
+ * @param props.problems Problems found by the analysis of the chart, by name
+ * @param props.onChange Called with the changed variables
+ * @param props.liveValues Current values of the variables, empty if the chart does not run
+ * @param props.socket Connection to ioBroker, for the dialog to select a state
+ * @param props.theme Theme of the admin, for the dialog to select a state
  */
 export default function SymbolsEditor({
     symbols,

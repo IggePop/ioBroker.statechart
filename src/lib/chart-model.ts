@@ -39,6 +39,7 @@ export interface ChartSymbol {
     debounceMs?: number;
 }
 
+/** A state of the chart, also a superstate with sub states */
 export interface ChartState {
     /** Unique and stable ID inside the chart */
     id: string;
@@ -83,6 +84,7 @@ export interface ChartState {
 /** Format of ChartState.color */
 export const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
+/** A transition between two states, or from a state to itself */
 export interface ChartTransition {
     /** Unique and stable ID inside the chart */
     id: string;
@@ -110,11 +112,17 @@ export interface ChartTransition {
     /** Where the arrow ends on the border of the target state, automatic if missing (editor only) */
     targetAnchor?: EdgeAnchor;
     /** Moves the label away from the middle of the arrow, set by dragging it (editor only) */
-    labelOffset?: { x: number; y: number };
+    labelOffset?: {
+        /** Horizontal distance */
+        x: number;
+        /** Vertical distance, pointing down */
+        y: number;
+    };
 }
 
 /** A point on the border of a state, set by dragging an end of a transition in the editor */
 export interface EdgeAnchor {
+    /** The side of the state */
     side: "top" | "right" | "bottom" | "left";
     /** Position along the side: 0 = left/top end, 1 = right/bottom end */
     pos: number;
@@ -147,6 +155,7 @@ export interface ChartFunction {
 export interface ChartNote {
     /** Unique and stable ID inside the chart */
     id: string;
+    /** The text of the note */
     text: string;
     /** ID of the state the note is placed in, it moves together with it */
     parent?: string | null;
@@ -160,6 +169,7 @@ export interface ChartNote {
     height?: number;
 }
 
+/** A chart, stored in native.chart of its object, see the top of this file */
 export interface Chart {
     /** Model version, see CHART_MODEL_VERSION */
     version: number;
@@ -180,8 +190,11 @@ export interface Chart {
     parallel?: boolean;
     /** Transitions are drawn with horizontal and vertical lines and right angles instead of curves (editor only) */
     orthogonalTransitions?: boolean;
+    /** The variables: inputs, outputs and locals */
     symbols: ChartSymbol[];
+    /** All states, nested ones refer to their parent */
     states: ChartState[];
+    /** All transitions */
     transitions: ChartTransition[];
     /** Missing in charts created before function blocks existed */
     functions?: ChartFunction[];
@@ -208,6 +221,7 @@ export const TEMPORAL_OPERATORS: TemporalOperator[] = ["after", "before", "at", 
  *   entering the state
  */
 export interface TemporalExpression {
+    /** after, before, at or every */
     operator: TemporalOperator;
     /** at(...) every day: name of an astro event (see ASTRO_EVENTS) or a time of day "HH:mm" */
     time?: string;
@@ -223,6 +237,7 @@ export interface TemporalExpression {
     condition?: string;
 }
 
+/** The parts of a transition label event[condition]{action}, see parseTransitionLabel() */
 export interface TransitionLabel {
     /** Name of the triggering event (an input symbol), undefined = any wakeup */
     event?: string;
@@ -278,6 +293,7 @@ export function nameToId(name: string): string {
     );
 }
 
+/** A part of a text, used e.g. to underline an error */
 export interface TextRange {
     /** Index of the first character */
     from: number;
@@ -287,6 +303,7 @@ export interface TextRange {
 
 /** Positions of the parts in the label text */
 export interface TransitionLabelRanges {
+    /** The name of the event, missing for a temporal expression */
     event?: TextRange;
     /** The whole temporal expression, e.g. after(...) */
     temporal?: TextRange;
@@ -590,9 +607,13 @@ const LEGACY_EXPORT_FORMATS = ["iobroker.state-machine"];
 
 /** The content of an export file */
 export interface ChartExport {
+    /** Identifies the file as export of this adapter, see EXPORT_FORMAT */
     format: string;
+    /** Version of the chart model, see CHART_MODEL_VERSION */
     version: number;
+    /** Time of the export as ISO string */
     exported: string;
+    /** The exported charts */
     charts: Chart[];
 }
 

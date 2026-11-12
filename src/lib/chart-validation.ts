@@ -47,15 +47,19 @@ const STATE_ACTIONS = ["entry", "during", "exit"] as const;
 
 export type CodeKind = "expression" | "statements";
 
+/** A problem at a position in a checked text, e.g. an unknown variable in an action */
 export interface Diagnostic {
-    /** Position in the checked text */
+    /** Position in the checked text: index of the first character */
     from: number;
+    /** Position in the checked text: index after the last character */
     to: number;
+    /** How severe the problem is */
     severity: Severity;
     /** English message */
     message: string;
     /** Message with %s placeholders, used to translate it */
     key: string;
+    /** Values for the %s placeholders */
     args: string[];
 }
 
@@ -270,11 +274,13 @@ export function validateTransitionLabel(
 
 /** A name declared at the top level of a function block */
 export interface Declaration {
+    /** The declared name */
     name: string;
     /** e.g. "clamp(x, lo, hi)", null if it is no function */
     signature: string | null;
-    /** Position of the name in the code */
+    /** Position of the name in the code: index of the first character */
     from: number;
+    /** Position of the name in the code: index after the last character */
     to: number;
 }
 
@@ -382,12 +388,15 @@ export function prepareHelperCalls(
     return { code: result, names: [...names], stateIds: [...stateIds] };
 }
 
+/** A problem of a chart and where it is */
 export interface ChartProblem {
+    /** What the problem is about */
     kind: "state" | "transition" | "function" | "symbol";
     /** ID of the state, transition or function block, name of the variable */
     id: string;
     /** "entry", "during", "exit", "label" or "code", empty for problems of the state or variable as a whole */
     field: string;
+    /** The problem and its position in the field */
     diagnostic: Diagnostic;
 }
 

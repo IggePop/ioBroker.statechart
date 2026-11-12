@@ -345,7 +345,7 @@ function ChartEditorInner({
         if (!moved.size) {
             return;
         }
-        /** the new absolute position of a node, or the current one */
+        // the new absolute position of a node, or the current one
         const absolute = (id: string): { x: number; y: number } | null => moved.get(id) ?? getRect(id);
         record();
         setNodes(nds =>

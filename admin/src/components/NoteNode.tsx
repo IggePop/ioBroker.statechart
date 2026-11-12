@@ -14,6 +14,10 @@ type NoteNodeProps = NodeProps<
 
 /**
  * A note on the canvas, like a sticky note. It has no connection points.
+ *
+ * @param props Properties of the node from React Flow
+ * @param props.data The note, and if a dragged node would be dropped into it
+ * @param props.selected The note is selected
  */
 function NoteNode({ data, selected }: NoteNodeProps): React.JSX.Element {
     const { note } = data;

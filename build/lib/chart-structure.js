@@ -28,6 +28,9 @@ function sortByOrder(states) {
 }
 const HISTORY_SUFFIX = "$history";
 class ChartStructure {
+  /**
+   * @param chart The chart whose structure is prepared
+   */
   constructor(chart) {
     this.chart = chart;
     this.statesById = new Map(chart.states.map((s) => [s.id, s]));
@@ -48,6 +51,7 @@ class ChartStructure {
       list.sort((a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER));
     }
   }
+  /** All states by their ID */
   statesById;
   /** children by parent ID, "" for the top level */
   childrenByParent = /* @__PURE__ */ new Map();

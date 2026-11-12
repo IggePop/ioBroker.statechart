@@ -15,9 +15,13 @@ import type { Diagnostic } from "../../../src/lib/chart-validation";
 
 /** An entry of the completion list */
 export interface Completion {
+    /** The inserted text, e.g. the name of a variable */
     label: string;
+    /** Short text shown next to the label, e.g. the scope of a variable */
     detail?: string;
+    /** Longer description shown beside the list for the selected entry */
     info?: string;
+    /** Kind of the entry, selects the icon of CodeMirror, e.g. "variable" or "function" */
     type?: string;
 }
 
@@ -70,19 +74,36 @@ export function createTheme(theme: Theme, minRows: number): Extension[] {
 }
 
 interface CodeEditorProps {
+    /** Shown in the border, like the label of a TextField */
     label: string;
+    /** The code */
     value: string;
+    /** Called with the code after each change */
     onChange: (value: string) => void;
+    /** Checks the code, the problems are underlined and shown below */
     validate: (text: string) => Diagnostic[];
+    /** Offered while typing */
     completions: Completion[];
+    /** Shown while the code is empty */
     placeholder?: string;
     /** Shown if there are no problems */
     helperText?: string;
+    /** Minimum height in lines */
     minRows?: number;
 }
 
 /**
  * Code input with JavaScript syntax highlighting, underlined errors and completion of variable names
+ *
+ * @param props Component properties, see CodeEditorProps
+ * @param props.label Shown in the border
+ * @param props.value The code
+ * @param props.onChange Called with the code after each change
+ * @param props.validate Checks the code
+ * @param props.completions Offered while typing
+ * @param props.placeholder Shown while the code is empty
+ * @param props.helperText Shown if there are no problems
+ * @param props.minRows Minimum height in lines
  */
 export default function CodeEditor({
     label,

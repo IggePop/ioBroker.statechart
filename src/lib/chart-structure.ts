@@ -18,6 +18,7 @@ export function sortByOrder<T extends { order?: number }>(states: T[]): T[] {
 /** Appended to the ID of a state with history for the ID of its XState history node */
 export const HISTORY_SUFFIX = "$history";
 
+/** How a transition is taken, depending on how its source and target are nested */
 export interface TransitionKind {
     /** checked after the during action of the source, the source stays active */
     inner: boolean;
@@ -25,13 +26,21 @@ export interface TransitionKind {
     reenter: boolean;
 }
 
+/**
+ * The structure of a chart, prepared for fast lookups: the states by ID, the children of each state, the
+ * transitions of each state
+ */
 export class ChartStructure {
+    /** All states by their ID */
     readonly statesById: Map<string, ChartState>;
     /** children by parent ID, "" for the top level */
     readonly childrenByParent = new Map<string, ChartState[]>();
     /** transitions by source, sorted by priority */
     readonly transitionsBySource = new Map<string, ChartTransition[]>();
 
+    /**
+     * @param chart The chart whose structure is prepared
+     */
     constructor(readonly chart: Chart) {
         this.statesById = new Map(chart.states.map(s => [s.id, s]));
         for (const state of chart.states) {

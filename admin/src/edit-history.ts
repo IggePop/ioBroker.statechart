@@ -6,6 +6,7 @@ const MAX_STEPS = 100;
 /** Changes with the same key within this time are one step, e.g. typing in a field */
 const MERGE_MS = 1000;
 
+/** A document in the history */
 export interface HistoryEntry<T> {
     /** The edited document before/after a change */
     document: T;
@@ -13,12 +14,17 @@ export interface HistoryEntry<T> {
     version: number;
 }
 
+/** The undo/redo history of a document */
 export interface History<T> {
+    /** The documents before the current one, the last one is restored by undo */
     past: HistoryEntry<T>[];
+    /** The documents after the current one, the first one is restored by redo */
     future: HistoryEntry<T>[];
     /** Of the current document */
     version: number;
+    /** Version of the saved document */
     savedVersion: number;
+    /** Version of the next change */
     nextVersion: number;
     /** Key of the last recorded change */
     lastKey: string | null;
@@ -26,6 +32,9 @@ export interface History<T> {
     lastTime: number;
 }
 
+/**
+ * @returns an empty history of an unchanged document
+ */
 export function createHistory<T>(): History<T> {
     return { past: [], future: [], version: 0, savedVersion: 0, nextVersion: 1, lastKey: null, lastTime: 0 };
 }
@@ -106,6 +115,7 @@ export function markSaved<T>(history: History<T>, version: number): History<T> {
     return { ...history, savedVersion: version, lastKey: null };
 }
 
+/** Undo/redo of an editor, see useEditHistory() */
 export interface EditHistory {
     /**
      * Must be called before the document is changed
@@ -113,13 +123,17 @@ export interface EditHistory {
      * @param key Changes with the same key within a short time are one step
      */
     record: (key?: string | null) => void;
+    /** Restores the document before the last change */
     undo: () => void;
+    /** Restores the document after the last undone change */
     redo: () => void;
     /** Must be called after the document was saved, with the version which was saved */
     markSaved: (version: number) => void;
     /** the version of the current document, see markSaved() */
     version: number;
+    /** There is a change which can be undone */
     canUndo: boolean;
+    /** There is an undone change which can be redone */
     canRedo: boolean;
     /** true if the document differs from the saved one */
     changed: boolean;
@@ -147,14 +161,15 @@ export function useEditHistory<T>(document: T, restore: (document: T) => void): 
     // eslint-disable-next-line react-hooks/refs
     historyRef.current = history;
 
-    const update = (value: History<T>): void => {
+    // stable, it only uses the ref and the setter of the state
+    const update = useCallback((value: History<T>): void => {
         historyRef.current = value;
         setHistory(value);
-    };
+    }, []);
 
     const record = useCallback(
         (key: string | null = null) => update(recordChange(historyRef.current, documentRef.current, key, Date.now())),
-        [],
+        [update],
     );
 
     const undo = useCallback(() => {
@@ -165,7 +180,7 @@ export function useEditHistory<T>(document: T, restore: (document: T) => void): 
             documentRef.current = result.document;
             update(result.history);
         }
-    }, []);
+    }, [update]);
 
     const redo = useCallback(() => {
         const result = redoChange(historyRef.current, documentRef.current);
@@ -174,13 +189,13 @@ export function useEditHistory<T>(document: T, restore: (document: T) => void): 
             documentRef.current = result.document;
             update(result.history);
         }
-    }, []);
+    }, [update]);
 
     return {
         record,
         undo,
         redo,
-        markSaved: useCallback((version: number) => update(markSaved(historyRef.current, version)), []),
+        markSaved: useCallback((version: number) => update(markSaved(historyRef.current, version)), [update]),
         version: history.version,
         canUndo: history.past.length > 0,
         canRedo: history.future.length > 0,

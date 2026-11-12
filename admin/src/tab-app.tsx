@@ -67,6 +67,10 @@ interface TabAppState extends GenericAppState {
     pendingSelect: { id: string | null } | null;
 }
 
+/**
+ * The admin tab: the list of charts on the left, the editor of the selected chart on the right. It loads and saves
+ * the charts and subscribes the states of the selected chart while it runs (active states, values, history).
+ */
 class TabApp extends GenericApp<GenericAppProps, TabAppState> {
     private readonly chartPrefix: string;
     /** saves the chart in the editor */
@@ -78,6 +82,9 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
     /** keeps the simulation of the selected chart alive, the adapter ends it if the editor is closed */
     private simulationPing: ReturnType<typeof setInterval> | null = null;
 
+    /**
+     * @param props Properties from the admin, e.g. the instance
+     */
     public constructor(props: GenericAppProps) {
         const extendedProps = {
             ...props,
@@ -104,8 +111,10 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
         this.chartPrefix = `${this.adapterName}.${this.instance}.charts.`;
     }
 
+    /**
+     * Executed when the connection to ioBroker is ready: loads all charts and keeps the list up to date
+     */
     public override onConnectionReady(): void {
-        // executed when connection is ready: load all charts and keep the list up to date
         void this.socket.getObjectViewSystem("channel", this.chartPrefix, `${this.chartPrefix}香`).then(charts => {
             const ids = Object.keys(charts).sort();
             this.setState({ charts });
@@ -116,6 +125,9 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
         void this.socket.subscribeObject(`${this.chartPrefix}*`, this.onObjectChange);
     }
 
+    /**
+     * Ends the subscriptions and the simulation of the selected chart
+     */
     public override componentWillUnmount(): void {
         void this.socket.unsubscribeObject(`${this.chartPrefix}*`, this.onObjectChange);
         this.unsubscribeLive();
@@ -692,6 +704,9 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
         );
     }
 
+    /**
+     * @returns the content of the tab (see renderContent()) in the theme of the admin
+     */
     public override render(): React.JSX.Element {
         return (
             <StyledEngineProvider injectFirst>

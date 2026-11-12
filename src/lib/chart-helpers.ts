@@ -4,8 +4,11 @@
  * the runtime implements them (see ChartRuntime.createHelpers()).
  */
 
+/** A helper function as it is shown in the completion of the code editor */
 export interface HelperDescription {
+    /** How it is called, e.g. "isTimeBetween(from, to)" */
     signature: string;
+    /** What it does */
     description: string;
 }
 
