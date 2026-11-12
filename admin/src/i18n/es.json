@@ -103,6 +103,8 @@
     "Collapse": "Contraer",
     "Expand": "Expandir",
     "Right-angled transitions": "Transiciones en ángulo recto",
+    "snapToGridOn": "Ajustar a la cuadrícula: activado (clic para desactivar)",
+    "snapToGridOff": "Ajustar a la cuadrícula: desactivado (clic para activar)",
     "Wake up on": "despertarse",
     "every update": "cada actualización",
     "value changes only": "solo cambios de valor",

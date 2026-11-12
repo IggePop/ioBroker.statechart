@@ -103,6 +103,8 @@
     "Collapse": "Comprimi",
     "Expand": "Espandi",
     "Right-angled transitions": "Transizioni ad angolo retto",
+    "snapToGridOn": "Aggancia alla griglia: attivo (clic per disattivare)",
+    "snapToGridOff": "Aggancia alla griglia: disattivo (clic per attivare)",
     "Wake up on": "Svegliati",
     "every update": "ogni aggiornamento",
     "value changes only": "cambia solo il valore",

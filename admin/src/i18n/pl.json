@@ -103,6 +103,8 @@
     "Collapse": "Zwiń",
     "Expand": "Rozwiń",
     "Right-angled transitions": "Przejścia pod kątem prostym",
+    "snapToGridOn": "Przyciąganie do siatki: wł. (kliknij, aby wyłączyć)",
+    "snapToGridOff": "Przyciąganie do siatki: wył. (kliknij, aby włączyć)",
     "Wake up on": "Obudź się",
     "every update": "każda aktualizacja",
     "value changes only": "zmienia się tylko wartość",

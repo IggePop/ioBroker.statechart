@@ -42,7 +42,7 @@ of the running chart on the top left, the variables on the right.*
 - Comments on states, transitions and function blocks, notes on the canvas, and a color per state
 - Per input: wake up on every update or only on changes, filter by ack, debounce
 - Helper functions: getState (any state), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
-- Align and distribute the selected elements
+- Align and distribute the selected elements, snap to the grid (can be switched off)
 - The list of charts and the properties panel can be resized and collapsed, for more space for the chart
 - Undo/redo (Ctrl+Z, Ctrl+Y), copy/cut/paste of states and function blocks (Ctrl+C, Ctrl+X, Ctrl+V), also between charts, and a warning about unsaved changes
 - **Show code**: the JavaScript generated from the chart, showing exactly how the adapter executes it
@@ -121,6 +121,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) the elements snap to the dots of the background (20 px instead of an invisible grid of 10 px), the button with the grid in the toolbar switches it on and off
 * (Igge) chart option "Right-angled transitions": the arrows consist of horizontal and vertical lines instead of curves
 * (Igge) the list of charts and the properties panel can be collapsed with the arrow on their border
 * (Igge) the color of each state can be chosen, light yellow by default, every second level of nested states is darker, function blocks have a light gray background

@@ -42,6 +42,8 @@ import {
     ContentPaste as PasteIcon,
     FileDownload as ExportIcon,
     Functions as FunctionIcon,
+    GridOff as GridOffIcon,
+    GridOn as GridOnIcon,
     MonitorHeartOutlined as LiveIcon,
     StickyNote2Outlined as NoteIcon,
     Redo as RedoIcon,
@@ -124,17 +126,31 @@ const FLASH_MS = 1500;
 /** Key in the browser storage: if the live values are shown on the canvas */
 const SHOW_LIVE_KEY = "statechart.showLiveValues";
 
-function loadShowLive(): boolean {
+/** Key in the browser storage: if states, function blocks and notes snap to the grid */
+const SNAP_TO_GRID_KEY = "statechart.snapToGrid";
+
+/** Distance of the dots of the background, the states snap to them */
+const GRID_SIZE = 20;
+
+/**
+ * @param key Key in the browser storage
+ * @returns the stored setting, true if there is none, e.g. the first time
+ */
+function loadSetting(key: string): boolean {
     try {
-        return window.localStorage.getItem(SHOW_LIVE_KEY) !== "false";
+        return window.localStorage.getItem(key) !== "false";
     } catch {
         return true;
     }
 }
 
-function saveShowLive(show: boolean): void {
+/**
+ * @param key Key in the browser storage
+ * @param value The setting
+ */
+function saveSetting(key: string, value: boolean): void {
     try {
-        window.localStorage.setItem(SHOW_LIVE_KEY, String(show));
+        window.localStorage.setItem(key, String(value));
     } catch {
         // only a convenience
     }
@@ -275,7 +291,12 @@ function ChartEditorInner({
     const [generatedCode, setGeneratedCode] = useState<string | null>(null);
     /** state into which the dragged state would be moved when it is dropped */
     const [dropTarget, setDropTarget] = useState<string | null>(null);
-    const [showLive, setShowLive] = useState(loadShowLive);
+    const [showLive, setShowLive] = useState(() => loadSetting(SHOW_LIVE_KEY));
+    const [snapToGrid, setSnapToGrid] = useState(() => loadSetting(SNAP_TO_GRID_KEY));
+    const toggleSnapToGrid = (): void => {
+        saveSetting(SNAP_TO_GRID_KEY, !snapToGrid);
+        setSnapToGrid(!snapToGrid);
+    };
     /** IDs of the states and transitions where the simulation stops, they are not stored in the chart */
     const [breakpoints, setBreakpoints] = useState<ReadonlySet<string>>(new Set());
     /** transitions which were just taken by the running chart, they are highlighted for a moment */
@@ -1010,6 +1031,13 @@ function ChartEditorInner({
                         ))}
                     </Menu>
                     <ToolButton
+                        title={I18n.t(snapToGrid ? "snapToGridOn" : "snapToGridOff")}
+                        icon={snapToGrid ? <GridOnIcon /> : <GridOffIcon />}
+                        // highlighted while it is switched on
+                        color={snapToGrid ? "primary" : "default"}
+                        onClick={toggleSnapToGrid}
+                    />
+                    <ToolButton
                         title={I18n.t("Show code")}
                         icon={<CodeIcon />}
                         onClick={() => setGeneratedCode(generateChartCode(flowToChart(chart, nodes, edges), chartId))}
@@ -1051,7 +1079,7 @@ function ChartEditorInner({
                         // the live values are needed to set the inputs of a simulation
                         disabled={simulating}
                         onClick={() => {
-                            saveShowLive(!showLive);
+                            saveSetting(SHOW_LIVE_KEY, !showLive);
                             setShowLive(!showLive);
                         }}
                     />
@@ -1098,13 +1126,14 @@ function ChartEditorInner({
                             } as React.CSSProperties
                         }
                         defaultMarkerColor={edgeColor}
-                        snapToGrid
-                        snapGrid={[10, 10]}
+                        // the states snap to the dots of the background
+                        snapToGrid={snapToGrid}
+                        snapGrid={[GRID_SIZE, GRID_SIZE]}
                         deleteKeyCode={["Delete", "Backspace"]}
                         fitView
                         fitViewOptions={{ maxZoom: 1 }}
                     >
-                        <Background />
+                        <Background gap={GRID_SIZE} />
                         <Controls />
                         <MiniMap
                             pannable

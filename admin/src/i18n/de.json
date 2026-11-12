@@ -103,6 +103,8 @@
     "Collapse": "Einklappen",
     "Expand": "Aufklappen",
     "Right-angled transitions": "Rechtwinklige Übergänge",
+    "snapToGridOn": "Am Raster einrasten: an (Klick schaltet aus)",
+    "snapToGridOff": "Am Raster einrasten: aus (Klick schaltet ein)",
     "Wake up on": "Aufwecken bei",
     "every update": "jeder Aktualisierung",
     "value changes only": "nur bei Wertänderung",

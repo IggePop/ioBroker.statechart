@@ -103,6 +103,8 @@
     "Collapse": "Inklappen",
     "Expand": "Uitklappen",
     "Right-angled transitions": "Rechthoekige overgangen",
+    "snapToGridOn": "Uitlijnen op raster: aan (klik om uit te zetten)",
+    "snapToGridOff": "Uitlijnen op raster: uit (klik om aan te zetten)",
     "Wake up on": "Wakker worden",
     "every update": "elke update",
     "value changes only": "alleen waardeveranderingen",

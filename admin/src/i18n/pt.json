@@ -103,6 +103,8 @@
     "Collapse": "Recolher",
     "Expand": "Expandir",
     "Right-angled transitions": "Transições em ângulo reto",
+    "snapToGridOn": "Ajustar à grade: ligado (clique para desligar)",
+    "snapToGridOff": "Ajustar à grade: desligado (clique para ligar)",
     "Wake up on": "Acorde",
     "every update": "cada atualização",
     "value changes only": "apenas alterações de valor",

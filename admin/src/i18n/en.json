@@ -103,6 +103,8 @@
     "Collapse": "Collapse",
     "Expand": "Expand",
     "Right-angled transitions": "Right-angled transitions",
+    "snapToGridOn": "Snap to the grid: on (click to switch off)",
+    "snapToGridOff": "Snap to the grid: off (click to switch on)",
     "Wake up on": "Wake up on",
     "every update": "every update",
     "value changes only": "value changes only",

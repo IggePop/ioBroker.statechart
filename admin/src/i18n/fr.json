@@ -103,6 +103,8 @@
     "Collapse": "Réduire",
     "Expand": "Développer",
     "Right-angled transitions": "Transitions à angle droit",
+    "snapToGridOn": "Aimanter à la grille : activé (cliquer pour désactiver)",
+    "snapToGridOff": "Aimanter à la grille : désactivé (cliquer pour activer)",
     "Wake up on": "Réveillez-vous le",
     "every update": "chaque mise à jour",
     "value changes only": "la valeur change uniquement",
