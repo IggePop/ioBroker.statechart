@@ -121,7 +121,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
-* (Igge) more color in the editor: each kind of element has its color and icon in the toolbar and in the headings of its properties, icons on the tabs, the status of each chart in the list
+* (Igge) more color in the editor: each kind of element has its color and icon in the toolbar and in the headings of its properties, icons on the tabs, the status of each chart as a colored dot in the list
 * (Igge) the elements snap to the dots of the background (20 px instead of an invisible grid of 10 px), the button with the grid in the toolbar switches it on and off
 * (Igge) chart option "Right-angled transitions": the arrows consist of horizontal and vertical lines instead of curves
 * (Igge) the list of charts and the properties panel can be collapsed with the arrow on their border

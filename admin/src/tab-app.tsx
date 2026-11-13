@@ -491,18 +491,18 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                                 onClick={() => this.selectChart(id)}
                             >
                                 {/* green while the chart runs, gray while it is paused */}
-                                <ListItemIcon sx={{ minWidth: 22 }}>
+                                <ListItemIcon
+                                    // the status as text only in the tooltip
+                                    title={I18n.t(paused ? "paused" : "running")}
+                                    sx={{ minWidth: 22 }}
+                                >
                                     <StatusIcon
                                         sx={{ fontSize: 12, color: paused ? "text.disabled" : "success.main" }}
                                     />
                                 </ListItemIcon>
                                 <ListItemText
                                     primary={`${chart?.name || id.substring(this.chartPrefix.length)}${unsaved ? " •" : ""}`}
-                                    secondary={I18n.t(paused ? "paused" : "running")}
-                                    slotProps={{
-                                        primary: { color: paused ? "text.secondary" : "text.primary" },
-                                        secondary: { variant: "caption" },
-                                    }}
+                                    slotProps={{ primary: { color: paused ? "text.secondary" : "text.primary" } }}
                                 />
                                 <Tooltip title={I18n.t(paused ? "Start chart" : "Pause chart")}>
                                     <IconButton
