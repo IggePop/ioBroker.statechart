@@ -121,6 +121,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) fixed: the dashed line to a moved label of a transition ran through its text, it ends at the border of the label now
 * (Igge) export of the whole chart as PNG image, also the parts outside of the visible area, with the button with the image in the toolbar
 * (Igge) the toolbar is grouped by tasks: save, undo/redo, clipboard, adding elements and layout on the left, code, export, live values and simulation on the right; new buttons to cut and to delete the selected elements
 * (Igge) fixed: self transitions on the top or right side of a state were drawn as a twisted spike instead of a loop, their labels are placed outside of the loop now

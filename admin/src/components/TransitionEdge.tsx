@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import {
     BaseEdge,
     EdgeLabelRenderer,
@@ -12,12 +12,14 @@ import { Box, useTheme } from "@mui/material";
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartTransition, EdgeAnchor } from "../../../src/lib/chart-model";
 import {
+    DIRECTIONS,
     LABEL_LINE_HEIGHT,
     anchorPoint,
     getFloatingEdgeEnds,
     getLoopEnds,
     getLoopPath,
     isValidAnchor,
+    leaderLineEnd,
     loopLabelTransform,
     nearestAnchor,
 } from "../floating-edges";
@@ -221,6 +223,29 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     const [preview, setPreview] = useState<{ end: EdgeEnd; point: Point } | null>(null);
     /** the offset of the label while it is dragged, it is stored when it is dropped */
     const [labelDrag, setLabelDrag] = useState<Point | null>(null);
+    /** the label, its size is measured so the line to a moved label ends at its border */
+    const labelRef = useRef<HTMLDivElement>(null);
+    const [labelSize, setLabelSize] = useState<{ width: number; height: number } | null>(null);
+    // like the condition for rendering the label below, the priority is shown if the source has several transitions
+    const hasLabel = !!(
+        data?.showPriority ||
+        transition?.label ||
+        transition?.comment?.trim() ||
+        data?.breakpoint ||
+        data?.problems
+    );
+    useEffect(() => {
+        const element = labelRef.current;
+        if (!element) {
+            return undefined;
+        }
+        // offsetWidth/offsetHeight are not scaled by the zoom, they are in the coordinates of the flow
+        const observer = new ResizeObserver(() =>
+            setLabelSize({ width: element.offsetWidth, height: element.offsetHeight }),
+        );
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [hasLabel]);
     const { screenToFlowPosition } = useReactFlow();
 
     // floating edges: the ends are on the borders of the states, facing each other, unless the user fixed them
@@ -237,8 +262,11 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     let loopAnchor: Point | null = null;
     /** how the label is placed relative to its point: centered, or next to a self transition */
     let labelAlign = "translate(-50%, -50%)";
+    /** the side of a self transition, its label is next to its point on this side instead of centered */
+    let loopSide: Position | null = null;
     if (source === target) {
         const side = (sourceAnchor?.side as Position | undefined) ?? sourcePosition;
+        loopSide = side;
         const ends = sourceBox ? getLoopEnds(sourceBox, side, sourceAnchor?.pos) : null;
         start = ends?.start ?? start;
         end = ends?.end ?? end;
@@ -289,6 +317,17 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     const anchor = { x: labelX, y: labelY };
     labelX += labelOffset.x;
     labelY += labelOffset.y + stackY;
+
+    // a moved label is connected to its arrow by a line, which ends at the border of the label, not in its text
+    let leaderEnd: Point | null = null;
+    if (Math.hypot(labelOffset.x, labelOffset.y) >= LEADER_FROM && !preview) {
+        const width = labelSize?.width ?? 0;
+        const height = labelSize?.height ?? 0;
+        // the center of the label: on its point, or beside it for a self transition
+        const [dx, dy] = loopSide ? DIRECTIONS[loopSide] : [0, 0];
+        const center = { x: labelX + (dx * width) / 2, y: labelY + (dy * height) / 2 };
+        leaderEnd = leaderLineEnd(anchor, center, width, height);
+    }
 
     /**
      * Drags the label. A click without moving selects the transition, like a click on the arrow.
@@ -376,10 +415,10 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                     style={{ fill: "var(--xy-edge-stroke, var(--xy-edge-stroke-default))" }}
                 />
             )}
-            {Math.hypot(labelOffset.x, labelOffset.y) >= LEADER_FROM && !preview && (
-                // a moved label is connected to its arrow by a thin line
+            {leaderEnd && (
+                // a moved label is connected to its arrow by a thin line, which ends at the border of the label
                 <path
-                    d={`M ${anchor.x} ${anchor.y} L ${labelX} ${labelY}`}
+                    d={`M ${anchor.x} ${anchor.y} L ${leaderEnd.x} ${leaderEnd.y}`}
                     style={{
                         stroke: "var(--xy-edge-stroke, var(--xy-edge-stroke-default))",
                         strokeWidth: 1,
@@ -418,6 +457,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
             {(text || transition?.comment?.trim() || data?.breakpoint || data?.problems) && (
                 <EdgeLabelRenderer>
                     <Box
+                        ref={labelRef}
                         className="nodrag nopan"
                         title={data?.onLabelMove ? I18n.t("labelDragHint") : undefined}
                         onPointerDown={data?.onLabelMove ? onLabelPointerDown : undefined}

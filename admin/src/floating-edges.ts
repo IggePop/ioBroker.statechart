@@ -457,6 +457,30 @@ export function getLoopPath(
 }
 
 /**
+ * End of the line from an arrow to its moved label: on the border of the label instead of its center, so the line
+ * does not run through the text of the transparent label
+ *
+ * @param from Where the line starts, on the arrow
+ * @param center Center of the label
+ * @param width Width of the label
+ * @param height Height of the label
+ * @param gap Space between the end of the line and the label
+ * @returns null if the start is inside of the label (with the gap), then no line is needed
+ */
+export function leaderLineEnd(from: Point, center: Point, width: number, height: number, gap = 3): Point | null {
+    const dx = from.x - center.x;
+    const dy = from.y - center.y;
+    const halfWidth = width / 2 + gap;
+    const halfHeight = height / 2 + gap;
+    // how far along the way from the center to the start the border is, 1 = at the start
+    const t = Math.max(Math.abs(dx) / halfWidth, Math.abs(dy) / halfHeight);
+    if (t <= 1) {
+        return null;
+    }
+    return { x: center.x + dx / t, y: center.y + dy / t };
+}
+
+/**
  * @param side The side of the state a self transition is on
  * @returns the CSS transform which places a label next to the given point on that side, instead of centered on it
  */

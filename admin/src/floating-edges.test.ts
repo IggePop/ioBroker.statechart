@@ -9,6 +9,7 @@ import {
     getLabelStackOffsets,
     getParallelOffsets,
     isValidAnchor,
+    leaderLineEnd,
     loopLabelTransform,
     nearestAnchor,
     straightEnds,
@@ -126,6 +127,23 @@ describe("floating-edges => getLoopPath", () => {
     it("aligns the label to the outer side of the loop", () => {
         expect(loopLabelTransform(Position.Top)).to.equal("translate(-50%, -100%)");
         expect(loopLabelTransform(Position.Right)).to.equal("translate(0, -50%)");
+    });
+});
+
+describe("floating-edges => leaderLineEnd", () => {
+    it("ends the line at the border of the label instead of its center", () => {
+        const center = { x: 0, y: 0 };
+        // a label of 40 x 20 without gap: the border is 20 to the side, 10 above and below
+        expect(leaderLineEnd({ x: 100, y: 0 }, center, 40, 20, 0)).to.deep.equal({ x: 20, y: 0 });
+        expect(leaderLineEnd({ x: 0, y: -50 }, center, 40, 20, 0)).to.deep.equal({ x: 0, y: -10 });
+        // diagonal: the line leaves through the bottom, which it reaches first
+        expect(leaderLineEnd({ x: 100, y: 100 }, center, 40, 20, 0)).to.deep.equal({ x: 10, y: 10 });
+        // with the default gap of 3
+        expect(leaderLineEnd({ x: 100, y: 0 }, center, 40, 20)).to.deep.equal({ x: 23, y: 0 });
+    });
+
+    it("draws no line if the start is inside of the label", () => {
+        expect(leaderLineEnd({ x: 5, y: 5 }, { x: 0, y: 0 }, 40, 20)).to.equal(null);
     });
 });
 
