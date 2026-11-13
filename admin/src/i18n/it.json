@@ -63,6 +63,8 @@
     "generatedCodeHelp": "JavaScript generato dal grafico. Mostra come l'adattatore esegue il grafico: la macchina XState e le funzioni che selezionano le transizioni ad ogni risveglio. È solo per la lettura, le modifiche non hanno alcun effetto.",
     "generatedCodeUnsaved": "Include le modifiche non salvate, l'adattatore esegue comunque il grafico salvato.",
     "Copy": "Copia",
+    "Cut": "Taglia",
+    "Del": "Canc",
     "Copied": "Copiato",
     "Close": "Vicino",
     "Restore the state after a restart": "Ripristina lo stato dopo un riavvio",

@@ -63,6 +63,8 @@
     "generatedCodeHelp": "JavaScript wygenerowany z wykresu. Pokazuje, w jaki sposób adapter wykonuje wykres: maszynę XState i funkcje, które wybierają przejścia przy każdym wybudzeniu. Służy tylko do odczytu, zmiany nie mają żadnego wpływu.",
     "generatedCodeUnsaved": "Uwzględnia niezapisane zmiany, adapter nadal wykonuje zapisany wykres.",
     "Copy": "Kopia",
+    "Cut": "Wytnij",
+    "Del": "Del",
     "Copied": "Skopiowano",
     "Close": "Zamknąć",
     "Restore the state after a restart": "Przywróć stan po ponownym uruchomieniu",

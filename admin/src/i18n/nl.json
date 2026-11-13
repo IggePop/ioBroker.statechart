@@ -63,6 +63,8 @@
     "generatedCodeHelp": "JavaScript gegenereerd op basis van de grafiek. Het laat zien hoe de adapter de grafiek uitvoert: de XState-machine en de functies die de overgangen selecteren bij elke wake-up. Het is alleen bedoeld om te lezen, wijzigingen hebben geen effect.",
     "generatedCodeUnsaved": "Het bevat de niet-opgeslagen wijzigingen, de adapter voert nog steeds het opgeslagen diagram uit.",
     "Copy": "Kopiëren",
+    "Cut": "Knippen",
+    "Del": "Del",
     "Copied": "Gekopieerd",
     "Close": "Dichtbij",
     "Restore the state after a restart": "Herstel de status na een herstart",

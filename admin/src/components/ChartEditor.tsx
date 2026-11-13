@@ -39,7 +39,9 @@ import {
     ViewStream as DistributeYIcon,
     Code as CodeIcon,
     ContentCopy as CopyIcon,
+    ContentCut as CutIcon,
     ContentPaste as PasteIcon,
+    DeleteOutline as DeleteIcon,
     FileDownload as ExportIcon,
     Functions as FunctionIcon,
     DataObject as VariablesIcon,
@@ -182,6 +184,7 @@ const ALIGNMENTS: { alignment: Alignment; title: string; icon: React.ReactNode }
  * @param props.onClick Called when the button is clicked
  * @param props.disabled If the button is disabled
  * @param props.color Color of the icon
+ * @param props.hoverColor Color of the icon while the pointer is over it, e.g. red for deleting
  */
 function ToolButton({
     title,
@@ -189,12 +192,14 @@ function ToolButton({
     onClick,
     disabled,
     color = "default",
+    hoverColor,
 }: {
     title: string;
     icon: React.ReactNode;
     onClick: () => void;
     disabled?: boolean;
     color?: "default" | ElementColor;
+    hoverColor?: "error";
 }): React.JSX.Element {
     return (
         <Tooltip title={title}>
@@ -206,11 +211,25 @@ function ToolButton({
                     disabled={disabled}
                     onClick={onClick}
                     aria-label={title}
+                    sx={hoverColor ? { "&:hover": { color: `${hoverColor}.main` } } : undefined}
                 >
                     {icon}
                 </IconButton>
             </span>
         </Tooltip>
+    );
+}
+
+/**
+ * Separates the groups of buttons in the toolbar
+ */
+function ToolDivider(): React.JSX.Element {
+    return (
+        <Divider
+            orientation="vertical"
+            flexItem
+            sx={{ mx: 0.5 }}
+        />
     );
 }
 
@@ -719,12 +738,17 @@ function ChartEditorInner({
         return !!content;
     };
 
+    /** Deletes the selected states, function blocks, notes and transitions, like the Delete key */
+    const deleteSelection = (): void => {
+        void reactFlow.deleteElements({
+            nodes: nodes.filter(n => n.selected).map(n => ({ id: n.id })),
+            edges: edges.filter(e => e.selected).map(e => ({ id: e.id })),
+        });
+    };
+
     const cut = (): void => {
         if (copy()) {
-            void reactFlow.deleteElements({
-                nodes: nodes.filter(n => n.selected).map(n => ({ id: n.id })),
-                edges: edges.filter(e => e.selected).map(e => ({ id: e.id })),
-            });
+            deleteSelection();
         }
     };
 
@@ -969,8 +993,10 @@ function ChartEditorInner({
             <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
                 <Toolbar
                     variant="dense"
-                    sx={{ gap: 0.5, borderBottom: 1, borderColor: "divider" }}
+                    // wraps in a narrow window instead of cutting off the buttons
+                    sx={{ gap: 0.5, flexWrap: "wrap", borderBottom: 1, borderColor: "divider" }}
                 >
+                    {/* editing on the left, ordered by how often it is needed */}
                     <ToolButton
                         title={`${I18n.t("Save")} (${changed ? I18n.t("unsaved changes") : I18n.t("no changes")})`}
                         icon={<SaveIcon />}
@@ -978,6 +1004,26 @@ function ChartEditorInner({
                         color={changed ? "primary" : "default"}
                         disabled={!changed || saving}
                         onClick={save}
+                    />
+                    <ToolDivider />
+                    <ToolButton
+                        title={`${I18n.t("Undo")} (Ctrl+Z)`}
+                        icon={<UndoIcon />}
+                        disabled={!history.canUndo}
+                        onClick={history.undo}
+                    />
+                    <ToolButton
+                        title={`${I18n.t("Redo")} (Ctrl+Y)`}
+                        icon={<RedoIcon />}
+                        disabled={!history.canRedo}
+                        onClick={history.redo}
+                    />
+                    <ToolDivider />
+                    <ToolButton
+                        title={`${I18n.t("Cut")} (Ctrl+X)`}
+                        icon={<CutIcon />}
+                        disabled={!nodes.some(n => n.selected)}
+                        onClick={cut}
                     />
                     <ToolButton
                         title={`${I18n.t("Copy")} (Ctrl+C)`}
@@ -992,22 +1038,35 @@ function ChartEditorInner({
                         onClick={paste}
                     />
                     <ToolButton
-                        title={`${I18n.t("Undo")} (Ctrl+Z)`}
-                        icon={<UndoIcon />}
-                        disabled={!history.canUndo}
-                        onClick={history.undo}
+                        title={`${I18n.t("Delete")} (${I18n.t("Del")})`}
+                        icon={<DeleteIcon />}
+                        // states, function blocks, notes and transitions can be deleted
+                        disabled={!nodes.some(n => n.selected) && !edges.some(e => e.selected)}
+                        // red only on hover, like the delete buttons of the list of charts
+                        hoverColor="error"
+                        onClick={deleteSelection}
+                    />
+                    <ToolDivider />
+                    <ToolButton
+                        title={I18n.t("Add state")}
+                        icon={<AddStateIcon />}
+                        // in the colors of the elements they add, like the headings of their properties
+                        color={ELEMENT_STYLES.state.color}
+                        onClick={addState}
                     />
                     <ToolButton
-                        title={`${I18n.t("Redo")} (Ctrl+Y)`}
-                        icon={<RedoIcon />}
-                        disabled={!history.canRedo}
-                        onClick={history.redo}
+                        title={I18n.t("Add function")}
+                        icon={<FunctionIcon />}
+                        color={ELEMENT_STYLES.function.color}
+                        onClick={addFunction}
                     />
-                    <Divider
-                        orientation="vertical"
-                        flexItem
-                        sx={{ mx: 0.5 }}
+                    <ToolButton
+                        title={I18n.t("Add note")}
+                        icon={<NoteIcon />}
+                        color={ELEMENT_STYLES.note.color}
+                        onClick={addNote}
                     />
+                    <ToolDivider />
                     {/* the anchor of the menu */}
                     <span ref={alignButton}>
                         <ToolButton
@@ -1042,45 +1101,19 @@ function ChartEditorInner({
                         color={snapToGrid ? "primary" : "default"}
                         onClick={toggleSnapToGrid}
                     />
+                    {/* output and running the chart on the right */}
+                    <Box sx={{ flex: 1 }} />
                     <ToolButton
                         title={I18n.t("Show code")}
                         icon={<CodeIcon />}
                         onClick={() => setGeneratedCode(generateChartCode(flowToChart(chart, nodes, edges), chartId))}
                     />
                     <ToolButton
-                        title={I18n.t("Add state")}
-                        icon={<AddStateIcon />}
-                        // in the colors of the elements they add, like the headings of their properties
-                        color={ELEMENT_STYLES.state.color}
-                        onClick={addState}
-                    />
-                    <ToolButton
-                        title={I18n.t("Add function")}
-                        icon={<FunctionIcon />}
-                        color={ELEMENT_STYLES.function.color}
-                        onClick={addFunction}
-                    />
-                    <ToolButton
-                        title={I18n.t("Add note")}
-                        icon={<NoteIcon />}
-                        color={ELEMENT_STYLES.note.color}
-                        onClick={addNote}
-                    />
-                    <Divider
-                        orientation="vertical"
-                        flexItem
-                        sx={{ mx: 0.5 }}
-                    />
-                    <ToolButton
                         title={`${I18n.t("Export chart")}${changed ? ` (${I18n.t("including unsaved changes")})` : ""}`}
                         icon={<ExportIcon />}
                         onClick={exportChart}
                     />
-                    <Divider
-                        orientation="vertical"
-                        flexItem
-                        sx={{ mx: 0.5 }}
-                    />
+                    <ToolDivider />
                     <ToolButton
                         title={I18n.t(showLive ? "Hide live values" : "Show live values")}
                         icon={<LiveIcon />}

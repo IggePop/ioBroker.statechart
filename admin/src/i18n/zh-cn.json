@@ -63,6 +63,8 @@
     "generatedCodeHelp": "由图表生成的 JavaScript。它展示了适配器如何执行图表:XState 状态机以及每次唤醒时选择转换的函数。仅供阅读,修改无效。",
     "generatedCodeUnsaved": "其中包含未保存的更改,适配器仍在执行已保存的图表。",
     "Copy": "复制",
+    "Cut": "剪切",
+    "Del": "Del",
     "Copied": "已复制",
     "Close": "关闭",
     "Restore the state after a restart": "重启后恢复状态",

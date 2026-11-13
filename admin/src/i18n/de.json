@@ -63,6 +63,8 @@
     "generatedCodeHelp": "Aus dem Chart generiertes JavaScript. Es zeigt, wie der Adapter das Chart ausführt: die XState-Maschine und die Funktionen, die bei jedem Aufwecken die Übergänge auswählen. Es dient nur zum Lesen, Änderungen haben keine Wirkung.",
     "generatedCodeUnsaved": "Er enthält die ungespeicherten Änderungen, der Adapter führt noch das gespeicherte Chart aus.",
     "Copy": "Kopieren",
+    "Cut": "Ausschneiden",
+    "Del": "Entf",
     "Copied": "Kopiert",
     "Close": "Schließen",
     "Restore the state after a restart": "Zustand nach Neustart wiederherstellen",

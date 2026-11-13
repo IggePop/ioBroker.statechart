@@ -63,6 +63,8 @@
     "generatedCodeHelp": "JavaScript generado a partir del gráfico. Muestra cómo el adaptador ejecuta el gráfico: la máquina XState y las funciones que seleccionan las transiciones en cada activación. Es sólo para lectura, los cambios no tienen ningún efecto.",
     "generatedCodeUnsaved": "Incluye los cambios no guardados, el adaptador aún ejecuta el gráfico guardado.",
     "Copy": "Copiar",
+    "Cut": "Cortar",
+    "Del": "Supr",
     "Copied": "copiado",
     "Close": "Cerca",
     "Restore the state after a restart": "Restaurar el estado después de un reinicio.",

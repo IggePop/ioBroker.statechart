@@ -63,6 +63,8 @@
     "generatedCodeHelp": "JavaScript generated from the chart. It shows how the adapter executes the chart: the XState machine and the functions which select the transitions on every wakeup. It is for reading only, changes have no effect.",
     "generatedCodeUnsaved": "It includes the unsaved changes, the adapter still executes the saved chart.",
     "Copy": "Copy",
+    "Cut": "Cut",
+    "Del": "Del",
     "Copied": "Copied",
     "Close": "Close",
     "Restore the state after a restart": "Restore the state after a restart",

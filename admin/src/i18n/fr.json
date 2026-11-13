@@ -63,6 +63,8 @@
     "generatedCodeHelp": "JavaScript généré à partir du graphique. Il montre comment l'adaptateur exécute le graphique : la machine XState et les fonctions qui sélectionnent les transitions à chaque réveil. C'est à titre de lecture uniquement, les modifications n'ont aucun effet.",
     "generatedCodeUnsaved": "Il inclut les modifications non enregistrées, l'adaptateur exécute toujours le graphique enregistré.",
     "Copy": "Copie",
+    "Cut": "Couper",
+    "Del": "Suppr",
     "Copied": "Copié",
     "Close": "Fermer",
     "Restore the state after a restart": "Restaurer l'état après un redémarrage",
