@@ -9,6 +9,7 @@ import {
     IconButton,
     List,
     ListItemButton,
+    ListItemIcon,
     ListItemText,
     StyledEngineProvider,
     TextField,
@@ -22,6 +23,7 @@ import {
     Delete as DeleteIcon,
     FileDownload as ExportIcon,
     FileUpload as ImportIcon,
+    FiberManualRecord as StatusIcon,
     Pause as PauseIcon,
     PlayArrow as StartIcon,
 } from "@mui/icons-material";
@@ -30,6 +32,7 @@ import type { GenericAppProps, GenericAppState } from "@iobroker/adapter-react-v
 import "@xyflow/react/dist/style.css";
 
 import ChartEditor from "./components/ChartEditor";
+import { ELEMENT_STYLES } from "./element-style";
 import ResizablePanel from "./components/ResizablePanel";
 import { downloadJson } from "./download";
 import { createChart, createExport, nameToId, parseExport } from "../../src/lib/chart-model";
@@ -422,6 +425,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                     variant="dense"
                     sx={{ gap: 1, borderBottom: 1, borderColor: "divider" }}
                 >
+                    <ELEMENT_STYLES.chart.Icon sx={{ color: `${ELEMENT_STYLES.chart.color}.main` }} />
                     <Typography
                         variant="subtitle1"
                         sx={{ flex: 1 }}
@@ -431,6 +435,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                     <Tooltip title={I18n.t("New chart")}>
                         <IconButton
                             size="small"
+                            color="primary"
                             onClick={() => this.setState({ newChartName: "" })}
                         >
                             <AddIcon />
@@ -485,14 +490,24 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                                 selected={id === this.state.selectedChart}
                                 onClick={() => this.selectChart(id)}
                             >
+                                {/* green while the chart runs, gray while it is paused */}
+                                <ListItemIcon sx={{ minWidth: 22 }}>
+                                    <StatusIcon
+                                        sx={{ fontSize: 12, color: paused ? "text.disabled" : "success.main" }}
+                                    />
+                                </ListItemIcon>
                                 <ListItemText
                                     primary={`${chart?.name || id.substring(this.chartPrefix.length)}${unsaved ? " •" : ""}`}
-                                    slotProps={{ primary: { color: paused ? "text.secondary" : "text.primary" } }}
+                                    secondary={I18n.t(paused ? "paused" : "running")}
+                                    slotProps={{
+                                        primary: { color: paused ? "text.secondary" : "text.primary" },
+                                        secondary: { variant: "caption" },
+                                    }}
                                 />
                                 <Tooltip title={I18n.t(paused ? "Start chart" : "Pause chart")}>
                                     <IconButton
                                         size="small"
-                                        color={paused ? "success" : "default"}
+                                        color={paused ? "success" : "warning"}
                                         onClick={e => {
                                             e.stopPropagation();
                                             void this.toggleChart(id);
@@ -505,6 +520,8 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                                     <IconButton
                                         size="small"
                                         edge="end"
+                                        // red only on hover, so the list does not look alarming
+                                        sx={{ "&:hover": { color: "error.main" } }}
                                         onClick={e => {
                                             e.stopPropagation();
                                             this.setState({ deleteChart: id });

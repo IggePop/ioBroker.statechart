@@ -125,11 +125,41 @@ function InputTriggerFields({
     );
 }
 
-/** The groups of the list, in this order */
+/** The groups of the list, in this order, each with its own color: inputs blue, outputs green, locals violet */
 const GROUPS: { scope: SymbolScope; title: string; add: string; icon: React.JSX.Element }[] = [
-    { scope: "input", title: "Inputs", add: "Add input", icon: <InputIcon fontSize="small" /> },
-    { scope: "output", title: "Outputs", add: "Add output", icon: <OutputIcon fontSize="small" /> },
-    { scope: "local", title: "Locals", add: "Add local", icon: <LocalIcon fontSize="small" /> },
+    {
+        scope: "input",
+        title: "Inputs",
+        add: "Add input",
+        icon: (
+            <InputIcon
+                fontSize="small"
+                color="info"
+            />
+        ),
+    },
+    {
+        scope: "output",
+        title: "Outputs",
+        add: "Add output",
+        icon: (
+            <OutputIcon
+                fontSize="small"
+                color="success"
+            />
+        ),
+    },
+    {
+        scope: "local",
+        title: "Locals",
+        add: "Add local",
+        icon: (
+            <LocalIcon
+                fontSize="small"
+                color="secondary"
+            />
+        ),
+    },
 ];
 
 /** From this number of variables on, a search field is shown */

@@ -28,7 +28,7 @@ import {
     Tooltip,
 } from "@mui/material";
 import {
-    Add as AddIcon,
+    AddBoxOutlined as AddStateIcon,
     AlignHorizontalCenter as AlignCenterXIcon,
     AlignHorizontalLeft as AlignLeftIcon,
     AlignHorizontalRight as AlignRightIcon,
@@ -42,8 +42,11 @@ import {
     ContentPaste as PasteIcon,
     FileDownload as ExportIcon,
     Functions as FunctionIcon,
+    DataObject as VariablesIcon,
     GridOff as GridOffIcon,
     GridOn as GridOnIcon,
+    History as HistoryIcon,
+    Tune as PropertiesIcon,
     MonitorHeartOutlined as LiveIcon,
     StickyNote2Outlined as NoteIcon,
     Redo as RedoIcon,
@@ -54,6 +57,8 @@ import {
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { AdminConnection, IobTheme } from "@iobroker/adapter-react-v5";
 import { useEditHistory } from "../edit-history";
+import { ELEMENT_STYLES } from "../element-style";
+import type { ElementColor } from "../element-style";
 
 import StateNode from "./StateNode";
 import FunctionNode from "./FunctionNode";
@@ -189,7 +194,7 @@ function ToolButton({
     icon: React.ReactNode;
     onClick: () => void;
     disabled?: boolean;
-    color?: "default" | "primary" | "warning";
+    color?: "default" | ElementColor;
 }): React.JSX.Element {
     return (
         <Tooltip title={title}>
@@ -1044,17 +1049,21 @@ function ChartEditorInner({
                     />
                     <ToolButton
                         title={I18n.t("Add state")}
-                        icon={<AddIcon />}
+                        icon={<AddStateIcon />}
+                        // in the colors of the elements they add, like the headings of their properties
+                        color={ELEMENT_STYLES.state.color}
                         onClick={addState}
                     />
                     <ToolButton
                         title={I18n.t("Add function")}
                         icon={<FunctionIcon />}
+                        color={ELEMENT_STYLES.function.color}
                         onClick={addFunction}
                     />
                     <ToolButton
                         title={I18n.t("Add note")}
                         icon={<NoteIcon />}
+                        color={ELEMENT_STYLES.note.color}
                         onClick={addNote}
                     />
                     <Divider
@@ -1075,7 +1084,8 @@ function ChartEditorInner({
                     <ToolButton
                         title={I18n.t(showLive ? "Hide live values" : "Show live values")}
                         icon={<LiveIcon />}
-                        color={showLive ? "primary" : "default"}
+                        // green like a running chart in the list of charts
+                        color={showLive ? "success" : "default"}
                         // the live values are needed to set the inputs of a simulation
                         disabled={simulating}
                         onClick={() => {
@@ -1174,17 +1184,25 @@ function ChartEditorInner({
                     value={panelTab}
                     onChange={(_e, value: string) => setPanelTab(value)}
                     variant="fullWidth"
+                    // icons in front of the labels, compact enough for a narrow panel
+                    sx={{ "& .MuiTab-root": { minHeight: 48, px: 1, gap: 0.5 } }}
                 >
                     <Tab
                         value="properties"
+                        icon={<PropertiesIcon fontSize="small" />}
+                        iconPosition="start"
                         label={I18n.t("Properties")}
                     />
                     <Tab
                         value="symbols"
+                        icon={<VariablesIcon fontSize="small" />}
+                        iconPosition="start"
                         label={I18n.t("Variables")}
                     />
                     <Tab
                         value="history"
+                        icon={<HistoryIcon fontSize="small" />}
+                        iconPosition="start"
                         label={I18n.t("History")}
                     />
                 </Tabs>

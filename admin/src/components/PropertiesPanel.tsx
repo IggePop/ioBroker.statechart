@@ -17,6 +17,8 @@ import type {
 import CodeEditor from "./CodeEditor";
 import type { Completion } from "./CodeEditor";
 import { DEFAULT_STATE_COLOR, STATE_COLORS } from "../flow-model";
+import { ELEMENT_STYLES } from "../element-style";
+import type { ElementKind } from "../element-style";
 
 interface CodeTools {
     validateAction: (code: string) => Diagnostic[];
@@ -183,6 +185,33 @@ function ColorField({
     );
 }
 
+/**
+ * Heading of the properties of an element, with its icon in its color, see ELEMENT_STYLES
+ *
+ * @param props Component properties
+ * @param props.kind The kind of the element
+ * @param props.title The heading
+ */
+function SectionTitle({ kind, title }: { kind: ElementKind; title: string }): React.JSX.Element {
+    const { color, Icon } = ELEMENT_STYLES[kind];
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                pb: 0.5,
+                // a line in the color of the element below the heading
+                borderBottom: 2,
+                borderColor: `${color}.main`,
+            }}
+        >
+            <Icon sx={{ color: `${color}.main` }} />
+            <Typography variant="h6">{title}</Typography>
+        </Box>
+    );
+}
+
 function NoteProperties({
     note,
     onChange,
@@ -194,7 +223,10 @@ function NoteProperties({
 }): React.JSX.Element {
     return (
         <>
-            <Typography variant="h6">{I18n.t("Note")}</Typography>
+            <SectionTitle
+                kind="note"
+                title={I18n.t("Note")}
+            />
             <TextField
                 multiline
                 minRows={8}
@@ -313,7 +345,10 @@ function StateProperties({
 }): React.JSX.Element {
     return (
         <>
-            <Typography variant="h6">{I18n.t("State")}</Typography>
+            <SectionTitle
+                kind="state"
+                title={I18n.t("State")}
+            />
             <TextField
                 size="small"
                 label={I18n.t("Name")}
@@ -442,7 +477,10 @@ function TransitionProperties({
 }): React.JSX.Element {
     return (
         <>
-            <Typography variant="h6">{I18n.t("Transition")}</Typography>
+            <SectionTitle
+                kind="transition"
+                title={I18n.t("Transition")}
+            />
             <CodeEditor
                 label={I18n.t("Label")}
                 placeholder="event[condition]{action}"
@@ -536,7 +574,10 @@ function FunctionProperties({
     const validate = useMemo(() => tools.validateFunction(fn.id), [tools, fn.id]);
     return (
         <>
-            <Typography variant="h6">{I18n.t("Function")}</Typography>
+            <SectionTitle
+                kind="function"
+                title={I18n.t("Function")}
+            />
             <CodeEditor
                 label={I18n.t("Code")}
                 placeholder="function myFunction(value) { return value; }"
@@ -572,7 +613,10 @@ function ChartProperties({
 }): React.JSX.Element {
     return (
         <>
-            <Typography variant="h6">{I18n.t("Chart")}</Typography>
+            <SectionTitle
+                kind="chart"
+                title={I18n.t("Chart")}
+            />
             <TextField
                 size="small"
                 label={I18n.t("Name")}
