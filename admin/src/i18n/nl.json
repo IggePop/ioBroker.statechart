@@ -87,6 +87,8 @@
     "unsavedChangesText": "Het diagram \"%s\" bevat niet-opgeslagen wijzigingen. Sla ze op voordat u een ander diagram weergeeft?",
     "no changes": "geen wijzigingen",
     "Export chart": "Grafiek exporteren",
+    "Export as image (PNG)": "Exporteren als afbeelding (PNG)",
+    "Cannot create the image": "De afbeelding kan niet worden gemaakt",
     "including unsaved changes": "inclusief niet-opgeslagen wijzigingen",
     "Import charts": "Grafieken importeren (JSON-bestand)",
     "Export all charts": "Exporteer alle grafieken",

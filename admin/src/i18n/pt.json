@@ -87,6 +87,8 @@
     "unsavedChangesText": "O gráfico \"%s\" possui alterações não salvas. Salvá-los antes de mostrar outro gráfico?",
     "no changes": "sem alterações",
     "Export chart": "Gráfico de exportação",
+    "Export as image (PNG)": "Exportar como imagem (PNG)",
+    "Cannot create the image": "Não é possível criar a imagem",
     "including unsaved changes": "incluindo alterações não salvas",
     "Import charts": "Importar gráficos (arquivo JSON)",
     "Export all charts": "Exportar todos os gráficos",

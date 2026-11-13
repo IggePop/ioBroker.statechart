@@ -167,7 +167,8 @@ function EndGrip({ point, box, stateId, fixed, onChange, onPreview, onReconnect 
 
     return (
         <circle
-            className="nodrag nopan"
+            // statechart-grip: not part of an exported image
+            className="nodrag nopan statechart-grip"
             cx={point.x}
             cy={point.y}
             r={6}

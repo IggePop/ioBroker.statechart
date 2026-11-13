@@ -698,6 +698,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                             onSimulate={this.simulate}
                             onClearHistory={() => this.clearHistory(selected)}
                             onSave={newChart => this.saveChart(selected, newChart)}
+                            onError={message => this.showError(message)}
                             onChangedChange={this.onChangedChange}
                             saveRef={this.saveRef}
                             socket={this.socket}

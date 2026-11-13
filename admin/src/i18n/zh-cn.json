@@ -87,6 +87,8 @@
     "unsavedChangesText": "图表 \"%s\" 有未保存的更改。在显示其他图表之前保存吗?",
     "no changes": "无更改",
     "Export chart": "导出图表",
+    "Export as image (PNG)": "导出为图片 (PNG)",
+    "Cannot create the image": "无法创建图片",
     "including unsaved changes": "包括未保存的更改",
     "Import charts": "导入图表(JSON 文件)",
     "Export all charts": "导出所有图表",

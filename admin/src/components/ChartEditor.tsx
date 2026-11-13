@@ -48,6 +48,7 @@ import {
     GridOff as GridOffIcon,
     GridOn as GridOnIcon,
     History as HistoryIcon,
+    ImageOutlined as ImageIcon,
     Tune as PropertiesIcon,
     MonitorHeartOutlined as LiveIcon,
     StickyNote2Outlined as NoteIcon,
@@ -85,7 +86,8 @@ import type {
     EdgeAnchor,
 } from "../../../src/lib/chart-model";
 import type { EdgeEnd } from "./TransitionEdge";
-import { downloadJson } from "../download";
+import { downloadJson, downloadUrl } from "../download";
+import { getImageFrame, renderImage } from "../image-export";
 import { translateDiagnostic } from "./CodeEditor";
 import { addProblem } from "./ProblemBadge";
 import type { ProblemList } from "./ProblemBadge";
@@ -267,6 +269,8 @@ interface ChartEditorProps {
     onSimulate: (command: string, message?: Record<string, any>) => void;
     onClearHistory: () => void;
     onSave: (chart: Chart) => Promise<void>;
+    /** Shows an error, e.g. if the image of the chart cannot be created */
+    onError: (message: string) => void;
     /** Called when the editor gets or loses unsaved changes */
     onChangedChange?: (changed: boolean) => void;
     /** Set to a function which saves the chart */
@@ -288,6 +292,7 @@ function ChartEditorInner({
     onSimulate,
     onClearHistory,
     onSave,
+    onError,
     onChangedChange,
     saveRef,
     socket,
@@ -370,6 +375,8 @@ function ChartEditorInner({
     /** The button which opened the menu for aligning the selected nodes */
     const [alignMenu, setAlignMenu] = useState<HTMLElement | null>(null);
     const alignButton = useRef<HTMLSpanElement>(null);
+    /** Contains React Flow, used to create an image of the chart */
+    const flowBox = useRef<HTMLDivElement>(null);
 
     /**
      * Aligns or distributes the selected nodes. Their absolute positions are changed, also of nodes inside other
@@ -714,6 +721,61 @@ function ChartEditorInner({
     };
 
     const exportChart = (): void => downloadJson(`${chartId}.statechart.json`, createExport([getCurrentChart()]));
+
+    /** While the image of the chart is created */
+    const [exportingImage, setExportingImage] = useState(false);
+
+    /**
+     * Downloads the whole chart as PNG image, also the parts outside of the visible area, as it is shown in the editor
+     */
+    const exportImage = async (): Promise<void> => {
+        const container = flowBox.current;
+        const viewport = container?.querySelector<HTMLElement>(".react-flow__viewport");
+        if (!container || !viewport) {
+            return;
+        }
+        // the frame of everything which is drawn: states, function blocks, notes, arrows (e.g. loops) and labels
+        const elements = container.querySelectorAll(
+            ".react-flow__node, .react-flow__edge-path, .react-flow__edgelabel-renderer > *",
+        );
+        const rects = [...elements].map(element => {
+            const r = element.getBoundingClientRect();
+            const topLeft = reactFlow.screenToFlowPosition({ x: r.left, y: r.top }, { snapToGrid: false });
+            const bottomRight = reactFlow.screenToFlowPosition({ x: r.right, y: r.bottom }, { snapToGrid: false });
+            return { x: topLeft.x, y: topLeft.y, width: bottomRight.x - topLeft.x, height: bottomRight.y - topLeft.y };
+        });
+        const frame = getImageFrame(rects);
+        if (!frame) {
+            return;
+        }
+        // the background of the canvas, in the light or dark theme
+        const canvas = getComputedStyle(container.querySelector(".react-flow") ?? container).backgroundColor;
+        const transparent = !canvas || canvas === "transparent" || canvas === "rgba(0, 0, 0, 0)";
+        // selected elements would be highlighted in the image: the selection is removed while the image is created,
+        // and restored afterwards. Changing the selection is no change of the chart, so it is not recorded for undo.
+        const selectedNodeIds = new Set(nodes.filter(n => n.selected).map(n => n.id));
+        const selectedEdgeIds = new Set(edges.filter(e => e.selected).map(e => e.id));
+        const hasSelection = selectedNodeIds.size > 0 || selectedEdgeIds.size > 0;
+        setExportingImage(true);
+        try {
+            if (hasSelection) {
+                setNodes(nds => nds.map(n => (n.selected ? { ...n, selected: false } : n)));
+                setEdges(eds => eds.map(e => (e.selected ? { ...e, selected: false } : e)));
+                // wait until the browser has drawn the editor without the selection
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            }
+            const image = await renderImage(viewport, frame, transparent ? theme.palette.background.paper : canvas);
+            downloadUrl(`${chartId}.png`, image);
+        } catch (err) {
+            onError(`${I18n.t("Cannot create the image")}: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+            if (hasSelection) {
+                setNodes(nds => nds.map(n => (selectedNodeIds.has(n.id) ? { ...n, selected: true } : n)));
+                setEdges(eds => eds.map(e => (selectedEdgeIds.has(e.id) ? { ...e, selected: true } : e)));
+            }
+            setExportingImage(false);
+        }
+    };
 
     const save = async (): Promise<void> => {
         const newChart = getCurrentChart();
@@ -1113,6 +1175,12 @@ function ChartEditorInner({
                         icon={<ExportIcon />}
                         onClick={exportChart}
                     />
+                    <ToolButton
+                        title={I18n.t("Export as image (PNG)")}
+                        icon={<ImageIcon />}
+                        disabled={exportingImage || !nodes.length}
+                        onClick={() => void exportImage()}
+                    />
                     <ToolDivider />
                     <ToolButton
                         title={I18n.t(showLive ? "Hide live values" : "Show live values")}
@@ -1141,7 +1209,10 @@ function ChartEditorInner({
                         }
                     />
                 </Toolbar>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
+                <Box
+                    ref={flowBox}
+                    sx={{ flex: 1, minHeight: 0 }}
+                >
                     <ReactFlow
                         nodes={displayNodes}
                         edges={displayEdges}

@@ -87,6 +87,8 @@
     "unsavedChangesText": "У діаграмі \"%s\" є незбережені зміни. Зберегти їх перед показом іншої діаграми?",
     "no changes": "без змін",
     "Export chart": "Діаграма експорту",
+    "Export as image (PNG)": "Експортувати як зображення (PNG)",
+    "Cannot create the image": "Не вдалося створити зображення",
     "including unsaved changes": "включаючи незбережені зміни",
     "Import charts": "Імпорт діаграм (файл JSON)",
     "Export all charts": "Експортуйте всі діаграми",

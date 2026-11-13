@@ -38,7 +38,7 @@ of the running chart on the top left, the variables on the right.*
 - Code editor with syntax highlighting, error checking (e.g. unknown variables) and completion
 - Static check of the chart: states which never become active, transitions which are never taken, unused variables
 - Several independent charts per instance, which can be paused, reset and woken up by states (e.g. from vis)
-- Import and export of charts as JSON files
+- Import and export of charts as JSON files, export of the whole chart as PNG image (e.g. for the forum)
 - Comments on states, transitions and function blocks, notes on the canvas, and a color per state
 - Per input: wake up on every update or only on changes, filter by ack, debounce
 - Helper functions: getState (any state), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
@@ -121,6 +121,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) export of the whole chart as PNG image, also the parts outside of the visible area, with the button with the image in the toolbar
 * (Igge) the toolbar is grouped by tasks: save, undo/redo, clipboard, adding elements and layout on the left, code, export, live values and simulation on the right; new buttons to cut and to delete the selected elements
 * (Igge) fixed: self transitions on the top or right side of a state were drawn as a twisted spike instead of a loop, their labels are placed outside of the loop now
 * (Igge) more color in the editor: each kind of element has its color and icon in the toolbar and in the headings of its properties, icons on the tabs, the status of each chart as a colored dot in the list

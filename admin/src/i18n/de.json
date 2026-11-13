@@ -87,6 +87,8 @@
     "unsavedChangesText": "Das Chart \"%s\" hat ungespeicherte Änderungen. Vor dem Wechsel zu einem anderen Chart speichern?",
     "no changes": "keine Änderungen",
     "Export chart": "Chart exportieren",
+    "Export as image (PNG)": "Als Bild exportieren (PNG)",
+    "Cannot create the image": "Das Bild kann nicht erstellt werden",
     "including unsaved changes": "mit ungespeicherten Änderungen",
     "Import charts": "Charts importieren (JSON-Datei)",
     "Export all charts": "Alle Charts exportieren",

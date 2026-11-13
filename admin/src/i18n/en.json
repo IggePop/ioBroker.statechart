@@ -87,6 +87,8 @@
     "unsavedChangesText": "The chart \"%s\" has unsaved changes. Save them before showing another chart?",
     "no changes": "no changes",
     "Export chart": "Export chart",
+    "Export as image (PNG)": "Export as image (PNG)",
+    "Cannot create the image": "Cannot create the image",
     "including unsaved changes": "including unsaved changes",
     "Import charts": "Import charts (JSON file)",
     "Export all charts": "Export all charts",

@@ -87,6 +87,8 @@
     "unsavedChangesText": "Wykres „%s” zawiera niezapisane zmiany. Zapisać je przed wyświetleniem kolejnego wykresu?",
     "no changes": "żadnych zmian",
     "Export chart": "Eksportuj wykres",
+    "Export as image (PNG)": "Eksportuj jako obraz (PNG)",
+    "Cannot create the image": "Nie można utworzyć obrazu",
     "including unsaved changes": "łącznie z niezapisanymi zmianami",
     "Import charts": "Importuj wykresy (plik JSON)",
     "Export all charts": "Eksportuj wszystkie wykresy",
