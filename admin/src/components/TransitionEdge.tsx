@@ -12,12 +12,13 @@ import { Box, useTheme } from "@mui/material";
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartTransition, EdgeAnchor } from "../../../src/lib/chart-model";
 import {
-    DIRECTIONS,
     LABEL_LINE_HEIGHT,
     anchorPoint,
     getFloatingEdgeEnds,
     getLoopEnds,
+    getLoopPath,
     isValidAnchor,
+    loopLabelTransform,
     nearestAnchor,
 } from "../floating-edges";
 import type { Box as Rect, Point } from "../floating-edges";
@@ -36,29 +37,6 @@ function getBox(node: InternalNode | undefined): Rect | null {
         return null;
     }
     return { ...node.internals.positionAbsolute, width, height };
-}
-
-/**
- * Path of a self transition: a loop which leaves and enters the state on the side of the handles
- *
- * @param sx Start x
- * @param sy Start y
- * @param tx End x
- * @param ty End y
- * @param side Side of the state the loop is on
- * @returns path, label x, label y
- */
-function getLoopPath(sx: number, sy: number, tx: number, ty: number, side: Position): [string, number, number] {
-    const [dx, dy] = DIRECTIONS[side];
-    // perpendicular to the direction, so the loop gets a width
-    const [px, py] = [-dy, dx];
-    const out = 60;
-    const width = 35;
-    const path =
-        `M ${sx} ${sy} ` +
-        `C ${sx + dx * out + px * width} ${sy + dy * out + py * width}, ` +
-        `${tx + dx * out - px * width} ${ty + dy * out - py * width}, ${tx} ${ty}`;
-    return [path, (sx + tx) / 2 + dx * out * 0.75, (sy + ty) / 2 + dy * out * 0.75];
 }
 
 /** Right-angled transitions: distance from the state before the first bend, if the target is behind the start */
@@ -256,13 +234,19 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     let end = { x: targetX, y: targetY };
     /** where the grip of a self transition is, it moves the whole loop */
     let loopAnchor: Point | null = null;
+    /** how the label is placed relative to its point: centered, or next to a self transition */
+    let labelAlign = "translate(-50%, -50%)";
     if (source === target) {
         const side = (sourceAnchor?.side as Position | undefined) ?? sourcePosition;
         const ends = sourceBox ? getLoopEnds(sourceBox, side, sourceAnchor?.pos) : null;
         start = ends?.start ?? start;
         end = ends?.end ?? end;
         loopAnchor = sourceBox ? anchorPoint(sourceBox, { side, pos: sourceAnchor?.pos ?? 0.5 }) : null;
-        [path, labelX, labelY] = getLoopPath(start.x, start.y, end.x, end.y, side);
+        const loop = getLoopPath(start, end, side, data?.orthogonal);
+        path = loop.path;
+        ({ x: labelX, y: labelY } = loop.label);
+        // the label is next to the loop, on its outer side
+        labelAlign = loopLabelTransform(side);
     } else {
         const ends =
             sourceBox && targetBox
@@ -440,7 +424,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                         sx={{
                             position: "absolute",
                             zIndex: labelZIndex,
-                            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+                            transform: `translate(${labelX}px, ${labelY}px) ${labelAlign}`,
                             pointerEvents: "all",
                             cursor: data?.onLabelMove ? "move" : undefined,
                             // the selected transition is also shown at its label

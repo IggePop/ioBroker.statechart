@@ -5,9 +5,11 @@ import {
     borderPoint,
     getFloatingEdgeEnds,
     getLoopEnds,
+    getLoopPath,
     getLabelStackOffsets,
     getParallelOffsets,
     isValidAnchor,
+    loopLabelTransform,
     nearestAnchor,
     straightEnds,
 } from "./floating-edges";
@@ -89,6 +91,41 @@ describe("floating-edges => getLoopEnds", () => {
             start: { x: 100, y: 10 },
             end: { x: 100, y: 40 },
         });
+    });
+});
+
+describe("floating-edges => getLoopPath", () => {
+    it("bulges outwards on every side, the two parts of the loop do not cross", () => {
+        for (const side of [Position.Top, Position.Right, Position.Bottom, Position.Left]) {
+            const { start, end } = getLoopEnds(box(0, 0), side);
+            const numbers = getLoopPath(start, end, side).path.match(/-?[\d.]+/g)!.map(Number);
+            // M sx sy C c1x c1y, c2x c2y, ex ey
+            const c1 = { x: numbers[2], y: numbers[3] };
+            const c2 = { x: numbers[4], y: numbers[5] };
+            const distance = (a: { x: number; y: number }, b: { x: number; y: number }): number =>
+                Math.hypot(a.x - b.x, a.y - b.y);
+            // each control point is on the side of its own end, so it is closer to it than to the other end
+            expect(distance(c1, start)).to.be.lessThan(distance(c1, end), `start of the loop on side ${side}`);
+            expect(distance(c2, end)).to.be.lessThan(distance(c2, start), `end of the loop on side ${side}`);
+        }
+    });
+
+    it("draws a curve, or a rectangle with rounded corners, and places the label outside", () => {
+        const { start, end } = getLoopEnds(box(0, 0), Position.Top);
+        expect(getLoopPath(start, end, Position.Top)).to.deep.equal({
+            path: "M 35 0 C 10 -50, 90 -50, 65 0",
+            // the curve reaches 3/4 of 50, the label is 6 above it
+            label: { x: 50, y: -43.5 },
+        });
+        expect(getLoopPath(start, end, Position.Top, true)).to.deep.equal({
+            path: "M 35 0 L 35 -24 Q 35 -30 41 -30 L 59 -30 Q 65 -30 65 -24 L 65 0",
+            label: { x: 50, y: -36 },
+        });
+    });
+
+    it("aligns the label to the outer side of the loop", () => {
+        expect(loopLabelTransform(Position.Top)).to.equal("translate(-50%, -100%)");
+        expect(loopLabelTransform(Position.Right)).to.equal("translate(0, -50%)");
     });
 });
 

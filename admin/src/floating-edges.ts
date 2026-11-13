@@ -394,6 +394,85 @@ export function getLoopEnds(box: Box, side: Position, pos = 0.5, gap = 30): { st
         : { start: { x: middle.x, y: middle.y - gap / 2 }, end: { x: middle.x, y: middle.y + gap / 2 } };
 }
 
+/** How far a self transition reaches out of its state */
+const LOOP_OUT = 50;
+/** How far the curve of a self transition bulges sideways beyond its ends */
+const LOOP_BULGE = 25;
+/** Radius of the corners of a right-angled self transition */
+const LOOP_RADIUS = 6;
+/** Space between a self transition and its label */
+const LOOP_LABEL_GAP = 6;
+
+/**
+ * Path of a self transition: a loop which leaves the state at start and enters it again at end, both on one side
+ *
+ * @param start Where the loop leaves the state, see getLoopEnds()
+ * @param end Where the loop enters the state again
+ * @param side The side of the state the loop is on
+ * @param orthogonal A rectangle with rounded corners instead of a curve, see Chart.orthogonalTransitions
+ * @returns the SVG path, and the point where the label is placed: just outside the loop, the label is aligned to it
+ *   on the side of the loop (see loopLabelTransform())
+ */
+export function getLoopPath(
+    start: Point,
+    end: Point,
+    side: Position,
+    orthogonal = false,
+): { path: string; label: Point } {
+    const [dx, dy] = DIRECTIONS[side];
+    const middle = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+    // unit vectors from the middle to each end, so each part of the loop bulges outwards, away from the other one
+    const away = (p: Point): Point => {
+        const length = Math.hypot(p.x - middle.x, p.y - middle.y) || 1;
+        return { x: (p.x - middle.x) / length, y: (p.y - middle.y) / length };
+    };
+    const a = away(start);
+    const b = away(end);
+    if (orthogonal) {
+        // out of the state, along the side, and back in, with rounded corners
+        const out = LOOP_OUT * 0.6;
+        const r = LOOP_RADIUS;
+        const c1 = { x: start.x + dx * out, y: start.y + dy * out };
+        const c2 = { x: end.x + dx * out, y: end.y + dy * out };
+        const towardEnd = { x: -a.x, y: -a.y };
+        const path =
+            `M ${start.x} ${start.y} ` +
+            `L ${c1.x - dx * r} ${c1.y - dy * r} ` +
+            `Q ${c1.x} ${c1.y} ${c1.x + towardEnd.x * r} ${c1.y + towardEnd.y * r} ` +
+            `L ${c2.x - towardEnd.x * r} ${c2.y - towardEnd.y * r} ` +
+            `Q ${c2.x} ${c2.y} ${c2.x - dx * r} ${c2.y - dy * r} ` +
+            `L ${end.x} ${end.y}`;
+        return {
+            path,
+            label: { x: middle.x + dx * (out + LOOP_LABEL_GAP), y: middle.y + dy * (out + LOOP_LABEL_GAP) },
+        };
+    }
+    const path =
+        `M ${start.x} ${start.y} ` +
+        `C ${start.x + dx * LOOP_OUT + a.x * LOOP_BULGE} ${start.y + dy * LOOP_OUT + a.y * LOOP_BULGE}, ` +
+        `${end.x + dx * LOOP_OUT + b.x * LOOP_BULGE} ${end.y + dy * LOOP_OUT + b.y * LOOP_BULGE}, ${end.x} ${end.y}`;
+    // a cubic curve whose control points are both at LOOP_OUT reaches 3/4 of it
+    const top = LOOP_OUT * 0.75 + LOOP_LABEL_GAP;
+    return { path, label: { x: middle.x + dx * top, y: middle.y + dy * top } };
+}
+
+/**
+ * @param side The side of the state a self transition is on
+ * @returns the CSS transform which places a label next to the given point on that side, instead of centered on it
+ */
+export function loopLabelTransform(side: Position): string {
+    switch (side) {
+        case Position.Top:
+            return "translate(-50%, -100%)";
+        case Position.Bottom:
+            return "translate(-50%, 0)";
+        case Position.Left:
+            return "translate(-100%, -50%)";
+        default:
+            return "translate(0, -50%)";
+    }
+}
+
 /**
  * Offsets for edges between the same two nodes, so they do not cover each other. The offset of an edge is
  * relative to its own direction, edges in opposite directions are moved to different sides.
