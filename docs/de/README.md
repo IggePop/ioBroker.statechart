@@ -59,7 +59,8 @@ Voraussetzungen: Node.js 22 oder neuer, js-controller 6.0.11 oder neuer, Admin 7
 ### Erste Schritte
 
 1. In der Seitenleiste des Admins **Zustandsmaschine** öffnen.
-2. Links in der Liste mit **+** ein Chart anlegen.
+2. Links in der Liste mit **+** ein Chart anlegen. Mit einer **Vorlage** beginnst du mit einem funktionierenden Beispiel
+   (Licht mit Bewegungsmelder, Heizung mit Fensterkontakt, Alarmanlage), oder du wählst ein leeres Chart.
 3. Rechts im Reiter **Variablen** die Variablen festlegen, mit **+** neben ihrer Gruppe. Die Variablen sind nach Art
    gruppiert, jede ist eine Zeile mit ihrem Datenpunkt und aktuellen Wert, ein Klick darauf zeigt ihre Einstellungen:
    - **Eingang**: wird aus einem ioBroker-Datenpunkt gelesen, jede Änderung weckt das Chart auf

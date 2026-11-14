@@ -67,7 +67,8 @@ Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.20 o
 ### Getting started
 
 1. Open **State Machine** in the admin side bar.
-2. Create a chart with **+** in the list on the left.
+2. Create a chart with **+** in the list on the left. Choose a **template** to start with a working example (light
+   with motion detector, heating with window contact, alarm system), or an empty chart.
 3. Define the variables in the tab **Variables** on the right, with **+** next to their group. The variables are
    grouped by kind, each one is a line with its state and current value, a click on it shows its settings:
    - **Input**: read from an ioBroker state, every change wakes up the chart
@@ -122,6 +123,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) templates for new charts: light with motion detector, heating with window contact, alarm system
 * (Igge) warning if an input or output has no state, or its state does not exist, in the editor and in the log
 * (Igge) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact
 * (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray

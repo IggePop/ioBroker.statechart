@@ -11,6 +11,7 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
+    MenuItem,
     StyledEngineProvider,
     TextField,
     ThemeProvider,
@@ -32,6 +33,7 @@ import type { GenericAppProps, GenericAppState } from "@iobroker/adapter-react-v
 import "@xyflow/react/dist/style.css";
 
 import ChartEditor from "./components/ChartEditor";
+import { getTemplates } from "./templates";
 import { ELEMENT_STYLES } from "./element-style";
 import ResizablePanel from "./components/ResizablePanel";
 import { downloadJson } from "./download";
@@ -63,6 +65,8 @@ interface TabAppState extends GenericAppState {
     /** status of the simulation of the selected chart, null if none runs */
     simulationStatus: SimulationStatus | null;
     newChartName: string | null;
+    /** the template of the new chart, see getTemplates() */
+    newChartTemplate: string;
     deleteChart: string | null;
     /** if the editor has unsaved changes */
     changed: boolean;
@@ -107,6 +111,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             simulating: false,
             simulationStatus: null,
             newChartName: null,
+            newChartTemplate: "empty",
             deleteChart: null,
             changed: false,
             pendingSelect: null,
@@ -363,12 +368,17 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
     /**
      * @param name Name of the new chart
      */
-    private async createChart(name: string): Promise<void> {
+    /**
+     * @param name Name of the new chart
+     * @param templateId The template, see getTemplates()
+     */
+    private async createChart(name: string, templateId: string): Promise<void> {
         const id = this.getUniqueChartId(name);
+        const template = getTemplates(text => I18n.t(text)).find(t => t.id === templateId);
         await this.socket.setObject(id, {
             type: "channel",
             common: { name },
-            native: { chart: createChart(name) },
+            native: { chart: template ? template.create(name) : createChart(name) },
         });
         this.selectChart(id);
     }
@@ -436,7 +446,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                         <IconButton
                             size="small"
                             color="primary"
-                            onClick={() => this.setState({ newChartName: "" })}
+                            onClick={() => this.setState({ newChartName: "", newChartTemplate: "empty" })}
                         >
                             <AddIcon />
                         </IconButton>
@@ -546,8 +556,10 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
         const close = (): void => this.setState({ newChartName: null });
         const create = (): void => {
             close();
-            this.createChart(name).catch(err => this.showError(String(err)));
+            this.createChart(name, this.state.newChartTemplate).catch(err => this.showError(String(err)));
         };
+        const templates = getTemplates(text => I18n.t(text));
+        const template = templates.find(t => t.id === this.state.newChartTemplate) ?? templates[0];
         return (
             <Dialog
                 open
@@ -558,7 +570,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                 disableRestoreFocus
             >
                 <DialogTitle>{I18n.t("New chart")}</DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <TextField
                         autoFocus
                         fullWidth
@@ -576,6 +588,30 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                             }
                         }}
                     />
+                    <TextField
+                        select
+                        fullWidth
+                        size="small"
+                        label={I18n.t("Template")}
+                        value={template.id}
+                        onChange={e => {
+                            const chosen = templates.find(t => t.id === e.target.value);
+                            // a template without a name yet gets its title as name
+                            const newName =
+                                !name && chosen && chosen.id !== "empty" ? chosen.title : this.state.newChartName;
+                            this.setState({ newChartTemplate: e.target.value, newChartName: newName });
+                        }}
+                        helperText={template.description}
+                    >
+                        {templates.map(t => (
+                            <MenuItem
+                                key={t.id}
+                                value={t.id}
+                            >
+                                {t.title}
+                            </MenuItem>
+                        ))}
+                    </TextField>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={close}>{I18n.t("Cancel")}</Button>
