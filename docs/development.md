@@ -53,8 +53,10 @@ commits, tags and pushes. The tag starts the job `deploy`, which publishes the p
 `dev-server watch` before, the release runs `npm run build`.
 
 The automatic translation of the news breaks code examples and terms. So write the news of the next version by hand
-before the release, as entry `NEXT` in `common.news` of `io-package.json`, in all languages. The release renames it to
-the new version and does not translate anything.
+right before the release, as entry `NEXT` in `common.news` of `io-package.json`, in all languages, and run the release
+with `--all` (`npm run release minor -- --yes --all`): it renames `NEXT` to the new version, translates nothing, and
+takes the uncommitted change into the release commit. Do not commit `NEXT` itself, the schema of `io-package.json`
+only allows versions there, so the package tests fail.
 
 | Path | Content |
 |---|---|

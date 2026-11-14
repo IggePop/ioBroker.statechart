@@ -123,13 +123,13 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
-* (Igge) the last 10 versions of a chart are kept when it is saved, and can be restored in the properties of the chart
-* (Igge) fixed: saving merged the chart with the stored one, so deleted states, transitions or variables and switched off options could remain
+### 0.4.0 (2026-11-14)
+* (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
 * (Igge) templates for new charts: light with motion detector, heating with window contact, alarm system
 * (Igge) warning if an input or output has no state, or its state does not exist, in the editor and in the log
+* (Igge) the last 10 versions of a chart are kept when it is saved, and can be restored in the properties of the chart
 * (Igge) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact
-* (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
+* (Igge) fixed: saving merged the chart with the stored one, so deleted states, transitions or variables and switched off options could remain
 
 ### 0.3.0 (2026-11-14)
 * (Igge) simulation: the chart runs in the editor without switching anything, the inputs are set by hand, advance the time, pause, single steps and breakpoints on states and transitions
