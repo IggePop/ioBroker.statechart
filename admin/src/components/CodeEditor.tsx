@@ -12,6 +12,7 @@ import { Box, Typography, useTheme } from "@mui/material";
 import type { Theme } from "@mui/material";
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { Diagnostic } from "../../../src/lib/chart-validation";
+import InfoTip from "./InfoTip";
 
 /** An entry of the completion list */
 export interface Completion {
@@ -86,8 +87,8 @@ interface CodeEditorProps {
     completions: Completion[];
     /** Shown while the code is empty */
     placeholder?: string;
-    /** Shown if there are no problems */
-    helperText?: string;
+    /** Explanation behind an ⓘ icon in the upper right corner */
+    info?: string;
     /** Minimum height in lines */
     minRows?: number;
 }
@@ -102,7 +103,7 @@ interface CodeEditorProps {
  * @param props.validate Checks the code
  * @param props.completions Offered while typing
  * @param props.placeholder Shown while the code is empty
- * @param props.helperText Shown if there are no problems
+ * @param props.info Explanation behind an ⓘ icon
  * @param props.minRows Minimum height in lines
  */
 export default function CodeEditor({
@@ -112,7 +113,7 @@ export default function CodeEditor({
     validate,
     completions,
     placeholder,
-    helperText,
+    info,
     minRows = 2,
 }: CodeEditorProps): React.JSX.Element {
     const theme = useTheme();
@@ -209,6 +210,8 @@ export default function CodeEditor({
                 sx={{
                     position: "relative",
                     borderRadius: "4px",
+                    // room for the ⓘ icon in the upper right corner
+                    ...(info ? { "& .cm-editor .cm-line": { paddingRight: "30px" } } : {}),
                     "&:hover fieldset": { borderColor: "text.primary" },
                     "&:focus-within fieldset": { borderColor: "primary.main", borderWidth: 2 },
                     "&:focus-within > label": { color: "primary.main" },
@@ -233,6 +236,12 @@ export default function CodeEditor({
                     {label}
                 </Box>
                 <div ref={container} />
+                {info && (
+                    // in the upper right corner, above the code
+                    <Box sx={{ position: "absolute", top: 2, right: 2, zIndex: 1 }}>
+                        <InfoTip text={info} />
+                    </Box>
+                )}
                 <Box
                     component="fieldset"
                     aria-hidden
@@ -276,28 +285,19 @@ export default function CodeEditor({
                     </Box>
                 </Box>
             </Box>
-            {diagnostics.length ? (
-                diagnostics.map((d, i) => (
-                    <Typography
-                        key={i}
-                        variant="caption"
-                        component="div"
-                        color={`${d.severity}.main`}
-                        sx={{ mt: "3px", mx: 1.75 }}
-                    >
-                        {translateDiagnostic(d)}
-                    </Typography>
-                ))
-            ) : helperText ? (
-                <Typography
-                    variant="caption"
-                    component="div"
-                    color="text.secondary"
-                    sx={{ mt: "3px", mx: 1.75 }}
-                >
-                    {helperText}
-                </Typography>
-            ) : null}
+            {diagnostics.length
+                ? diagnostics.map((d, i) => (
+                      <Typography
+                          key={i}
+                          variant="caption"
+                          component="div"
+                          color={`${d.severity}.main`}
+                          sx={{ mt: "3px", mx: 1.75 }}
+                      >
+                          {translateDiagnostic(d)}
+                      </Typography>
+                  ))
+                : null}
         </Box>
     );
 }

@@ -14,6 +14,7 @@ import {
 } from "@mui/icons-material";
 import { DialogSelectID, I18n } from "@iobroker/adapter-react-v5";
 import type { AdminConnection, IobTheme } from "@iobroker/adapter-react-v5";
+import InfoTip, { infoSlotProps } from "./InfoTip";
 import type { ChartSymbol, SymbolScope } from "../../../src/lib/chart-model";
 import { formatValue } from "./LiveValuesPanel";
 import ProblemBadge from "./ProblemBadge";
@@ -48,12 +49,11 @@ function InitialValueField({ value, onChange }: { value: any; onChange: (value: 
             size="small"
             label={I18n.t("Initial value")}
             value={text}
-            helperText={I18n.t("initialHelp")}
             onChange={e => {
                 setText(e.target.value);
                 onChange(e.target.value === "" ? undefined : parseInitial(e.target.value));
             }}
-            slotProps={{ htmlInput: { style: { fontFamily: "monospace" } } }}
+            slotProps={{ ...infoSlotProps(I18n.t("initialHelp")), htmlInput: { style: { fontFamily: "monospace" } } }}
         />
     );
 }
@@ -114,13 +114,9 @@ function InputTriggerFields({
                 slotProps={{ htmlInput: { min: 0, step: 100 } }}
                 sx={{ flex: "1 1 100px" }}
             />
-            <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ flexBasis: "100%" }}
-            >
-                {I18n.t("triggerHelp")}
-            </Typography>
+            <Box sx={{ alignSelf: "center" }}>
+                <InfoTip text={I18n.t("triggerHelp")} />
+            </Box>
         </Box>
     );
 }
@@ -459,12 +455,10 @@ export default function SymbolsEditor({
 
     return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <Typography
-                variant="body2"
-                color="text.secondary"
-            >
-                {I18n.t("symbolsHelp")}
-            </Typography>
+            {/* the explanation of inputs, outputs and locals, in the upper right corner */}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: -1 }}>
+                <InfoTip text={I18n.t("symbolsHelp")} />
+            </Box>
             {symbols.length >= SEARCH_FROM && (
                 <TextField
                     size="small"

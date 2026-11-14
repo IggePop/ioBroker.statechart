@@ -15,6 +15,7 @@ import type {
     ChartTransition,
 } from "../../../src/lib/chart-model";
 import CodeEditor from "./CodeEditor";
+import InfoTip, { OptionCheckbox, infoSlotProps } from "./InfoTip";
 import type { Completion } from "./CodeEditor";
 import { DEFAULT_STATE_COLOR, STATE_COLORS } from "../flow-model";
 import { ELEMENT_STYLES } from "../element-style";
@@ -104,7 +105,7 @@ function CommentField({
             minRows={2}
             label={I18n.t("Comment")}
             value={value || ""}
-            helperText={I18n.t("commentHelp")}
+            slotProps={infoSlotProps(I18n.t("commentHelp"))}
             // an empty comment is removed, so it does not appear in the stored chart
             onChange={e => onChange(e.target.value || undefined)}
         />
@@ -191,8 +192,9 @@ function ColorField({
  * @param props Component properties
  * @param props.kind The kind of the element
  * @param props.title The heading
+ * @param props.info Explanation behind an ⓘ icon at the end of the heading
  */
-function SectionTitle({ kind, title }: { kind: ElementKind; title: string }): React.JSX.Element {
+function SectionTitle({ kind, title, info }: { kind: ElementKind; title: string; info?: string }): React.JSX.Element {
     const { color, Icon } = ELEMENT_STYLES[kind];
     return (
         <Box
@@ -207,7 +209,13 @@ function SectionTitle({ kind, title }: { kind: ElementKind; title: string }): Re
             }}
         >
             <Icon sx={{ color: `${color}.main` }} />
-            <Typography variant="h6">{title}</Typography>
+            <Typography
+                variant="h6"
+                sx={{ flex: 1 }}
+            >
+                {title}
+            </Typography>
+            {info && <InfoTip text={info} />}
         </Box>
     );
 }
@@ -232,7 +240,7 @@ function NoteProperties({
                 minRows={8}
                 label={I18n.t("Text")}
                 value={note.text}
-                helperText={I18n.t("noteHelp")}
+                slotProps={infoSlotProps(I18n.t("noteHelp"))}
                 onChange={e => onChange({ text: e.target.value })}
             />
             <Button
@@ -265,25 +273,13 @@ function ParallelCheckbox({
     onChange: (parallel: boolean | undefined) => void;
 }): React.JSX.Element {
     return (
-        <Box>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={!!parallel}
-                        // the default is stored as undefined, so it does not appear in the chart
-                        onChange={e => onChange(e.target.checked || undefined)}
-                    />
-                }
-                label={label}
-            />
-            <Typography
-                variant="caption"
-                component="div"
-                color="text.secondary"
-            >
-                {I18n.t("parallelHelp")}
-            </Typography>
-        </Box>
+        <OptionCheckbox
+            label={label}
+            checked={!!parallel}
+            // the default is stored as undefined, so it does not appear in the chart
+            onChange={checked => onChange(checked || undefined)}
+            info={I18n.t("parallelHelp")}
+        />
     );
 }
 
@@ -292,7 +288,7 @@ function ParallelCheckbox({
  *
  * @param props Component properties
  * @param props.label Label of the checkbox
- * @param props.help Explanation below the checkbox
+ * @param props.help Explanation of the option
  * @param props.disabled If the element is disabled
  * @param props.onChange Called with the new value, undefined for the default (enabled)
  */
@@ -308,25 +304,13 @@ function DisabledCheckbox({
     onChange: (disabled: boolean | undefined) => void;
 }): React.JSX.Element {
     return (
-        <Box>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={!!disabled}
-                        // the default is stored as undefined, so it does not appear in the chart
-                        onChange={e => onChange(e.target.checked || undefined)}
-                    />
-                }
-                label={label}
-            />
-            <Typography
-                variant="caption"
-                component="div"
-                color="text.secondary"
-            >
-                {help}
-            </Typography>
-        </Box>
+        <OptionCheckbox
+            label={label}
+            checked={!!disabled}
+            // the default is stored as undefined, so it does not appear in the chart
+            onChange={checked => onChange(checked || undefined)}
+            info={help}
+        />
     );
 }
 
@@ -391,6 +375,7 @@ function StateProperties({
             <SectionTitle
                 kind="state"
                 title={I18n.t("State")}
+                info={I18n.t("actionsHelp")}
             />
             <TextField
                 size="small"
@@ -421,7 +406,7 @@ function StateProperties({
                     label={I18n.t("Execution order")}
                     value={state.order ?? ""}
                     placeholder={String(executionOrder)}
-                    helperText={I18n.t("executionOrderHelp", String(executionOrder))}
+                    slotProps={infoSlotProps(I18n.t("executionOrderHelp", String(executionOrder)))}
                     onChange={e =>
                         onChange({ order: e.target.value === "" ? undefined : parseInt(e.target.value, 10) })
                     }
@@ -433,25 +418,13 @@ function StateProperties({
                 onChange={parallel => onChange({ parallel })}
             />
             {canHaveHistory && (
-                <Box>
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={!!state.history}
-                                // the default is stored as undefined, so it does not appear in the chart
-                                onChange={e => onChange({ history: e.target.checked || undefined })}
-                            />
-                        }
-                        label={I18n.t("Return to the last active sub state (history)")}
-                    />
-                    <Typography
-                        variant="caption"
-                        component="div"
-                        color="text.secondary"
-                    >
-                        {I18n.t("historyJunctionHelp")}
-                    </Typography>
-                </Box>
+                <OptionCheckbox
+                    label={I18n.t("Return to the last active sub state (history)")}
+                    checked={!!state.history}
+                    // the default is stored as undefined, so it does not appear in the chart
+                    onChange={checked => onChange({ history: checked || undefined })}
+                    info={I18n.t("historyJunctionHelp")}
+                />
             )}
             <DisabledCheckbox
                 label={I18n.t("Disabled: the state is not executed")}
@@ -470,12 +443,6 @@ function StateProperties({
                     completions={tools.completions}
                 />
             ))}
-            <Typography
-                variant="body2"
-                color="text.secondary"
-            >
-                {I18n.t("actionsHelp")}
-            </Typography>
             <CommentField
                 value={state.comment}
                 onChange={comment => onChange({ comment })}
@@ -537,7 +504,7 @@ function TransitionProperties({
                 onChange={label => onChange({ label })}
                 validate={tools.validateLabel}
                 completions={tools.completions}
-                helperText={I18n.t("labelHelp")}
+                info={I18n.t("labelHelp")}
                 minRows={3}
             />
             <TextField
@@ -545,28 +512,16 @@ function TransitionProperties({
                 type="number"
                 label={I18n.t("Priority")}
                 value={transition.priority ?? ""}
-                helperText={I18n.t("priorityHelp")}
+                slotProps={infoSlotProps(I18n.t("priorityHelp"))}
                 onChange={e => onChange({ priority: e.target.value === "" ? undefined : parseInt(e.target.value, 10) })}
             />
             {toChild && (
-                <Box>
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={!!transition.reenterParent}
-                                onChange={e => onChange({ reenterParent: e.target.checked || undefined })}
-                            />
-                        }
-                        label={I18n.t("Leave and enter the parent state again")}
-                    />
-                    <Typography
-                        variant="caption"
-                        component="div"
-                        color="text.secondary"
-                    >
-                        {I18n.t(transition.reenterParent ? "outerToChildHelp" : "innerTransitionHelp")}
-                    </Typography>
-                </Box>
+                <OptionCheckbox
+                    label={I18n.t("Leave and enter the parent state again")}
+                    checked={!!transition.reenterParent}
+                    onChange={checked => onChange({ reenterParent: checked || undefined })}
+                    info={I18n.t(transition.reenterParent ? "outerToChildHelp" : "innerTransitionHelp")}
+                />
             )}
             <DisabledCheckbox
                 label={I18n.t("Disabled: the transition is never taken")}
@@ -583,7 +538,7 @@ function TransitionProperties({
                 checked={breakpoint}
                 onToggle={onToggleBreakpoint}
             />
-            <Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <Button
                     variant="outlined"
                     size="small"
@@ -594,14 +549,7 @@ function TransitionProperties({
                 >
                     {I18n.t("Place ends and label automatically")}
                 </Button>
-                <Typography
-                    variant="caption"
-                    component="div"
-                    color="text.secondary"
-                    sx={{ mt: 0.5 }}
-                >
-                    {I18n.t("anchorsHelp")}
-                </Typography>
+                <InfoTip text={I18n.t("anchorsHelp")} />
             </Box>
             <Button
                 color="error"
@@ -640,7 +588,7 @@ function FunctionProperties({
                 onChange={code => onChange({ code })}
                 validate={validate}
                 completions={tools.completions}
-                helperText={I18n.t("functionHelp")}
+                info={I18n.t("functionHelp")}
                 minRows={16}
             />
             <CommentField
@@ -671,6 +619,7 @@ function ChartProperties({
             <SectionTitle
                 kind="chart"
                 title={I18n.t("Chart")}
+                info={I18n.t("chartHelp")}
             />
             <TextField
                 size="small"
@@ -683,64 +632,31 @@ function ChartProperties({
                 onChange={comment => onChange({ comment })}
             />
             {/* running or paused is changed with the button in the chart list */}
-            <Box>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={chart.restoreState !== false}
-                            onChange={e => onChange({ restoreState: e.target.checked })}
-                        />
-                    }
-                    label={I18n.t("Restore the state after a restart")}
-                />
-                <Typography
-                    variant="caption"
-                    component="div"
-                    color="text.secondary"
-                >
-                    {I18n.t("restoreStateHelp")}
-                </Typography>
-            </Box>
+            <OptionCheckbox
+                label={I18n.t("Restore the state after a restart")}
+                checked={chart.restoreState !== false}
+                onChange={checked => onChange({ restoreState: checked })}
+                info={I18n.t("restoreStateHelp")}
+            />
             <ParallelCheckbox
                 label={I18n.t("Top level states are parallel (AND)")}
                 parallel={chart.parallel}
                 onChange={parallel => onChange({ parallel })}
             />
-            <Box>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={!!chart.superStep}
-                            // the default is stored as undefined, so it does not appear in the chart
-                            onChange={e => onChange({ superStep: e.target.checked || undefined })}
-                        />
-                    }
-                    label={I18n.t("Take transitions until none is valid (super step)")}
-                />
-                <Typography
-                    variant="caption"
-                    component="div"
-                    color="text.secondary"
-                >
-                    {I18n.t("superStepHelp", String(MAX_SUPER_STEPS))}
-                </Typography>
-            </Box>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={!!chart.orthogonalTransitions}
-                        // the default is stored as undefined, so it does not appear in the chart
-                        onChange={e => onChange({ orthogonalTransitions: e.target.checked || undefined })}
-                    />
-                }
-                label={I18n.t("Right-angled transitions")}
+            <OptionCheckbox
+                label={I18n.t("Take transitions until none is valid (super step)")}
+                checked={!!chart.superStep}
+                // the default is stored as undefined, so it does not appear in the chart
+                onChange={checked => onChange({ superStep: checked || undefined })}
+                info={I18n.t("superStepHelp", String(MAX_SUPER_STEPS))}
             />
-            <Typography
-                variant="body2"
-                color="text.secondary"
-            >
-                {I18n.t("chartHelp")}
-            </Typography>
+            <OptionCheckbox
+                label={I18n.t("Right-angled transitions")}
+                checked={!!chart.orthogonalTransitions}
+                // the default is stored as undefined, so it does not appear in the chart
+                onChange={checked => onChange({ orthogonalTransitions: checked || undefined })}
+                info={I18n.t("rightAngledHelp")}
+            />
         </>
     );
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { Check as CopiedIcon, ContentCopy as CopyIcon } from "@mui/icons-material";
 import { copy, I18n } from "@iobroker/adapter-react-v5";
+import InfoTip from "./InfoTip";
 import CodeViewer from "./CodeViewer";
 
 /**
@@ -39,15 +40,20 @@ export default function GeneratedCodeDialog({
             fullWidth
             slotProps={{ paper: { sx: { height: "85vh" } } }}
         >
-            <DialogTitle>{I18n.t("Generated code")}</DialogTitle>
+            <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {I18n.t("Generated code")}
+                <InfoTip text={I18n.t("generatedCodeHelp")} />
+            </DialogTitle>
             <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                >
-                    {I18n.t("generatedCodeHelp")}
-                    {unsaved ? ` ${I18n.t("generatedCodeUnsaved")}` : ""}
-                </Typography>
+                {/* a status, not an explanation: it stays visible */}
+                {unsaved && (
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                    >
+                        {I18n.t("generatedCodeUnsaved")}
+                    </Typography>
+                )}
                 <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
                     <CodeViewer value={code} />
                 </Box>

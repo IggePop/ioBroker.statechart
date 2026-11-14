@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Button, List, ListItemButton, ListItemText, Typography } from "@mui/material";
 import { DeleteSweep as ClearIcon } from "@mui/icons-material";
 import { I18n } from "@iobroker/adapter-react-v5";
+import InfoTip from "./InfoTip";
 import type { HistoryEntry } from "../../../src/lib/chart-runtime";
 
 /**
@@ -67,13 +68,7 @@ export default function HistoryPanel(props: HistoryPanelProps): React.JSX.Elemen
     const entries = [...(history || [])].reverse();
     return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <Typography
-                variant="body2"
-                color="text.secondary"
-            >
-                {I18n.t("historyHelp")}
-            </Typography>
-            <Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <Button
                     size="small"
                     variant="outlined"
@@ -83,6 +78,8 @@ export default function HistoryPanel(props: HistoryPanelProps): React.JSX.Elemen
                 >
                     {I18n.t("Clear history")}
                 </Button>
+                <Box sx={{ flex: 1 }} />
+                <InfoTip text={I18n.t("historyHelp")} />
             </Box>
             {history && !entries.length && (
                 <Typography

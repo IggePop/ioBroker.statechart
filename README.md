@@ -122,6 +122,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact
 * (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
 
 ### 0.3.0 (2026-11-14)
