@@ -91,7 +91,8 @@ export function OptionCheckbox({
     return (
         <Box sx={{ display: "flex", alignItems: "center" }}>
             <FormControlLabel
-                sx={{ mr: 0.5 }}
+                // the label takes the free space, so the ⓘ icon is at the right edge like at the text fields
+                sx={{ flex: 1, mr: 0.5 }}
                 control={
                     <Checkbox
                         checked={checked}
