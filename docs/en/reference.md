@@ -207,6 +207,19 @@ Transition label: `[tooWarm(temperature)]{heating = false;}`
 Comments, notes and colors have no influence on the execution. They are included in the generated code and in exported
 files, and changing them does not prevent restoring the state after a restart.
 
+## Disabling states and transitions
+
+The option **Disabled** in the properties of a state or transition switches it off, like commenting it out in code.
+It stays in the chart and can be switched on again at any time.
+
+- A disabled **transition** is never taken.
+- A disabled **state** is never entered. Its sub states and all transitions from and to it are disabled as well.
+- Disabled states and transitions are shown light gray, and they are not checked, so they may contain unfinished
+  code. **Show code** leaves them out and names them at the top.
+- If the initial state of a level is disabled, the chart starts in the first enabled state of that level instead,
+  and the check reports a warning.
+- Disabling or enabling changes the logic: after saving, a running chart starts again in its initial state.
+
 ## Checking the chart
 
 While you edit, the editor checks the chart. Errors are shown red, warnings orange, both at the state, transition,

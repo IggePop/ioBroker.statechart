@@ -300,9 +300,36 @@ function prepareHelperCalls(code, kind, createCallId) {
   }
   return { code: result, names: [...names], stateIds: [...stateIds] };
 }
-function validateChart(chart, options = {}) {
+function getDisabledInitialStates(chart) {
+  const disabled = (0, import_chart_model.getDisabledStateIds)(chart);
+  const result = [];
+  if (!chart.parallel && chart.initial && disabled.has(chart.initial)) {
+    result.push(chart.initial);
+  }
+  for (const state of chart.states) {
+    if (!disabled.has(state.id) && !state.parallel && state.initial && disabled.has(state.initial)) {
+      result.push(state.initial);
+    }
+  }
+  return result;
+}
+function validateChart(fullChart, options = {}) {
+  const chart = (0, import_chart_model.getExecutedChart)(fullChart);
   const functionNames = getFunctionNames(chart);
   const problems = [];
+  for (const id of getDisabledInitialStates(fullChart)) {
+    problems.push({
+      kind: "state",
+      id,
+      field: "",
+      diagnostic: createDiagnostic(
+        0,
+        0,
+        "warning",
+        "The initial state is disabled, the first enabled state of its level is used instead"
+      )
+    });
+  }
   for (const state of chart.states) {
     for (const field of STATE_ACTIONS) {
       for (const diagnostic of validateCode(state[field], "statements", chart.symbols, 0, functionNames)) {

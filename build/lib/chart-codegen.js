@@ -58,7 +58,21 @@ function actionFunction(code, level) {
 ${indent(dedent(code), level + 1)}
 ${INDENT.repeat(level)}}`;
 }
-function generateChartCode(chart, chartId) {
+function disabledLines(chart) {
+  const disabledStates = (0, import_chart_model.getDisabledStateIds)(chart);
+  const name = (id) => oneLine(chart.states.find((s) => s.id === id)?.name ?? id);
+  const names = [
+    ...chart.states.filter((s) => s.disabled).map((s) => `state ${name(s.id)}`),
+    ...chart.transitions.filter((t) => t.disabled && !disabledStates.has(t.source) && !disabledStates.has(t.target)).map((t) => `transition ${name(t.source)} -> ${name(t.target)}`)
+  ];
+  return names.length ? [
+    "// Disabled, not part of the code (with the sub states of disabled states and their transitions):",
+    ...names.map((n) => `// - ${n}`),
+    ""
+  ] : [];
+}
+function generateChartCode(fullChart, chartId) {
+  const chart = (0, import_chart_model.getExecutedChart)(fullChart);
   const structure = new import_chart_structure.ChartStructure(chart);
   const stateName = (id) => structure.statesById.get(id)?.name ?? id;
   const parse = (transition) => {
@@ -78,6 +92,7 @@ function generateChartCode(chart, chartId) {
     "",
     ...chart.comment?.trim() ? [...commentLines(chart.comment), ""] : [],
     ...(chart.notes || []).flatMap((note) => [...commentLines(note.text, "Note: "), ""]),
+    ...disabledLines(fullChart),
     'const { createActor, createMachine } = require("xstate");',
     ""
   ];

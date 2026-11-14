@@ -111,6 +111,47 @@ describe("chart-runtime => ChartRuntime", () => {
         expect(runtime.sandbox.count).to.equal(1);
     });
 
+    it("does not take disabled transitions", async () => {
+        const host = createHost({ "test.0.motion": false, "test.0.light": false });
+        const chart = createLightChart();
+        chart.transitions[0].disabled = true;
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        runtime.handleInput("test.0.motion", true);
+        expect(host.active).to.deep.equal(["Off"]);
+        expect(host.states["test.0.light"]).to.equal(false);
+    });
+
+    it("ignores disabled states and the transitions from and to them", async () => {
+        const host = createHost({ "test.0.motion": false, "test.0.light": false });
+        const chart = createLightChart();
+        // "dim" is another target of motion, before "on", but disabled
+        chart.states.push({ id: "dim", name: "Dim", entry: "light = 'dim';", disabled: true, x: 0, y: 0 });
+        chart.transitions.unshift({ id: "t0", source: "off", target: "dim", label: "motion", priority: 0 });
+        chart.transitions[1].priority = 1;
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        runtime.handleInput("test.0.motion", true);
+        expect(host.active).to.deep.equal(["Off", "On"]);
+        expect(host.states["test.0.light"]).to.equal(true);
+    });
+
+    it("starts in the first enabled state if the initial state is disabled", async () => {
+        const host = createHost({ "test.0.light": false });
+        const chart = createLightChart();
+        chart.states[0].disabled = true;
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        expect(host.active).to.deep.equal(["On"]);
+    });
+
+    it("treats disabling a state or transition as a change of the logic", () => {
+        const chart = createLightChart();
+        const hash = getChartHash(chart);
+        chart.transitions[0].disabled = true;
+        expect(getChartHash(chart)).not.to.equal(hash);
+    });
+
     it("executes temporal transitions", async () => {
         const host = createHost({ "test.0.motion": false });
         runtime = new ChartRuntime("light", createLightChart(), host);

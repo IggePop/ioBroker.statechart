@@ -73,20 +73,21 @@ function toSnapshot(state) {
 class ChartRuntime {
   /**
    * @param chartId ID of the chart object
-   * @param chart The chart
+   * @param fullChart The chart, including the disabled states and transitions
    * @param host The connection to the outside world
    * @param simulated Simulation: the inputs are only changed by simulateInput(), outputs, setState() etc. are not
    * written but recorded in the history, nothing is persisted
    */
-  constructor(chartId, chart, host, simulated = false) {
+  constructor(chartId, fullChart, host, simulated = false) {
     this.chartId = chartId;
-    this.chart = chart;
+    this.fullChart = fullChart;
     this.host = host;
     this.simulated = simulated;
-    this.structure = new import_chart_structure.ChartStructure(chart);
+    this.chart = (0, import_chart_model.getExecutedChart)(fullChart);
+    this.structure = new import_chart_structure.ChartStructure(this.chart);
     this.statesById = this.structure.statesById;
     this.sandbox = import_node_vm.default.createContext({ ...this.createHelpers(), ...import_chart_model.TIME_UNITS });
-    this.hash = getChartHash(chart);
+    this.hash = getChartHash(fullChart);
     this.prepareAllCode();
   }
   structure;
@@ -175,6 +176,8 @@ class ChartRuntime {
   lastStatus = "";
   /** the current time, can be replaced in tests. A simulation can be ahead of the real time. */
   now = () => Date.now() + this.timeOffset;
+  /** The chart as it is executed, without disabled states and transitions, see getExecutedChart() */
+  chart;
   /**
    * Prepares all code of the chart for the change detection, so its variables are known from the first wakeup on
    */
@@ -628,10 +631,11 @@ class ChartRuntime {
    * Logs the problems found by the validation, the chart is started anyway
    */
   logProblems() {
-    for (const { kind, id, field, diagnostic } of (0, import_chart_validation.validateChart)(this.chart)) {
+    for (const { kind, id, field, diagnostic } of (0, import_chart_validation.validateChart)(this.fullChart)) {
       let where;
       if (kind === "state") {
-        where = `${this.statesById.get(id)?.name ?? id}${field ? `/${field}` : ""}`;
+        const name = this.fullChart.states.find((s) => s.id === id)?.name;
+        where = `${name ?? id}${field ? `/${field}` : ""}`;
       } else if (kind === "symbol") {
         where = `Variable ${id}`;
       } else if (kind === "function") {

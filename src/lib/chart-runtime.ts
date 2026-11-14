@@ -6,7 +6,7 @@ import type { SunTimes } from "suncalc";
 import { createActor, createMachine } from "xstate";
 import type { AnyActor, AnyStateMachine } from "xstate";
 import { isTimeBetween } from "./chart-helpers";
-import { MAX_SUPER_STEPS, TIME_OF_DAY, TIME_UNITS, parseTransitionLabel } from "./chart-model";
+import { MAX_SUPER_STEPS, TIME_OF_DAY, TIME_UNITS, getExecutedChart, parseTransitionLabel } from "./chart-model";
 import type { Chart, ChartState, ChartSymbol, ChartTransition, TemporalExpression } from "./chart-model";
 import { ChartStructure, HISTORY_SUFFIX } from "./chart-structure";
 import { getDeclarations, prepareHelperCalls, validateChart } from "./chart-validation";
@@ -338,24 +338,29 @@ export class ChartRuntime {
     /** the current time, can be replaced in tests. A simulation can be ahead of the real time. */
     now = (): number => Date.now() + this.timeOffset;
 
+    /** The chart as it is executed, without disabled states and transitions, see getExecutedChart() */
+    readonly chart: Chart;
+
     /**
      * @param chartId ID of the chart object
-     * @param chart The chart
+     * @param fullChart The chart, including the disabled states and transitions
      * @param host The connection to the outside world
      * @param simulated Simulation: the inputs are only changed by simulateInput(), outputs, setState() etc. are not
      * written but recorded in the history, nothing is persisted
      */
     constructor(
         readonly chartId: string,
-        readonly chart: Chart,
+        readonly fullChart: Chart,
         readonly host: RuntimeHost,
         readonly simulated = false,
     ) {
-        this.structure = new ChartStructure(chart);
+        this.chart = getExecutedChart(fullChart);
+        this.structure = new ChartStructure(this.chart);
         this.statesById = this.structure.statesById;
         // the time units can be used in the helpers, e.g. elapsed(min)
         this.sandbox = vm.createContext({ ...this.createHelpers(), ...TIME_UNITS });
-        this.hash = getChartHash(chart);
+        // of the full chart: disabling or enabling a state or transition changes the logic
+        this.hash = getChartHash(fullChart);
         this.prepareAllCode();
     }
 
@@ -860,10 +865,12 @@ export class ChartRuntime {
      * Logs the problems found by the validation, the chart is started anyway
      */
     logProblems(): void {
-        for (const { kind, id, field, diagnostic } of validateChart(this.chart)) {
+        // the full chart: the validation also reports a disabled initial state
+        for (const { kind, id, field, diagnostic } of validateChart(this.fullChart)) {
             let where;
             if (kind === "state") {
-                where = `${this.statesById.get(id)?.name ?? id}${field ? `/${field}` : ""}`;
+                const name = this.fullChart.states.find(s => s.id === id)?.name;
+                where = `${name ?? id}${field ? `/${field}` : ""}`;
             } else if (kind === "symbol") {
                 where = `Variable ${id}`;
             } else if (kind === "function") {

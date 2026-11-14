@@ -232,6 +232,34 @@ describe("chart-validation => validateChart", () => {
     });
 });
 
+describe("chart-validation => disabled states and transitions", () => {
+    it("does not check disabled elements, and warns about a disabled initial state", () => {
+        const problems = validateChart(
+            {
+                version: 1,
+                name: "Test",
+                enabled: true,
+                initial: "s1",
+                symbols,
+                states: [
+                    // unfinished code in disabled states and their sub states is not checked
+                    { id: "s1", name: "S1", entry: "lihgt = true;", disabled: true, x: 0, y: 0 },
+                    { id: "s1a", name: "S1a", parent: "s1", entry: "lihgt = true;", x: 0, y: 0 },
+                    { id: "s2", name: "S2", x: 0, y: 0 },
+                ],
+                transitions: [
+                    { id: "t1", source: "s2", target: "s2", label: "[x]", disabled: true },
+                    { id: "t2", source: "s2", target: "s1", label: "[x]" },
+                ],
+            },
+            { analyze: false },
+        );
+        expect(problems.map(p => `${p.kind} ${p.id}: ${p.diagnostic.message}`)).to.deep.equal([
+            "state s1: The initial state is disabled, the first enabled state of its level is used instead",
+        ]);
+    });
+});
+
 describe("chart-validation => parallel states", () => {
     it("reports transitions between parallel states and their children", () => {
         const problems = validateChart(

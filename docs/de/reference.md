@@ -215,6 +215,20 @@ Beschriftung eines Übergangs: `[zuWarm(temperatur)]{heizung = false;}`
 Kommentare, Notizen und Farben haben keinen Einfluss auf die Ausführung. Sie stehen im generierten Code und in exportierten
 Dateien, und wenn sie sich ändern, wird der Zustand nach einem Neustart trotzdem wiederhergestellt.
 
+## Zustände und Übergänge deaktivieren
+
+Die Option **Deaktiviert** in den Eigenschaften eines Zustands oder Übergangs schaltet ihn ab, wie Auskommentieren im
+Code. Er bleibt im Chart und lässt sich jederzeit wieder einschalten.
+
+- Ein deaktivierter **Übergang** wird nie genommen.
+- Ein deaktivierter **Zustand** wird nie betreten. Seine Unterzustände und alle Übergänge von und zu ihm sind ebenfalls
+  deaktiviert.
+- Deaktivierte Zustände und Übergänge werden hellgrau dargestellt und nicht geprüft, sie dürfen also unfertigen Code
+  enthalten. **Code anzeigen** lässt sie weg und nennt sie am Anfang.
+- Ist der Startzustand einer Ebene deaktiviert, startet das Chart stattdessen im ersten aktiven Zustand dieser Ebene,
+  und die Prüfung meldet eine Warnung.
+- Deaktivieren oder Aktivieren ändert die Logik: Nach dem Speichern startet ein laufendes Chart neu im Startzustand.
+
 ## Prüfung des Charts
 
 Während du bearbeitest, prüft der Editor das Chart. Fehler erscheinen rot, Warnungen orange, beide am Zustand,

@@ -54,6 +54,24 @@ describe("chart-codegen => generateChartCode", () => {
         expect(code).not.to.include("after: {");
     });
 
+    it("leaves out disabled states and transitions and names them in a comment", () => {
+        // without disabling, the parts which are checked below are in the code
+        const all = generateChartCode(createChart(), "heating");
+        for (const part of ["function process_manualState(", '"T.toManual"', '"T.start"']) {
+            expect(all).to.include(part);
+        }
+        expect(all).not.to.include("// Disabled");
+        const chart = createChart();
+        chart.states.find(s => s.id === "manualState")!.disabled = true;
+        chart.transitions.find(t => t.id === "start")!.disabled = true;
+        const code = generateChartCode(chart, "heating");
+        expect(() => acorn.parse(code, { ecmaVersion: "latest", sourceType: "script" })).not.to.throw();
+        expect(code).to.include("// - state Manual\n// - transition Idle -> Heat\n");
+        expect(code).not.to.include("function process_manualState(");
+        expect(code).not.to.include('"T.toManual"');
+        expect(code).not.to.include('"T.start"');
+    });
+
     it("selects the transitions in Stateflow order", () => {
         const code = generateChartCode(createChart(), "heating");
         const auto = code.substring(code.indexOf("function process_auto("), code.indexOf("function process_idle("));

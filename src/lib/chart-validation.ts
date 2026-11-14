@@ -9,7 +9,14 @@ import * as walk from "acorn-walk";
 import { analyzeChart } from "./chart-analysis";
 import type { Severity } from "./chart-analysis";
 import { CHANGE_HELPERS, HELPERS } from "./chart-helpers";
-import { LabelSyntaxError, TIME_UNITS, formatMessage, parseTransitionLabelWithRanges } from "./chart-model";
+import {
+    LabelSyntaxError,
+    TIME_UNITS,
+    formatMessage,
+    getDisabledStateIds,
+    getExecutedChart,
+    parseTransitionLabelWithRanges,
+} from "./chart-model";
 import type { Chart, ChartSymbol } from "./chart-model";
 import { ChartStructure } from "./chart-structure";
 
@@ -401,15 +408,51 @@ export interface ChartProblem {
 }
 
 /**
+ * @param chart The chart, including the disabled states
+ * @returns the IDs of the disabled states which are the initial state of their level, a level with parallel states
+ *   has none. Levels inside disabled states are not executed, so they do not matter.
+ */
+function getDisabledInitialStates(chart: Chart): string[] {
+    const disabled = getDisabledStateIds(chart);
+    const result: string[] = [];
+    if (!chart.parallel && chart.initial && disabled.has(chart.initial)) {
+        result.push(chart.initial);
+    }
+    for (const state of chart.states) {
+        if (!disabled.has(state.id) && !state.parallel && state.initial && disabled.has(state.initial)) {
+            result.push(state.initial);
+        }
+    }
+    return result;
+}
+
+/**
  * Checks all actions, transition labels and function blocks of a chart, and analyzes its logic
  *
- * @param chart The chart
+ * Disabled states and transitions are not checked, like when the chart runs. Only a disabled initial state is
+ * reported, because then the chart starts in another state.
+ *
+ * @param fullChart The chart, including the disabled states and transitions
  * @param options Options
  * @param options.analyze false to check only the code, without the static analysis
  */
-export function validateChart(chart: Chart, options: { analyze?: boolean } = {}): ChartProblem[] {
+export function validateChart(fullChart: Chart, options: { analyze?: boolean } = {}): ChartProblem[] {
+    const chart = getExecutedChart(fullChart);
     const functionNames = getFunctionNames(chart);
     const problems: ChartProblem[] = [];
+    for (const id of getDisabledInitialStates(fullChart)) {
+        problems.push({
+            kind: "state",
+            id,
+            field: "",
+            diagnostic: createDiagnostic(
+                0,
+                0,
+                "warning",
+                "The initial state is disabled, the first enabled state of its level is used instead",
+            ),
+        });
+    }
     for (const state of chart.states) {
         for (const field of STATE_ACTIONS) {
             for (const diagnostic of validateCode(state[field], "statements", chart.symbols, 0, functionNames)) {

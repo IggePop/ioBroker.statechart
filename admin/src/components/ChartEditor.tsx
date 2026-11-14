@@ -105,6 +105,7 @@ import {
     findDropParent,
     flowToChart,
     getExclusiveParentIds,
+    getDisabledNodeIds,
     getNestingDepths,
     getExecutionOrder,
     getInitialStateIds,
@@ -950,6 +951,10 @@ function ChartEditorInner({
     const executionOrder = useMemo(() => getExecutionOrder(nodes, chart.parallel), [nodes, chart.parallel]);
     const exclusiveParents = useMemo(() => getExclusiveParentIds(nodes), [nodes]);
     const depths = useMemo(() => getNestingDepths(nodes), [nodes]);
+    /** disabled states, also the sub states of disabled states: they are not executed and shown light gray */
+    const disabledIds = useMemo(() => getDisabledNodeIds(nodes), [nodes]);
+    /** Color of disabled transitions, light gray in both themes */
+    const disabledColor = theme.palette.grey[theme.palette.mode === "dark" ? 700 : 400];
 
     const displayNodes = useMemo(
         () =>
@@ -967,9 +972,21 @@ function ChartEditorInner({
                     history: n.type === "state" && !!n.data.state.history && exclusiveParents.has(n.id),
                     breakpoint: breakpoints.has(n.id),
                     depth: depths.get(n.id),
+                    disabled: disabledIds.has(n.id),
                 } as any,
             })),
-        [nodes, initialIds, executionOrder, exclusiveParents, depths, activeIds, dropTarget, problems, breakpoints],
+        [
+            nodes,
+            initialIds,
+            executionOrder,
+            exclusiveParents,
+            depths,
+            disabledIds,
+            activeIds,
+            dropTarget,
+            problems,
+            breakpoints,
+        ],
     );
     const displayEdges = useMemo(() => {
         const outgoing: Record<string, number> = {};
@@ -990,11 +1007,14 @@ function ChartEditorInner({
         return edges.map(e => {
             const toChild = isDescendantNode(nodes, e.source, e.target);
             const toParent = !toChild && isDescendantNode(nodes, e.target, e.source);
+            // not executed: disabled itself, or a transition from or to a disabled state
+            const disabled = !!e.data?.transition.disabled || disabledIds.has(e.source) || disabledIds.has(e.target);
             return {
                 ...e,
                 // like the nodes: no zooming on double click and no panning when dragging the edge
                 className: "nopan",
-                markerEnd,
+                // the arrowhead in the light gray of a disabled transition
+                markerEnd: disabled ? { ...markerEnd, color: disabledColor } : markerEnd,
                 data: {
                     ...e.data,
                     showPriority: outgoing[e.source] > 1,
@@ -1004,6 +1024,8 @@ function ChartEditorInner({
                     offset: offsets.get(e.id),
                     labelStack: labelStack.get(e.id),
                     orthogonal: !!chart.orthogonalTransitions,
+                    disabled,
+                    disabledColor,
                     problems: problems.get(e.id),
                     flash: flashing.has(e.id),
                     breakpoint: breakpoints.has(e.id),
@@ -1018,6 +1040,8 @@ function ChartEditorInner({
     }, [
         edges,
         nodes,
+        disabledIds,
+        disabledColor,
         chart.orthogonalTransitions,
         problems,
         flashing,

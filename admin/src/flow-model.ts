@@ -101,6 +101,30 @@ export function getNestingDepths(nodes: { id: string; parentId?: string }[]): Ma
     return depths;
 }
 
+/**
+ * @param nodes The nodes of React Flow
+ * @returns the IDs of the disabled states, including the sub states of disabled states, see getDisabledStateIds()
+ */
+export function getDisabledNodeIds(nodes: ChartFlowNode[]): Set<string> {
+    const byId = new Map(nodes.map(n => [n.id, n]));
+    const disabled = new Set<string>();
+    for (const node of nodes) {
+        if (node.type !== "state") {
+            continue;
+        }
+        // the limit protects against cycles in broken charts
+        let current: ChartFlowNode | undefined = node;
+        for (let depth = 0; current && depth <= nodes.length; depth++) {
+            if (current.type === "state" && current.data.state.disabled) {
+                disabled.add(node.id);
+                break;
+            }
+            current = current.parentId ? byId.get(current.parentId) : undefined;
+        }
+    }
+    return disabled;
+}
+
 /** Node types which can be placed in a state (and move together with it) */
 const NESTABLE_TYPES = ["state", "note"];
 

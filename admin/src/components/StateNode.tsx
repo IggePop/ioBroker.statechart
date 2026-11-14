@@ -67,13 +67,17 @@ type StateNodeProps = NodeProps<
         history?: boolean;
         /** Nesting depth, 0 for top level states, every second level is darker */
         depth?: number;
+        /** Not executed: the state or one of its parents is disabled, it is shown light gray */
+        disabled?: boolean;
     }>
 >;
 
 function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
-    const { state, isInitial, isActive, isDropTarget, problems, order, breakpoint, history, depth } = data;
+    const { state, isInitial, isActive, isDropTarget, problems, order, breakpoint, history, depth, disabled } = data;
     const theme = useTheme();
-    let borderColor = "text.secondary";
+    const dark = theme.palette.mode === "dark";
+    // a disabled state is light gray, whatever its color is; drop target and selection are still shown
+    let borderColor = disabled ? "text.disabled" : "text.secondary";
     if (isDropTarget) {
         borderColor = "primary.main";
     } else if (isActive) {
@@ -120,7 +124,10 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                     // a state shows that the dragged state is moved into it when it is dropped
                     bgcolor: isDropTarget
                         ? "action.selected"
-                        : stateBackground(state.color, theme.palette.mode === "dark", depth),
+                        : disabled
+                          ? theme.palette.grey[dark ? 900 : 100]
+                          : stateBackground(state.color, dark, depth),
+                    color: disabled ? "text.disabled" : undefined,
                     boxShadow: isActive ? 6 : 0,
                     px: 1,
                     py: 0.5,

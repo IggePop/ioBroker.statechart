@@ -65,6 +65,10 @@ type TransitionEdgeProps = EdgeProps<
         labelStack?: number;
         /** right angles instead of a curve, see Chart.orthogonalTransitions */
         orthogonal?: boolean;
+        /** not executed: the transition, its source or its target is disabled */
+        disabled?: boolean;
+        /** color of a disabled transition */
+        disabledColor?: string;
         /** the transition was just taken by the running chart */
         flash?: boolean;
         /** the simulation stops when the transition is taken */
@@ -381,6 +385,9 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
     };
 
     const problemColor = getProblemColor(data?.problems);
+    /** a disabled transition is light gray, unless it is selected */
+    const grayed = !!data?.disabled && !selected;
+    const lineColor = grayed ? data?.disabledColor : "var(--xy-edge-stroke, var(--xy-edge-stroke-default))";
     const text = `${data?.showPriority ? `${transition?.priority ?? "?"}: ` : ""}${transition?.label || ""}`;
     const showGrips = selected && !!data?.onAnchorChange && !!sourceBox && !!targetBox;
     // the properties of the grip of one end
@@ -402,6 +409,8 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                 // the keyframes are defined in ChartEditor
                 style={{
                     ...style,
+                    // light gray if disabled, the selection is still shown in its color
+                    ...(grayed ? { stroke: data?.disabledColor } : {}),
                     ...(data?.flash ? { animation: "statechart-flash 1.5s ease-out" } : {}),
                     ...(preview ? { strokeDasharray: "6 4" } : {}),
                 }}
@@ -412,7 +421,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                     cx={start.x}
                     cy={start.y}
                     r={4}
-                    style={{ fill: "var(--xy-edge-stroke, var(--xy-edge-stroke-default))" }}
+                    style={{ fill: lineColor }}
                 />
             )}
             {leaderEnd && (
@@ -420,7 +429,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                 <path
                     d={`M ${anchor.x} ${anchor.y} L ${leaderEnd.x} ${leaderEnd.y}`}
                     style={{
-                        stroke: "var(--xy-edge-stroke, var(--xy-edge-stroke-default))",
+                        stroke: lineColor,
                         strokeWidth: 1,
                         strokeDasharray: "2 3",
                         fill: "none",
@@ -472,7 +481,7 @@ function TransitionEdge(props: TransitionEdgeProps): React.JSX.Element {
                             boxShadow: selected ? 2 : 0,
                             // transparent, so the label does not cover the states and the background
                             bgcolor: "transparent",
-                            color: problemColor ?? "text.primary",
+                            color: problemColor ?? (data?.disabled ? "text.disabled" : "text.primary"),
                             border: 1,
                             borderColor: problemColor ?? "transparent",
                             borderRadius: 1,

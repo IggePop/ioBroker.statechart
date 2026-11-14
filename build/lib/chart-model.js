@@ -30,6 +30,8 @@ __export(chart_model_exports, {
   createChart: () => createChart,
   createExport: () => createExport,
   formatMessage: () => formatMessage,
+  getDisabledStateIds: () => getDisabledStateIds,
+  getExecutedChart: () => getExecutedChart,
   nameToId: () => nameToId,
   parseExport: () => parseExport,
   parseTransitionLabel: () => parseTransitionLabel,
@@ -321,12 +323,13 @@ function normalizeChart(data, where) {
     if (state.color !== void 0 && !(typeof state.color === "string" && COLOR_PATTERN.test(state.color))) {
       fail(`${at}: "color" is no color like "#d6eaf8"`);
     }
-    const { parallel, history, ...rest } = state;
+    const { parallel, history, disabled, ...rest } = state;
     return {
       ...rest,
-      // the defaults (exclusive, no history) are not stored, like in the editor
+      // the defaults (exclusive, no history, enabled) are not stored, like in the editor
       ...parallel === true ? { parallel } : {},
       ...history === true ? { history } : {},
+      ...disabled === true ? { disabled } : {},
       name: typeof state.name === "string" && state.name ? state.name : state.id,
       parent: state.parent || null,
       x: Number.isFinite(state.x) ? state.x : 0,
@@ -363,9 +366,14 @@ function normalizeChart(data, where) {
     if (transition.priority !== void 0 && !Number.isFinite(transition.priority)) {
       fail(`${at}: "priority" is no number`);
     }
-    const { labelOffset, ...rest } = transition;
+    const { labelOffset, disabled, ...rest } = transition;
     const validOffset = isObject(labelOffset) && Number.isFinite(labelOffset.x) && Number.isFinite(labelOffset.y);
-    return { ...rest, ...validOffset ? { labelOffset: { x: labelOffset.x, y: labelOffset.y } } : {} };
+    return {
+      ...rest,
+      ...validOffset ? { labelOffset: { x: labelOffset.x, y: labelOffset.y } } : {},
+      // the default (enabled) is not stored
+      ...disabled === true ? { disabled } : {}
+    };
   });
   const symbolNames = /* @__PURE__ */ new Set();
   const symbols = data.symbols.map((symbol, i) => {
@@ -455,6 +463,36 @@ function parseExport(text) {
   }
   throw new Error("The file contains no charts of the statechart adapter");
 }
+function getDisabledStateIds(chart) {
+  const byId = new Map(chart.states.map((s) => [s.id, s]));
+  const disabled = /* @__PURE__ */ new Set();
+  for (const state of chart.states) {
+    let current = state;
+    for (let depth = 0; current && depth <= chart.states.length; depth++) {
+      if (current.disabled) {
+        disabled.add(state.id);
+        break;
+      }
+      current = current.parent ? byId.get(current.parent) : void 0;
+    }
+  }
+  return disabled;
+}
+function getExecutedChart(chart) {
+  const disabledStates = getDisabledStateIds(chart);
+  if (!disabledStates.size && !chart.transitions.some((t) => t.disabled)) {
+    return chart;
+  }
+  return {
+    ...chart,
+    states: chart.states.filter((s) => !disabledStates.has(s.id)),
+    transitions: chart.transitions.filter(
+      (t) => !t.disabled && !disabledStates.has(t.source) && !disabledStates.has(t.target)
+    ),
+    // notes in disabled states are kept with the chart, they have no influence on the execution
+    notes: chart.notes?.filter((n) => !n.parent || !disabledStates.has(n.parent))
+  };
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ASTRO_EVENTS,
@@ -469,6 +507,8 @@ function parseExport(text) {
   createChart,
   createExport,
   formatMessage,
+  getDisabledStateIds,
+  getExecutedChart,
   nameToId,
   parseExport,
   parseTransitionLabel,

@@ -2,6 +2,7 @@ import { expect } from "chai";
 import {
     createChart,
     createExport,
+    getExecutedChart,
     nameToId,
     parseExport,
     parseTransitionLabel,
@@ -288,5 +289,43 @@ describe("chart-model => nameToId", () => {
         expect(nameToId("Licht Flur")).to.equal("licht_flur");
         expect(nameToId("Größe/Höhe")).to.equal("groesse_hoehe");
         expect(nameToId("...")).to.equal("chart");
+    });
+});
+
+describe("chart-model => getExecutedChart", () => {
+    it("removes disabled states with their sub states, and the transitions from and to them", () => {
+        const chart = createTestChart();
+        // "on" is disabled, so its sub state "dim" is disabled as well
+        chart.states[1].disabled = true;
+        chart.transitions.push({ id: "t2", source: "off", target: "off", label: "motion", disabled: true });
+        const executed = getExecutedChart(chart);
+        expect(executed.states.map(s => s.id)).to.deep.equal(["off"]);
+        expect(executed.transitions).to.deep.equal([]);
+        // the chart itself is not changed
+        expect(chart.states).to.have.length(3);
+    });
+
+    it("returns the chart itself if nothing is disabled", () => {
+        const chart = createTestChart();
+        expect(getExecutedChart(chart)).to.equal(chart);
+    });
+
+    it("imports the disabled flag and does not store the default", () => {
+        const [chart] = parseExport(
+            JSON.stringify({
+                states: [
+                    { id: "a", disabled: true },
+                    { id: "b", disabled: "yes" },
+                ],
+                transitions: [
+                    { id: "t1", source: "a", target: "b", disabled: true },
+                    { id: "t2", source: "b", target: "a", disabled: false },
+                ],
+                symbols: [],
+            }),
+        );
+        expect(chart.states.map(s => s.disabled)).to.deep.equal([true, undefined]);
+        expect(chart.states[1]).to.not.have.property("disabled");
+        expect(chart.transitions.map(t => t.disabled)).to.deep.equal([true, undefined]);
     });
 });

@@ -32,6 +32,7 @@ oben links die Live-Werte des laufenden Charts, rechts die Variablen.*
 - Mehrere unabhängige Charts pro Instanz, die sich über Datenpunkte anhalten, zurücksetzen und wecken lassen (z.B. aus vis)
 - Import und Export von Charts als JSON-Dateien, Export des ganzen Charts als PNG-Bild (z.B. fürs Forum)
 - Kommentare zu Zuständen, Übergängen und Funktionsblöcken, Notizen auf der Zeichenfläche und eine Farbe pro Zustand
+- Zustände und Übergänge lassen sich deaktivieren, wie auskommentiert: Sie bleiben im Chart, werden aber nicht ausgeführt
 - Pro Eingang: Aufwecken bei jeder Aktualisierung oder nur bei Änderung, Filter nach ack, Entprellen
 - Hilfsfunktionen: getState (beliebige Datenpunkte), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, Änderungserkennung (hasChanged...)
 - Ausgewählte Elemente ausrichten und verteilen, Einrasten am Raster (abschaltbar)

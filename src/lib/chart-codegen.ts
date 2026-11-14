@@ -5,7 +5,7 @@
  */
 
 import { HELPERS } from "./chart-helpers";
-import { MAX_SUPER_STEPS, parseTransitionLabel } from "./chart-model";
+import { MAX_SUPER_STEPS, getDisabledStateIds, getExecutedChart, parseTransitionLabel } from "./chart-model";
 import type { Chart, ChartState, ChartTransition, TemporalExpression, TransitionLabel } from "./chart-model";
 import { ChartStructure, HISTORY_SUFFIX } from "./chart-structure";
 import type { TransitionKind } from "./chart-structure";
@@ -93,12 +93,36 @@ function actionFunction(code: string | undefined, level: number): string | null 
 }
 
 /**
- * Generates the code of a chart
+ * @param chart The chart, including the disabled states and transitions
+ * @returns comment lines naming the disabled states and transitions, which are not part of the code, none if there
+ *   are none
+ */
+function disabledLines(chart: Chart): string[] {
+    const disabledStates = getDisabledStateIds(chart);
+    const name = (id: string): string => oneLine(chart.states.find(s => s.id === id)?.name ?? id);
+    const names = [
+        ...chart.states.filter(s => s.disabled).map(s => `state ${name(s.id)}`),
+        ...chart.transitions
+            .filter(t => t.disabled && !disabledStates.has(t.source) && !disabledStates.has(t.target))
+            .map(t => `transition ${name(t.source)} -> ${name(t.target)}`),
+    ];
+    return names.length
+        ? [
+              "// Disabled, not part of the code (with the sub states of disabled states and their transitions):",
+              ...names.map(n => `// - ${n}`),
+              "",
+          ]
+        : [];
+}
+
+/**
+ * Generates the code of a chart, like the adapter executes it: without the disabled states and transitions
  *
- * @param chart The chart
+ * @param fullChart The chart, including the disabled states and transitions
  * @param chartId ID of the chart object, used for the machine ID like in the runtime
  */
-export function generateChartCode(chart: Chart, chartId: string): string {
+export function generateChartCode(fullChart: Chart, chartId: string): string {
+    const chart = getExecutedChart(fullChart);
     const structure = new ChartStructure(chart);
     const stateName = (id: string): string => structure.statesById.get(id)?.name ?? id;
 
@@ -133,6 +157,7 @@ export function generateChartCode(chart: Chart, chartId: string): string {
         "",
         ...(chart.comment?.trim() ? [...commentLines(chart.comment), ""] : []),
         ...(chart.notes || []).flatMap(note => [...commentLines(note.text, "Note: "), ""]),
+        ...disabledLines(fullChart),
         'const { createActor, createMachine } = require("xstate");',
         "",
     ];

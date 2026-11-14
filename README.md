@@ -40,6 +40,7 @@ of the running chart on the top left, the variables on the right.*
 - Several independent charts per instance, which can be paused, reset and woken up by states (e.g. from vis)
 - Import and export of charts as JSON files, export of the whole chart as PNG image (e.g. for the forum)
 - Comments on states, transitions and function blocks, notes on the canvas, and a color per state
+- States and transitions can be disabled, like commented out: they stay in the chart, but are not executed
 - Per input: wake up on every update or only on changes, filter by ack, debounce
 - Helper functions: getState (any state), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
 - Align and distribute the selected elements, snap to the grid (can be switched off)
@@ -120,6 +121,9 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
+
 ### 0.3.0 (2026-11-14)
 * (Igge) simulation: the chart runs in the editor without switching anything, the inputs are set by hand, advance the time, pause, single steps and breakpoints on states and transitions
 * (Igge) parallel states (AND) with an execution order, and history junctions: entering a state returns to its last active sub state

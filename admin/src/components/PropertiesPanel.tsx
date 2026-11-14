@@ -288,6 +288,49 @@ function ParallelCheckbox({
 }
 
 /**
+ * Disables a state or transition: it is not executed, like commented out, and shown light gray
+ *
+ * @param props Component properties
+ * @param props.label Label of the checkbox
+ * @param props.help Explanation below the checkbox
+ * @param props.disabled If the element is disabled
+ * @param props.onChange Called with the new value, undefined for the default (enabled)
+ */
+function DisabledCheckbox({
+    label,
+    help,
+    disabled,
+    onChange,
+}: {
+    label: string;
+    help: string;
+    disabled: boolean | undefined;
+    onChange: (disabled: boolean | undefined) => void;
+}): React.JSX.Element {
+    return (
+        <Box>
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={!!disabled}
+                        // the default is stored as undefined, so it does not appear in the chart
+                        onChange={e => onChange(e.target.checked || undefined)}
+                    />
+                }
+                label={label}
+            />
+            <Typography
+                variant="caption"
+                component="div"
+                color="text.secondary"
+            >
+                {help}
+            </Typography>
+        </Box>
+    );
+}
+
+/**
  * A breakpoint of the simulation on a state or transition, it is not stored in the chart
  *
  * @param props Component properties
@@ -410,6 +453,12 @@ function StateProperties({
                     </Typography>
                 </Box>
             )}
+            <DisabledCheckbox
+                label={I18n.t("Disabled: the state is not executed")}
+                help={I18n.t("disabledStateHelp")}
+                disabled={state.disabled}
+                onChange={disabled => onChange({ disabled })}
+            />
             {(["entry", "during", "exit"] as const).map(action => (
                 <CodeEditor
                     key={action}
@@ -519,6 +568,12 @@ function TransitionProperties({
                     </Typography>
                 </Box>
             )}
+            <DisabledCheckbox
+                label={I18n.t("Disabled: the transition is never taken")}
+                help={I18n.t("disabledTransitionHelp")}
+                disabled={transition.disabled}
+                onChange={disabled => onChange({ disabled })}
+            />
             <CommentField
                 value={transition.comment}
                 onChange={comment => onChange({ comment })}
