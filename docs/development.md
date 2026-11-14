@@ -20,7 +20,7 @@ and the code generator directly from `src/lib/`, so they are shared by both.
 | `build:ts` / `watch:ts` | Build only the adapter |
 | `build:react` / `watch:react` | Build only the tab |
 | `upload:tab` | Build the tab and write the admin files into the running dev-server instance (works while `dev-server watch` runs) |
-| `test` | Unit tests (`src/**/*.test.ts`) and package tests |
+| `test` | Unit tests (`src/**/*.test.ts` and `admin/src/**/*.test.ts`) and package tests |
 | `check` | Type check of the adapter and the tab |
 | `lint` | ESLint |
 | `translate` | Translate the texts of the adapter |

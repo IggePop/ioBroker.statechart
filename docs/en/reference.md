@@ -2,6 +2,28 @@
 
 [Overview](../../README.md) | [Deutsch](../de/reference.md)
 
+## The editor
+
+The list of charts is on the left, the chart in the middle, and the tabs **Properties**, **Variables** and
+**History** on the right. Both side panels can be resized by dragging their border (double click: default width),
+and collapsed with the arrow on their border, for more space for the chart. A double click on a state or transition
+expands the right panel again. The browser remembers the widths and which panels are collapsed.
+
+The toolbar above the chart is grouped by tasks, the tooltip of each icon shows its name and shortcut:
+
+| Group | Icons |
+|---|---|
+| Save | **Save** (blue when there are unsaved changes) |
+| History | **Undo** (Ctrl+Z), **Redo** (Ctrl+Y) |
+| Clipboard | **Cut** (Ctrl+X), **Copy** (Ctrl+C), **Paste** (Ctrl+V), also between charts, and **Delete** (Del) |
+| Add | **Add state**, **Add function**, **Add note**, in the color of the element they add |
+| Layout | **Align** the selected elements (menu), **Snap to the grid** on and off |
+| Output (right) | **Show code**, **Export chart** (JSON), **Export as image** (PNG), see [Import and export](#import-and-export) |
+| Running (right) | **Live values** on and off, **Simulation** start and stop, see [Watching a running chart](#watching-a-running-chart) and [Simulation](#simulation) |
+
+With **Snap to the grid** switched on, states, function blocks and notes snap to the dots of the background. The
+browser remembers the setting.
+
 ## Transition labels
 
 ```
@@ -215,7 +237,8 @@ shown by the [simulation](#simulation).
 While a chart runs, the editor shows what it does:
 
 - The **active states** have a green border.
-- **Live values** (panel at the top left of the canvas, switched on and off with the last icon in the toolbar):
+- **Live values** (panel at the top left of the canvas, switched on and off with the icon **Live values** in the
+  toolbar, green while they are shown):
   the current values of all variables. They are also shown in the line of each variable in the tab **Variables**.
 - A **transition lights up** for a moment when the chart takes it.
 - The tab **History** lists the starts of the chart and the transitions taken, newest first: when, from which state
@@ -262,7 +285,10 @@ The bar at the top of the canvas shows the simulated time, the next timer and th
 
 ## Import and export
 
-- **Export chart** (last icon in the toolbar of the editor) saves the chart as JSON file, including unsaved changes.
+- **Export chart** (icon in the toolbar of the editor) saves the chart as JSON file, including unsaved changes.
+- **Export as image** (icon in the toolbar of the editor) saves the whole chart as PNG image, also the parts outside
+  of the visible area, e.g. for a question in the forum. It looks like in the editor, without the selection, the
+  minimap and the panels.
 - **Export all charts** (icon above the chart list) saves all saved charts in one file.
 - **Import charts** (icon above the chart list) adds the charts of such a file as new charts, existing charts are not
   changed. The file is checked before (structure, IDs, references between states and transitions).

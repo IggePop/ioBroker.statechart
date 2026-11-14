@@ -36,7 +36,7 @@ oben links die Live-Werte des laufenden Charts, rechts die Variablen.*
 - Hilfsfunktionen: getState (beliebige Datenpunkte), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, Änderungserkennung (hasChanged...)
 - Ausgewählte Elemente ausrichten und verteilen, Einrasten am Raster (abschaltbar)
 - Die Chart-Liste und die Eigenschaften lassen sich in der Breite ändern und einklappen, für mehr Platz für das Chart
-- Rückgängig/Wiederholen (Strg+Z, Strg+Y), Kopieren/Ausschneiden/Einfügen von Zuständen und Funktionsblöcken (Strg+C, Strg+X, Strg+V), auch zwischen Charts, und eine Warnung bei ungespeicherten Änderungen
+- Rückgängig/Wiederholen (Strg+Z, Strg+Y), Ausschneiden/Kopieren/Einfügen/Löschen von Zuständen, Funktionsblöcken und Notizen (Strg+X, Strg+C, Strg+V, Entf), auch zwischen Charts, und eine Warnung bei ungespeicherten Änderungen
 - **Code anzeigen**: das aus dem Chart generierte JavaScript, das genau zeigt, wie der Adapter es ausführt
 
 ### Installation
@@ -53,7 +53,7 @@ Der Adapter ist noch nicht in den ioBroker-Repositories, lässt sich aber direkt
 Danach eine Instanz von **Zustandsmaschine** hinzufügen. Installiert wird der aktuelle
 Entwicklungsstand, der sich noch inkompatibel ändern kann.
 
-Voraussetzungen: Node.js 22 oder neuer, js-controller 6.0.11 oder neuer, Admin 7.6.17 oder neuer.
+Voraussetzungen: Node.js 22 oder neuer, js-controller 6.0.11 oder neuer, Admin 7.6.20 oder neuer.
 
 ### Erste Schritte
 
@@ -100,7 +100,7 @@ Das Licht geht bei Bewegung an und nach 2 Minuten ohne Bewegung aus: `after(2, m
 
 ### Dokumentation
 
-- [Referenz](reference.md): Beschriftung von Übergängen und Zeitlogik, wann Eingänge das Chart aufwecken, Aktionen,
+- [Referenz](reference.md): der Editor und seine Werkzeugleiste, Beschriftung von Übergängen und Zeitlogik, wann Eingänge das Chart aufwecken, Aktionen,
   verschachtelte und parallele Zustände, Hilfsfunktionen, Funktionsblöcke, ein laufendes Chart beobachten,
   Simulation, Import und Export, vom Adapter angelegte Datenpunkte, Neustart, Ausführung und Einschränkungen
 - [Entwicklung](../development.md) (Englisch): Build, Dev-Server, Tests und Aufbau des Projekts

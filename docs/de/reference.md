@@ -2,6 +2,29 @@
 
 [Übersicht](README.md) | [English](../en/reference.md)
 
+## Der Editor
+
+Links steht die Liste der Charts, in der Mitte das Chart und rechts die Reiter **Eigenschaften**, **Variablen** und
+**Verlauf**. Beide Seitenspalten lassen sich durch Ziehen ihres Rands in der Breite ändern (Doppelklick:
+Standardbreite) und mit dem Pfeil auf ihrem Rand einklappen, für mehr Platz für das Chart. Ein Doppelklick auf einen
+Zustand oder Übergang klappt die rechte Spalte wieder auf. Der Browser merkt sich die Breiten und welche Spalten
+eingeklappt sind.
+
+Die Werkzeugleiste über dem Chart ist nach Aufgaben gruppiert, der Tooltip jedes Symbols zeigt Namen und Tastenkürzel:
+
+| Gruppe | Symbole |
+|---|---|
+| Speichern | **Speichern** (blau, wenn es ungespeicherte Änderungen gibt) |
+| Verlauf | **Rückgängig** (Strg+Z), **Wiederholen** (Strg+Y) |
+| Zwischenablage | **Ausschneiden** (Strg+X), **Kopieren** (Strg+C), **Einfügen** (Strg+V), auch zwischen Charts, und **Löschen** (Entf) |
+| Hinzufügen | **Zustand hinzufügen**, **Funktion hinzufügen**, **Notiz hinzufügen**, in der Farbe des Elements, das sie anlegen |
+| Anordnen | Ausgewählte Elemente **ausrichten** (Menü), **Am Raster einrasten** ein und aus |
+| Ausgabe (rechts) | **Code anzeigen**, **Chart exportieren** (JSON), **Als Bild exportieren** (PNG), siehe [Import und Export](#import-und-export) |
+| Ausführen (rechts) | **Live-Werte** ein und aus, **Simulation** starten und beenden, siehe [Ein laufendes Chart beobachten](#ein-laufendes-chart-beobachten) und [Simulation](#simulation) |
+
+Mit **Am Raster einrasten** rasten Zustände, Funktionsblöcke und Notizen an den Punkten des Hintergrunds ein. Der Browser
+merkt sich die Einstellung.
+
 ## Beschriftung von Übergängen
 
 ```
@@ -223,8 +246,8 @@ wird, zeigt die [Simulation](#simulation).
 Während ein Chart läuft, zeigt der Editor, was es tut:
 
 - Die **aktiven Zustände** haben einen grünen Rahmen.
-- **Live-Werte** (Tafel oben links auf der Zeichenfläche, ein- und ausgeschaltet mit dem letzten Symbol der
-  Werkzeugleiste): die aktuellen Werte aller Variablen. Sie stehen auch in der Zeile jeder Variable im Reiter **Variablen**.
+- **Live-Werte** (Tafel oben links auf der Zeichenfläche, ein- und ausgeschaltet mit dem Symbol **Live-Werte** in der
+  Werkzeugleiste, grün, solange sie angezeigt werden): die aktuellen Werte aller Variablen. Sie stehen auch in der Zeile jeder Variable im Reiter **Variablen**.
 - Ein **Übergang leuchtet kurz auf**, wenn das Chart ihn nimmt.
 - Der Reiter **Verlauf** listet die Starts des Charts und die genommenen Übergänge, der neueste zuerst: wann, von
   welchem Zustand zu welchem, ausgelöst durch welchen Eingang oder einen Timer (`after`), und welche Zustände danach
@@ -270,8 +293,11 @@ Die Leiste oben auf der Zeichenfläche zeigt die simulierte Zeit, den nächsten 
 
 ## Import und Export
 
-- **Chart exportieren** (letztes Symbol in der Werkzeugleiste des Editors) speichert das Chart als JSON-Datei, mit
+- **Chart exportieren** (Symbol in der Werkzeugleiste des Editors) speichert das Chart als JSON-Datei, mit
   ungespeicherten Änderungen.
+- **Als Bild exportieren** (Symbol in der Werkzeugleiste des Editors) speichert das ganze Chart als PNG-Bild, auch die
+  Teile außerhalb des sichtbaren Bereichs, z.B. für eine Frage im Forum. Es sieht aus wie im Editor, ohne Auswahl,
+  Minikarte und Tafeln.
 - **Alle Charts exportieren** (Symbol über der Chart-Liste) speichert alle gespeicherten Charts in einer Datei.
 - **Charts importieren** (Symbol über der Chart-Liste) fügt die Charts einer solchen Datei als neue Charts hinzu,
   vorhandene Charts werden nicht verändert. Die Datei wird vorher geprüft (Aufbau, IDs, Verweise zwischen Zuständen

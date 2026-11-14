@@ -44,7 +44,7 @@ of the running chart on the top left, the variables on the right.*
 - Helper functions: getState (any state), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
 - Align and distribute the selected elements, snap to the grid (can be switched off)
 - The list of charts and the properties panel can be resized and collapsed, for more space for the chart
-- Undo/redo (Ctrl+Z, Ctrl+Y), copy/cut/paste of states and function blocks (Ctrl+C, Ctrl+X, Ctrl+V), also between charts, and a warning about unsaved changes
+- Undo/redo (Ctrl+Z, Ctrl+Y), cut/copy/paste/delete of states, function blocks and notes (Ctrl+X, Ctrl+C, Ctrl+V, Del), also between charts, and a warning about unsaved changes
 - **Show code**: the JavaScript generated from the chart, showing exactly how the adapter executes it
 
 ### Installation
@@ -61,7 +61,7 @@ The adapter is not in the ioBroker repositories yet, but can be installed direct
 Then add an instance of **State Machine**. This installs the current development version, which may
 still change incompatibly.
 
-Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.17 or newer.
+Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.20 or newer.
 
 ### Getting started
 
@@ -105,7 +105,7 @@ The light goes on with motion and off after 2 minutes without motion: `after(2, 
 
 ### Documentation
 
-- [Reference](docs/en/reference.md): transition labels and temporal logic, when inputs wake up the chart, actions,
+- [Reference](docs/en/reference.md): the editor and its toolbar, transition labels and temporal logic, when inputs wake up the chart, actions,
   nested and parallel states, helper functions, function blocks, watching a running chart, simulation, import and
   export, states created by the adapter, restart, execution model and limitations
 - [Development](docs/development.md): build, dev-server, tests and the structure of the project
@@ -121,28 +121,16 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
-* (Igge) fixed: the dashed line to a moved label of a transition ran through its text, it ends at the border of the label now
-* (Igge) export of the whole chart as PNG image, also the parts outside of the visible area, with the button with the image in the toolbar
-* (Igge) the toolbar is grouped by tasks: save, undo/redo, clipboard, adding elements and layout on the left, code, export, live values and simulation on the right; new buttons to cut and to delete the selected elements
-* (Igge) fixed: self transitions on the top or right side of a state were drawn as a twisted spike instead of a loop, their labels are placed outside of the loop now
-* (Igge) more color in the editor: each kind of element has its color and icon in the toolbar and in the headings of its properties, icons on the tabs, the status of each chart as a colored dot in the list
-* (Igge) the elements snap to the dots of the background (20 px instead of an invisible grid of 10 px), the button with the grid in the toolbar switches it on and off
-* (Igge) chart option "Right-angled transitions": the arrows consist of horizontal and vertical lines instead of curves
-* (Igge) the list of charts and the properties panel can be collapsed with the arrow on their border
-* (Igge) the color of each state can be chosen, light yellow by default, every second level of nested states is darker, function blocks have a light gray background
-* (Igge) transitions are black (white in the dark theme), the selected one blue, and their labels have no background
-* (Igge) fixed: the labels of transitions inside a superstate were hidden behind it, and the labels of several transitions between the same states covered each other
-* (Igge) simulation: advance the time (e.g. to the next timer), pause, single steps and breakpoints on states and transitions
-* (Igge) simulation: the chart runs as shown in the editor without writing outputs, the inputs are set by hand
-* (Igge) `getState("id")` reads any state in conditions and actions, `at("sunset", -30)` and `at("22:30")` are valid every day at an astro event or a time of day
-* (Igge) control states per chart: `enabled` pauses and starts it, `reset` restarts it in its initial state, `event` wakes it up with the event of an input
-* (Igge) more temporal logic: `before`, `at` and `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)` for conditions which are true for a time, and the helpers `elapsed()` and `duration()`
-* (Igge) the variables are grouped by kind and shown as compact lines, a click shows the settings of a variable, a search appears with many variables
-* (Igge) the labels of transitions can be moved by dragging them
-* (Igge) align and distribute the selected states, function blocks and notes
+* (Igge) simulation: the chart runs in the editor without switching anything, the inputs are set by hand, advance the time, pause, single steps and breakpoints on states and transitions
+* (Igge) parallel states (AND) with an execution order, and history junctions: entering a state returns to its last active sub state
+* (Igge) more temporal logic: `before`, `at`, `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)`, `elapsed()`, `duration()`, and every day at a time or astro event (`at("22:30")`, `at("sunset", -30)`)
+* (Igge) `getState("id")` reads any state in conditions and actions, control states per chart: `enabled`, `reset` and `event`
 * (Igge) static check of the chart: states which never become active or are never left, transitions which are never taken, conditions which are never true, unused variables
-* (Igge) history junction: entering a state returns to its last active sub state
-* (Igge) parallel states (AND): all sub states of a state, or all top level states, are active at the same time and are processed in their execution order
+* (Igge) editor: color of each state (every second level of nested states darker), right-angled transitions as option, snap to the grid, align and distribute, labels of transitions can be moved
+* (Igge) editor: toolbar grouped by tasks with new buttons to cut and delete, collapsible side panels, colors and icons for each kind of element, variables grouped by kind with a search
+* (Igge) editor: transitions are black, their labels have no background
+* (Igge) export of the whole chart as PNG image
+* (Igge) fixed: labels of transitions inside a superstate were hidden, labels of several transitions between the same states and the line to a moved label covered text, self transitions on the top or right side were drawn twisted
 
 ### 0.2.0 (2026-11-01)
 * (Igge) the adapter and the editor are written in TypeScript now, no changes of the behavior
