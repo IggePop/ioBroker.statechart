@@ -31,6 +31,7 @@ oben links die Live-Werte des laufenden Charts, rechts die Variablen.*
 - Statische Prüfung des Charts: Zustände, die nie aktiv werden, Übergänge, die nie genommen werden, ungenutzte Variablen
 - Mehrere unabhängige Charts pro Instanz, die sich über Datenpunkte anhalten, zurücksetzen und wecken lassen (z.B. aus vis)
 - Import und Export von Charts als JSON-Dateien, Export des ganzen Charts als PNG-Bild (z.B. fürs Forum)
+- Die letzten 10 Versionen jedes Charts werden beim Speichern aufbewahrt und lassen sich wiederherstellen
 - Kommentare zu Zuständen, Übergängen und Funktionsblöcken, Notizen auf der Zeichenfläche und eine Farbe pro Zustand
 - Zustände und Übergänge lassen sich deaktivieren, wie auskommentiert: Sie bleiben im Chart, werden aber nicht ausgeführt
 - Pro Eingang: Aufwecken bei jeder Aktualisierung oder nur bei Änderung, Filter nach ack, Entprellen

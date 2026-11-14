@@ -312,6 +312,14 @@ The bar at the top of the canvas shows the simulated time, the next timer and th
 Imported charts are **paused**: their variables may refer to states of another system. Check them in the tab
 **Variables**, then start the chart with the button in the chart list.
 
+## Former versions
+
+When a chart is saved, the version before is kept, the last 10 of them. They are listed under **Former versions** in
+the properties of the chart (click on an empty spot of the canvas), with the time they were replaced.
+**Restore** loads a version into the editor as unsaved change: look at it, undo it with Ctrl+Z, or save it. Whether
+the chart runs or is paused is not changed. The former versions are stored in the object of the chart, they are not
+part of exported files.
+
 ## States created by the adapter
 
 For every chart, the adapter creates below `statechart.<instance>.charts.<chart>`:

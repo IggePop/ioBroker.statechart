@@ -242,5 +242,9 @@
     "Motion detector": "Bewegingsmelder",
     "templateLightNote": "Licht met bewegingsmelder\n\nKies op het tabblad Variabelen de statussen van motion en light en start de grafiek dan met ▶ in de lijst met grafieken.",
     "templateHeatingNote": "Verwarming met raamcontact\n\nKies op het tabblad Variabelen de statussen van temperature, window en heating. De gewenste temperatuur is de lokale variabele target.",
-    "templateAlarmNote": "Alarmsysteem\n\n• armed: schakelaar, bijv. vanuit vis of een keypad\n• de voordeur start de inloopvertraging\n• ramen gaan meteen af\n• 3× paniekknop: alarm, ook uitgeschakeld\n\nKies de statussen op het tabblad Variabelen."
+    "templateAlarmNote": "Alarmsysteem\n\n• armed: schakelaar, bijv. vanuit vis of een keypad\n• de voordeur start de inloopvertraging\n• ramen gaan meteen af\n• 3× paniekknop: alarm, ook uitgeschakeld\n\nKies de statussen op het tabblad Variabelen.",
+    "Former versions": "Eerdere versies",
+    "backupsHelp": "Bij het opslaan van de grafiek wordt de vorige versie bewaard, de laatste %s ervan. Herstellen laadt een versie als niet-opgeslagen wijziging in de editor: bekijk haar, maak haar ongedaan met Ctrl+Z of sla haar op.",
+    "Restore": "Herstellen",
+    "No former versions yet, they are kept when the chart is saved": "Nog geen eerdere versies, ze worden bewaard bij het opslaan van de grafiek"
 }

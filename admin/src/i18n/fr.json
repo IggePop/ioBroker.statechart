@@ -242,5 +242,9 @@
     "Motion detector": "Détecteur de mouvement",
     "templateLightNote": "Lumière avec détecteur de mouvement\n\nChoisissez les états de motion et light dans l'onglet Variables, puis démarrez le graphique avec ▶ dans la liste des graphiques.",
     "templateHeatingNote": "Chauffage avec contact de fenêtre\n\nChoisissez les états de temperature, window et heating dans l'onglet Variables. La température de consigne est la variable locale target.",
-    "templateAlarmNote": "Système d'alarme\n\n• armed : interrupteur, p. ex. depuis vis ou un clavier\n• la porte d'entrée lance la temporisation d'entrée\n• les fenêtres déclenchent immédiatement\n• 3× bouton de panique : alarme, même désarmé\n\nChoisissez les états dans l'onglet Variables."
+    "templateAlarmNote": "Système d'alarme\n\n• armed : interrupteur, p. ex. depuis vis ou un clavier\n• la porte d'entrée lance la temporisation d'entrée\n• les fenêtres déclenchent immédiatement\n• 3× bouton de panique : alarme, même désarmé\n\nChoisissez les états dans l'onglet Variables.",
+    "Former versions": "Versions précédentes",
+    "backupsHelp": "À l'enregistrement du graphique, la version précédente est conservée, les %s dernières. Restaurer charge une version dans l'éditeur comme modification non enregistrée : consultez-la, annulez-la avec Ctrl+Z ou enregistrez-la.",
+    "Restore": "Restaurer",
+    "No former versions yet, they are kept when the chart is saved": "Pas encore de versions précédentes, elles sont conservées à l'enregistrement du graphique"
 }

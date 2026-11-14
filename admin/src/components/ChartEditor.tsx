@@ -61,6 +61,7 @@ import { I18n } from "@iobroker/adapter-react-v5";
 import type { AdminConnection, IobTheme } from "@iobroker/adapter-react-v5";
 import { useEditHistory } from "../edit-history";
 import { ELEMENT_STYLES } from "../element-style";
+import type { ChartBackup } from "../backups";
 import type { ElementColor } from "../element-style";
 
 import StateNode from "./StateNode";
@@ -272,6 +273,8 @@ interface ChartEditorProps {
     onSave: (chart: Chart) => Promise<void>;
     /** Shows an error, e.g. if the image of the chart cannot be created */
     onError: (message: string) => void;
+    /** The former versions of the chart, newest first, see backups.ts */
+    backups: ChartBackup[];
     /** Called when the editor gets or loses unsaved changes */
     onChangedChange?: (changed: boolean) => void;
     /** Set to a function which saves the chart */
@@ -294,6 +297,7 @@ function ChartEditorInner({
     onClearHistory,
     onSave,
     onError,
+    backups,
     onChangedChange,
     saveRef,
     socket,
@@ -799,6 +803,20 @@ function ChartEditorInner({
             setHasClipboard(true);
         }
         return !!content;
+    };
+
+    /**
+     * Loads a former version of the chart into the editor, as unsaved change which can be undone. Running or paused
+     * is kept, it is only changed with the button in the list of charts.
+     *
+     * @param backup The former version
+     */
+    const restoreBackup = (backup: Chart): void => {
+        record();
+        const flow = chartToFlow(backup);
+        setChart({ ...backup, enabled: chart.enabled });
+        setNodes(flow.nodes);
+        setEdges(flow.edges);
     };
 
     /** Deletes the selected states, function blocks, notes and transitions, like the Delete key */
@@ -1405,6 +1423,8 @@ function ChartEditorInner({
                             functions={functions}
                             declarations={declarations}
                             onChartChange={updateChart}
+                            backups={backups}
+                            onRestoreBackup={restoreBackup}
                             onStateChange={updateState}
                             onTransitionChange={updateTransition}
                             onFunctionChange={updateFunction}

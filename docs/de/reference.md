@@ -323,6 +323,14 @@ Die Leiste oben auf der Zeichenfläche zeigt die simulierte Zeit, den nächsten 
 Importierte Charts sind **angehalten**: Ihre Variablen können auf Datenpunkte eines anderen Systems verweisen. Prüfe sie
 im Reiter **Variablen** und starte das Chart dann mit dem Knopf in der Chart-Liste.
 
+## Frühere Versionen
+
+Beim Speichern eines Charts wird die Version davor aufbewahrt, die letzten 10 davon. Sie stehen unter **Frühere
+Versionen** in den Eigenschaften des Charts (Klick auf eine freie Stelle der Zeichenfläche), mit dem Zeitpunkt, zu dem
+sie ersetzt wurden. **Wiederherstellen** lädt eine Version als ungespeicherte Änderung in den Editor: ansehen, mit
+Strg+Z zurücknehmen oder speichern. Ob das Chart läuft oder angehalten ist, ändert sich dadurch nicht. Die früheren
+Versionen liegen im Objekt des Charts und sind nicht Teil exportierter Dateien.
+
 ## Vom Adapter angelegte Datenpunkte
 
 Für jedes Chart legt der Adapter unter `statechart.<instanz>.charts.<chart>` an:

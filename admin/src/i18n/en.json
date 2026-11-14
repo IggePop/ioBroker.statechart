@@ -242,5 +242,9 @@
     "Motion detector": "Motion detector",
     "templateLightNote": "Light with motion detector\n\nSelect the states of motion and light in the tab Variables, then start the chart with ▶ in the list of charts.",
     "templateHeatingNote": "Heating with window contact\n\nSelect the states of temperature, window and heating in the tab Variables. The target temperature is the local variable target.",
-    "templateAlarmNote": "Alarm system\n\n• armed: switch, e.g. from vis or a keypad\n• the front door starts the entry delay\n• windows trigger at once\n• 3× panic button: alarm, also when disarmed\n\nSelect the states in the tab Variables."
+    "templateAlarmNote": "Alarm system\n\n• armed: switch, e.g. from vis or a keypad\n• the front door starts the entry delay\n• windows trigger at once\n• 3× panic button: alarm, also when disarmed\n\nSelect the states in the tab Variables.",
+    "Former versions": "Former versions",
+    "backupsHelp": "When the chart is saved, the version before is kept, the last %s of them. Restore loads a version into the editor as unsaved change: look at it, undo it with Ctrl+Z, or save it.",
+    "Restore": "Restore",
+    "No former versions yet, they are kept when the chart is saved": "No former versions yet, they are kept when the chart is saved"
 }

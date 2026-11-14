@@ -39,6 +39,7 @@ of the running chart on the top left, the variables on the right.*
 - Static check of the chart: states which never become active, transitions which are never taken, unused variables
 - Several independent charts per instance, which can be paused, reset and woken up by states (e.g. from vis)
 - Import and export of charts as JSON files, export of the whole chart as PNG image (e.g. for the forum)
+- The last 10 versions of each chart are kept when it is saved, and can be restored
 - Comments on states, transitions and function blocks, notes on the canvas, and a color per state
 - States and transitions can be disabled, like commented out: they stay in the chart, but are not executed
 - Per input: wake up on every update or only on changes, filter by ack, debounce
@@ -123,6 +124,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) the last 10 versions of a chart are kept when it is saved, and can be restored in the properties of the chart
 * (Igge) fixed: saving merged the chart with the stored one, so deleted states, transitions or variables and switched off options could remain
 * (Igge) templates for new charts: light with motion detector, heating with window contact, alarm system
 * (Igge) warning if an input or output has no state, or its state does not exist, in the editor and in the log

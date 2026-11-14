@@ -16,6 +16,8 @@ import type {
 } from "../../../src/lib/chart-model";
 import CodeEditor from "./CodeEditor";
 import InfoTip, { OptionCheckbox, infoSlotProps } from "./InfoTip";
+import { MAX_BACKUPS } from "../backups";
+import type { ChartBackup } from "../backups";
 import type { Completion } from "./CodeEditor";
 import { DEFAULT_STATE_COLOR, STATE_COLORS } from "../flow-model";
 import { ELEMENT_STYLES } from "../element-style";
@@ -610,9 +612,13 @@ function FunctionProperties({
 function ChartProperties({
     chart,
     onChange,
+    backups,
+    onRestoreBackup,
 }: {
     chart: Chart;
     onChange: (patch: Partial<Chart>) => void;
+    backups: ChartBackup[];
+    onRestoreBackup: (chart: Chart) => void;
 }): React.JSX.Element {
     return (
         <>
@@ -657,7 +663,69 @@ function ChartProperties({
                 onChange={checked => onChange({ orthogonalTransitions: checked || undefined })}
                 info={I18n.t("rightAngledHelp")}
             />
+            <BackupList
+                backups={backups}
+                onRestore={onRestoreBackup}
+            />
         </>
+    );
+}
+
+/**
+ * The former versions of the chart, each can be loaded into the editor
+ *
+ * @param props Component properties
+ * @param props.backups The former versions, newest first
+ * @param props.onRestore Loads a version into the editor, as unsaved change
+ */
+function BackupList({
+    backups,
+    onRestore,
+}: {
+    backups: ChartBackup[];
+    onRestore: (chart: Chart) => void;
+}): React.JSX.Element {
+    return (
+        <Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography
+                    variant="subtitle2"
+                    sx={{ flex: 1 }}
+                >
+                    {I18n.t("Former versions")}
+                </Typography>
+                <InfoTip text={I18n.t("backupsHelp", String(MAX_BACKUPS))} />
+            </Box>
+            {backups.length ? (
+                backups.map(backup => (
+                    <Box
+                        key={backup.ts}
+                        sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.25 }}
+                    >
+                        <Typography
+                            variant="body2"
+                            sx={{ flex: 1 }}
+                        >
+                            {/* the time the version was replaced, in the format of the browser */}
+                            {new Date(backup.ts).toLocaleString()}
+                        </Typography>
+                        <Button
+                            size="small"
+                            onClick={() => onRestore(backup.chart)}
+                        >
+                            {I18n.t("Restore")}
+                        </Button>
+                    </Box>
+                ))
+            ) : (
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                >
+                    {I18n.t("No former versions yet, they are kept when the chart is saved")}
+                </Typography>
+            )}
+        </Box>
     );
 }
 
@@ -687,6 +755,10 @@ interface PropertiesPanelProps {
     /** Names declared in all function blocks */
     declarations: Declaration[];
     onChartChange: (patch: Partial<Chart>) => void;
+    /** The former versions of the chart, newest first */
+    backups: ChartBackup[];
+    /** Loads a former version into the editor, as unsaved change */
+    onRestoreBackup: (chart: Chart) => void;
     onStateChange: (id: string, patch: Partial<ChartState>) => void;
     onTransitionChange: (id: string, patch: Partial<ChartTransition>) => void;
     onFunctionChange: (id: string, patch: Partial<ChartFunction>) => void;
@@ -754,6 +826,8 @@ export default function PropertiesPanel(props: PropertiesPanelProps): React.JSX.
             <ChartProperties
                 chart={chart}
                 onChange={props.onChartChange}
+                backups={props.backups}
+                onRestoreBackup={props.onRestoreBackup}
             />
         );
     }

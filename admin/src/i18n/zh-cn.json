@@ -242,5 +242,9 @@
     "Motion detector": "运动传感器",
     "templateLightNote": "带运动传感器的灯光\n\n在“变量”选项卡中选择 motion 和 light 的状态，然后在图表列表中用 ▶ 启动图表。",
     "templateHeatingNote": "带窗户触点的供暖\n\n在“变量”选项卡中选择 temperature、window 和 heating 的状态。目标温度是局部变量 target。",
-    "templateAlarmNote": "报警系统\n\n• armed：开关，例如来自 vis 或键盘\n• 前门触发进入延时\n• 窗户立即触发\n• 按 3 次紧急按钮：报警，撤防时也有效\n\n在“变量”选项卡中选择状态。"
+    "templateAlarmNote": "报警系统\n\n• armed：开关，例如来自 vis 或键盘\n• 前门触发进入延时\n• 窗户立即触发\n• 按 3 次紧急按钮：报警，撤防时也有效\n\n在“变量”选项卡中选择状态。",
+    "Former versions": "以前的版本",
+    "backupsHelp": "保存图表时会保留之前的版本，最多保留最近 %s 个。“恢复”会将某个版本作为未保存的更改载入编辑器：可以查看，用 Ctrl+Z 撤销，或保存。",
+    "Restore": "恢复",
+    "No former versions yet, they are kept when the chart is saved": "尚无以前的版本，保存图表时会保留"
 }

@@ -242,5 +242,9 @@
     "Motion detector": "Sensore di movimento",
     "templateLightNote": "Luce con sensore di movimento\n\nScegli gli stati di motion e light nella scheda Variabili, poi avvia il grafico con ▶ nell'elenco dei grafici.",
     "templateHeatingNote": "Riscaldamento con contatto finestra\n\nScegli gli stati di temperature, window e heating nella scheda Variabili. La temperatura desiderata è la variabile locale target.",
-    "templateAlarmNote": "Sistema d'allarme\n\n• armed: interruttore, ad es. da vis o da una tastiera\n• la porta d'ingresso avvia il ritardo di ingresso\n• le finestre scattano subito\n• 3× pulsante antipanico: allarme, anche disinserito\n\nScegli gli stati nella scheda Variabili."
+    "templateAlarmNote": "Sistema d'allarme\n\n• armed: interruttore, ad es. da vis o da una tastiera\n• la porta d'ingresso avvia il ritardo di ingresso\n• le finestre scattano subito\n• 3× pulsante antipanico: allarme, anche disinserito\n\nScegli gli stati nella scheda Variabili.",
+    "Former versions": "Versioni precedenti",
+    "backupsHelp": "Quando il grafico viene salvato, la versione precedente viene conservata, le ultime %s. Ripristina carica una versione nell'editor come modifica non salvata: guardala, annullala con Ctrl+Z o salvala.",
+    "Restore": "Ripristina",
+    "No former versions yet, they are kept when the chart is saved": "Nessuna versione precedente, vengono conservate quando il grafico viene salvato"
 }

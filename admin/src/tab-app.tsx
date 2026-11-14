@@ -34,6 +34,7 @@ import "@xyflow/react/dist/style.css";
 
 import ChartEditor from "./components/ChartEditor";
 import { getTemplates } from "./templates";
+import { addBackup, getBackups } from "./backups";
 import { ELEMENT_STYLES } from "./element-style";
 import ResizablePanel from "./components/ResizablePanel";
 import { downloadJson } from "./download";
@@ -398,10 +399,15 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             }
             // running or paused is only changed with the button in the chart list, the editor may have an old value
             const enabled = obj.native?.chart?.enabled ?? chart.enabled;
+            const newChart = { ...chart, enabled };
             await this.socket.setObject(id, {
                 ...obj,
                 common: { ...obj.common, name: chart.name },
-                native: { ...obj.native, chart: { ...chart, enabled } },
+                native: {
+                    ...obj.native,
+                    chart: newChart,
+                    backups: addBackup(obj.native?.backups, obj.native?.chart, newChart, Date.now()),
+                },
             });
         } catch (err) {
             this.showError(`${I18n.t("Cannot save chart")}: ${err}`);
@@ -743,6 +749,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                             onClearHistory={() => this.clearHistory(selected)}
                             onSave={newChart => this.saveChart(selected, newChart)}
                             onError={message => this.showError(message)}
+                            backups={getBackups(this.state.charts[selected]?.native?.backups)}
                             onChangedChange={this.onChangedChange}
                             saveRef={this.saveRef}
                             socket={this.socket}

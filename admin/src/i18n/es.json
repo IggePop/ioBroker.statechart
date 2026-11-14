@@ -242,5 +242,9 @@
     "Motion detector": "Detector de movimiento",
     "templateLightNote": "Luz con detector de movimiento\n\nElige los estados de motion y light en la pestaña Variables y después inicia el gráfico con ▶ en la lista de gráficos.",
     "templateHeatingNote": "Calefacción con contacto de ventana\n\nElige los estados de temperature, window y heating en la pestaña Variables. La temperatura deseada es la variable local target.",
-    "templateAlarmNote": "Sistema de alarma\n\n• armed: interruptor, p. ej. desde vis o un teclado\n• la puerta de entrada inicia el retardo de entrada\n• las ventanas disparan al instante\n• 3× botón de pánico: alarma, también desarmado\n\nElige los estados en la pestaña Variables."
+    "templateAlarmNote": "Sistema de alarma\n\n• armed: interruptor, p. ej. desde vis o un teclado\n• la puerta de entrada inicia el retardo de entrada\n• las ventanas disparan al instante\n• 3× botón de pánico: alarma, también desarmado\n\nElige los estados en la pestaña Variables.",
+    "Former versions": "Versiones anteriores",
+    "backupsHelp": "Al guardar el gráfico se conserva la versión anterior, las últimas %s. Restaurar carga una versión en el editor como cambio sin guardar: revísala, deshazla con Ctrl+Z o guárdala.",
+    "Restore": "Restaurar",
+    "No former versions yet, they are kept when the chart is saved": "Aún no hay versiones anteriores, se conservan al guardar el gráfico"
 }

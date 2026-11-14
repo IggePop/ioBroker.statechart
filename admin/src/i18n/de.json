@@ -242,5 +242,9 @@
     "Motion detector": "Bewegungsmelder",
     "templateLightNote": "Licht mit Bewegungsmelder\n\nWähle im Reiter Variablen die Datenpunkte von motion und light und starte das Chart dann mit ▶ in der Chart-Liste.",
     "templateHeatingNote": "Heizung mit Fensterkontakt\n\nWähle im Reiter Variablen die Datenpunkte von temperature, window und heating. Die Solltemperatur ist die lokale Variable target.",
-    "templateAlarmNote": "Alarmanlage\n\n• armed: Schalter, z.B. aus vis oder ein Keypad\n• die Haustür startet die Eingangsverzögerung\n• Fenster lösen sofort aus\n• 3× Panik-Taster: Alarm, auch unscharf\n\nWähle die Datenpunkte im Reiter Variablen."
+    "templateAlarmNote": "Alarmanlage\n\n• armed: Schalter, z.B. aus vis oder ein Keypad\n• die Haustür startet die Eingangsverzögerung\n• Fenster lösen sofort aus\n• 3× Panik-Taster: Alarm, auch unscharf\n\nWähle die Datenpunkte im Reiter Variablen.",
+    "Former versions": "Frühere Versionen",
+    "backupsHelp": "Beim Speichern wird die Version davor aufbewahrt, die letzten %s davon. Wiederherstellen lädt eine Version als ungespeicherte Änderung in den Editor: ansehen, mit Strg+Z zurücknehmen oder speichern.",
+    "Restore": "Wiederherstellen",
+    "No former versions yet, they are kept when the chart is saved": "Noch keine früheren Versionen, sie werden beim Speichern aufbewahrt"
 }

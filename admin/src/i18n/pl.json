@@ -242,5 +242,9 @@
     "Motion detector": "Czujnik ruchu",
     "templateLightNote": "Światło z czujnikiem ruchu\n\nWybierz stany motion i light na karcie Zmienne, a następnie uruchom wykres przyciskiem ▶ na liście wykresów.",
     "templateHeatingNote": "Ogrzewanie z kontaktronem okna\n\nWybierz stany temperature, window i heating na karcie Zmienne. Temperatura zadana to zmienna lokalna target.",
-    "templateAlarmNote": "System alarmowy\n\n• armed: przełącznik, np. z vis lub klawiatury\n• drzwi wejściowe uruchamiają opóźnienie wejścia\n• okna wyzwalają od razu\n• 3× przycisk paniki: alarm, także rozbrojony\n\nWybierz stany na karcie Zmienne."
+    "templateAlarmNote": "System alarmowy\n\n• armed: przełącznik, np. z vis lub klawiatury\n• drzwi wejściowe uruchamiają opóźnienie wejścia\n• okna wyzwalają od razu\n• 3× przycisk paniki: alarm, także rozbrojony\n\nWybierz stany na karcie Zmienne.",
+    "Former versions": "Poprzednie wersje",
+    "backupsHelp": "Przy zapisie wykresu zachowywana jest poprzednia wersja, ostatnie %s. Przywróć wczytuje wersję do edytora jako niezapisaną zmianę: obejrzyj ją, cofnij Ctrl+Z albo zapisz.",
+    "Restore": "Przywróć",
+    "No former versions yet, they are kept when the chart is saved": "Brak jeszcze poprzednich wersji, są zachowywane przy zapisie wykresu"
 }
