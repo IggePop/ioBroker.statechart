@@ -43,6 +43,7 @@ import {
     ContentPaste as PasteIcon,
     DeleteOutline as DeleteIcon,
     FileDownload as ExportIcon,
+    FitScreen as FitViewIcon,
     Functions as FunctionIcon,
     DataObject as VariablesIcon,
     GridOff as GridOffIcon,
@@ -142,6 +143,9 @@ const SNAP_TO_GRID_KEY = "statechart.snapToGrid";
 
 /** Distance of the dots of the background, the states snap to them */
 const GRID_SIZE = 20;
+
+/** Zooming to show the whole chart does not enlarge small charts beyond their normal size */
+const FIT_VIEW_OPTIONS = { maxZoom: 1 };
 
 /**
  * @param key Key in the browser storage
@@ -1254,6 +1258,12 @@ function ChartEditorInner({
                         color={snapToGrid ? "primary" : "default"}
                         onClick={toggleSnapToGrid}
                     />
+                    <ToolButton
+                        title={I18n.t("Fit view")}
+                        icon={<FitViewIcon />}
+                        disabled={!nodes.length}
+                        onClick={() => void reactFlow.fitView({ ...FIT_VIEW_OPTIONS, duration: 300 })}
+                    />
                     {/* output and running the chart on the right */}
                     <Box sx={{ flex: 1 }} />
                     <ToolButton
@@ -1336,10 +1346,10 @@ function ChartEditorInner({
                         snapGrid={[GRID_SIZE, GRID_SIZE]}
                         deleteKeyCode={["Delete", "Backspace"]}
                         fitView
-                        fitViewOptions={{ maxZoom: 1 }}
+                        fitViewOptions={FIT_VIEW_OPTIONS}
                     >
                         <Background gap={GRID_SIZE} />
-                        <Controls />
+                        <Controls fitViewOptions={FIT_VIEW_OPTIONS} />
                         <MiniMap
                             pannable
                             zoomable

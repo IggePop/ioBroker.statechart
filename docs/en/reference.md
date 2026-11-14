@@ -17,7 +17,7 @@ The toolbar above the chart is grouped by tasks, the tooltip of each icon shows 
 | History | **Undo** (Ctrl+Z), **Redo** (Ctrl+Y) |
 | Clipboard | **Cut** (Ctrl+X), **Copy** (Ctrl+C), **Paste** (Ctrl+V), also between charts, and **Delete** (Del) |
 | Add | **Add state**, **Add function**, **Add note**, in the color of the element they add |
-| Layout | **Align** the selected elements (menu), **Snap to the grid** on and off |
+| Layout | **Align** the selected elements (menu), **Snap to the grid** on and off, **Show everything** (zooms and scrolls so that the whole chart is visible) |
 | Output (right) | **Show code**, **Export chart** (JSON), **Export as image** (PNG), see [Import and export](#import-and-export) |
 | Running (right) | **Live values** on and off, **Simulation** start and stop, see [Watching a running chart](#watching-a-running-chart) and [Simulation](#simulation) |
 
