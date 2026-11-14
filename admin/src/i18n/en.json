@@ -177,6 +177,7 @@
     "No matching variables": "No matching variables",
     "No variables": "None yet",
     "No state selected": "No state selected",
+    "The state \"%s\" does not exist": "The state \"%s\" does not exist",
     "Wake up options": "Wake up options",
     "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input",
     "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)",

@@ -376,6 +376,16 @@ function validateChart(fullChart, options = {}) {
       seen.add(name);
     }
   }
+  for (const symbol of chart.symbols) {
+    if (symbol.scope !== "local" && !symbol.stateId?.trim()) {
+      problems.push({
+        kind: "symbol",
+        id: symbol.name,
+        field: "",
+        diagnostic: createDiagnostic(0, 0, "warning", "No state selected")
+      });
+    }
+  }
   for (const { kind, id, severity, key, args } of options.analyze === false ? [] : (0, import_chart_analysis.analyzeChart)(chart)) {
     problems.push({
       kind,

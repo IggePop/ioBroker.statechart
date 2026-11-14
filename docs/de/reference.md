@@ -238,6 +238,9 @@ debug.
 
 - **Code:** Syntaxfehler, unbekannte Variablen und Events, ungültige Zeitlogik, Schreiben eines Eingangs (Warnung).
   Sie werden auch in den Code-Editoren unterstrichen.
+- **Datenpunkte von Eingängen und Ausgängen** (Warnung): Es ist kein Datenpunkt gewählt, oder er existiert in ioBroker
+  nicht, z.B. wegen eines Tippfehlers. Dann wird das Chart von dem Eingang nie geweckt, oder es schreibt ins Leere.
+  Der Adapter schreibt beim Start des Charts außerdem eine Warnung ins Log.
 - **Zustände, die nie aktiv werden** (Warnung): Kein Übergang führt zu ihnen, und sie werden auch nicht als
   Startzustand betreten. Gemeldet wird nur der oberste, seine Unterzustände werden ebenfalls nie aktiv.
 - **Übergänge, die nie genommen werden** (Warnung): Ein Übergang davor (mit höherer Priorität) gilt immer, d.h. er hat

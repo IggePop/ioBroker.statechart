@@ -177,6 +177,7 @@
     "No matching variables": "没有匹配的变量",
     "No variables": "暂无",
     "No state selected": "未选择数据点",
+    "The state \"%s\" does not exist": "状态“%s”不存在",
     "Wake up options": "唤醒选项",
     "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "未知输入 \"%s\",请使用时间单位 (msec, sec, min) 或输入的名称",
     "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "无效的时间表达式 \"%s\",应为例如 after(5, sec)、every(10, min)、after(3, button)、after(5, min, condition) 或 at(\"sunset\", -30)",

@@ -122,6 +122,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) warning if an input or output has no state, or its state does not exist, in the editor and in the log
 * (Igge) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact
 * (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
 

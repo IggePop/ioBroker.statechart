@@ -177,6 +177,7 @@
     "No matching variables": "Geen overeenkomende variabelen",
     "No variables": "Nog geen",
     "No state selected": "Geen staat geselecteerd",
+    "The state \"%s\" does not exist": "De status \"%s\" bestaat niet",
     "Wake up options": "Wakker worden opties",
     "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Onbekende invoer \"%s\", gebruik een tijdseenheid (msec, sec, min) of de naam van een invoer",
     "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "Ongeldige tijdsexpressie \"%s\", verwacht bijv. after(5, sec), every(10, min), after(3, button), after(5, min, condition) of at(\"sunset\", -30)",

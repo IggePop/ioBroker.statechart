@@ -156,6 +156,30 @@ class Statechart extends utils.Adapter {
         this.runtimes.set(chartId, runtime);
         this.updateSubscriptions();
         this.log.info(`Chart "${chart.name}" started`);
+        await this.warnMissingStates(chart);
+    }
+
+    /**
+     * Logs a warning for each input and output whose state does not exist, e.g. because of a typing error: the chart
+     * runs, but never wakes up by the input, or writes into nothing
+     *
+     * @param chart The chart
+     */
+    private async warnMissingStates(chart: Chart): Promise<void> {
+        for (const symbol of chart.symbols) {
+            const id = symbol.stateId?.trim();
+            if (symbol.scope === "local" || !id) {
+                // an empty state is reported by the validation of the chart
+                continue;
+            }
+            try {
+                if (!(await this.getForeignObjectAsync(id))) {
+                    this.log.warn(`[${chart.name}] Variable ${symbol.name}: the state "${id}" does not exist`);
+                }
+            } catch (err) {
+                this.log.debug(`[${chart.name}] Cannot check the state "${id}": ${err}`);
+            }
+        }
     }
 
     /**

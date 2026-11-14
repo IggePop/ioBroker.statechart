@@ -177,6 +177,7 @@
     "No matching variables": "Немає відповідних змінних",
     "No variables": "Поки немає",
     "No state selected": "Стан не вибрано",
+    "The state \"%s\" does not exist": "Стан «%s» не існує",
     "Wake up options": "Параметри пробудження",
     "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Невідомий вхід \"%s\", використовуйте одиницю часу (msec, sec, min) або назву входу",
     "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "Недійсний часовий вираз \"%s\", очікується, наприклад, after(5, sec), every(10, min), after(3, button), after(5, min, condition) або at(\"sunset\", -30)",

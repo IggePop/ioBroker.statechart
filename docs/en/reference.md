@@ -228,6 +228,9 @@ chart starts, the adapter writes errors and warnings to the log, hints only with
 
 - **Code:** syntax errors, unknown variables and events, invalid temporal logic, writing an input (warning). They are
   also underlined in the code editors.
+- **States of inputs and outputs** (warning): no state is selected, or the state does not exist in ioBroker, e.g.
+  because of a typing error. Then the chart never wakes up by the input, or writes into nothing. The adapter also
+  writes a warning to the log when the chart starts.
 - **States which never become active** (warning): no transition leads to them, and they are not entered as initial
   state. Only the topmost one is reported, its sub states are never active either.
 - **Transitions which are never taken** (warning): a transition before them (higher priority) is always valid, i.e. it

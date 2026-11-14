@@ -917,8 +917,43 @@ function ChartEditorInner({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [functionCodes]);
 
+    /**
+     * States of inputs and outputs which do not exist in ioBroker, e.g. because of a typing error. Checked shortly
+     * after the last change, not on every key press.
+     */
+    const [missingStates, setMissingStates] = useState<Set<string>>(() => new Set());
+    const stateIdsKey = [
+        ...new Set(chart.symbols.filter(s => s.scope !== "local" && s.stateId?.trim()).map(s => s.stateId!.trim())),
+    ]
+        .sort()
+        .join("\n");
+    useEffect(() => {
+        const ids = stateIdsKey ? stateIdsKey.split("\n") : [];
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            void Promise.all(
+                ids.map(async id => {
+                    try {
+                        return (await socket.getObject(id)) ? null : id;
+                    } catch {
+                        // e.g. no permission: no warning, the adapter checks it as well
+                        return null;
+                    }
+                }),
+            ).then(results => {
+                if (!cancelled) {
+                    setMissingStates(new Set(results.filter((id): id is string => !!id)));
+                }
+            });
+        }, 500);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [stateIdsKey, socket]);
+
     /** translated problems by state/transition/function ID, and of the variables by name */
-    const { problems, symbolProblems } = useMemo(() => {
+    const { problems, symbolProblems: checkedSymbolProblems } = useMemo(() => {
         const byId = new Map<string, ProblemList>();
         const byName = new Map<string, ProblemList>();
         for (const { kind, id, field, diagnostic } of validateChart(flowToChart(chart, nodes, edges))) {
@@ -929,6 +964,20 @@ function ChartEditorInner({
         return { problems: byId, symbolProblems: byName };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [codeSignature]);
+
+    /** the problems of the variables, with the states which do not exist */
+    const symbolProblems = useMemo(() => {
+        const byName = new Map<string, ProblemList>(
+            [...checkedSymbolProblems].map(([name, list]) => [name, { ...list, messages: [...list.messages] }]),
+        );
+        for (const symbol of chart.symbols) {
+            const id = symbol.stateId?.trim();
+            if (symbol.scope !== "local" && id && missingStates.has(id)) {
+                addProblem(byName, symbol.name, I18n.t('The state "%s" does not exist', id), "warning");
+            }
+        }
+        return byName;
+    }, [checkedSymbolProblems, chart.symbols, missingStates]);
 
     /**
      * Makes a state the initial state of its level: of its parent, or of the chart for top level states

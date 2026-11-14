@@ -232,6 +232,31 @@ describe("chart-validation => validateChart", () => {
     });
 });
 
+describe("chart-validation => states of inputs and outputs", () => {
+    it("warns about inputs and outputs without state, locals need none", () => {
+        const problems = validateChart(
+            {
+                version: 1,
+                name: "Test",
+                enabled: true,
+                symbols: [
+                    { name: "motion", scope: "input", stateId: "" },
+                    { name: "light", scope: "output" },
+                    { name: "count", scope: "local", initial: 0 },
+                    { name: "button", scope: "input", stateId: "test.0.button" },
+                ],
+                states: [{ id: "s1", name: "S1", x: 0, y: 0 }],
+                transitions: [],
+            },
+            { analyze: false },
+        );
+        expect(problems.map(p => `${p.kind} ${p.id}: ${p.diagnostic.message}`)).to.deep.equal([
+            "symbol motion: No state selected",
+            "symbol light: No state selected",
+        ]);
+    });
+});
+
 describe("chart-validation => disabled states and transitions", () => {
     it("does not check disabled elements, and warns about a disabled initial state", () => {
         const problems = validateChart(

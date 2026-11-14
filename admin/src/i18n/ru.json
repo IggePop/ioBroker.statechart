@@ -177,6 +177,7 @@
     "No matching variables": "Нет соответствующих переменных",
     "No variables": "Пока нет",
     "No state selected": "Штат не выбран",
+    "The state \"%s\" does not exist": "Состояние «%s» не существует",
     "Wake up options": "Варианты пробуждения",
     "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Неизвестный вход «%s», используйте единицу времени (мсек, сек, мин) или имя входа.",
     "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "Недопустимое временное выражение \"%s\", ожидается, например, after(5, sec), every(10, min), after(3, button), after(5, min, condition) или at(\"sunset\", -30)",

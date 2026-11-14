@@ -177,6 +177,7 @@
     "No matching variables": "Keine passenden Variablen",
     "No variables": "Noch keine",
     "No state selected": "Kein Datenpunkt ausgewählt",
+    "The state \"%s\" does not exist": "Der Datenpunkt „%s“ existiert nicht",
     "Wake up options": "Optionen zum Aufwecken",
     "Unknown input \"%s\", use a time unit (msec, sec, min) or the name of an input": "Unbekannter Eingang \"%s\", verwende eine Zeiteinheit (msec, sec, min) oder den Namen eines Eingangs",
     "Invalid temporal expression \"%s\", expected e.g. after(5, sec), every(10, min), after(3, button), after(5, min, condition) or at(\"sunset\", -30)": "Ungültiger Zeitausdruck \"%s\", erwartet z.B. after(5, sec), every(10, min), after(3, taster), after(5, min, bedingung) oder at(\"sunset\", -30)",
