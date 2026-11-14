@@ -14,7 +14,7 @@ import {
 } from "@mui/icons-material";
 import { DialogSelectID, I18n } from "@iobroker/adapter-react-v5";
 import type { AdminConnection, IobTheme } from "@iobroker/adapter-react-v5";
-import InfoTip, { infoSlotProps } from "./InfoTip";
+import InfoTip, { infoSlotProps, TapTooltip } from "./InfoTip";
 import type { ChartSymbol, SymbolScope } from "../../../src/lib/chart-model";
 import { formatValue } from "./LiveValuesPanel";
 import ProblemBadge from "./ProblemBadge";
@@ -253,12 +253,12 @@ function SymbolRow({
                 </Typography>
             )}
             {problem ? (
-                <Tooltip title={problem}>
+                <TapTooltip text={problem}>
                     <ErrorIcon
                         fontSize="small"
                         color="error"
                     />
-                </Tooltip>
+                </TapTooltip>
             ) : (
                 <ProblemBadge
                     problems={hints}

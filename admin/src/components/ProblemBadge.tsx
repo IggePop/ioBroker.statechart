@@ -1,8 +1,8 @@
 import React from "react";
-import { Tooltip } from "@mui/material";
 import type { SxProps } from "@mui/material";
 import { ErrorOutline as ErrorIcon, InfoOutlined as InfoIcon, WarningAmber as WarningIcon } from "@mui/icons-material";
 import type { Severity } from "../../../src/lib/chart-analysis";
+import { TapTooltip } from "./InfoTip";
 
 /** The translated problems of a state, transition, function block or variable */
 export interface ProblemList {
@@ -43,7 +43,7 @@ export function getProblemColor(problems: ProblemList | undefined): string | und
 }
 
 /**
- * Shows the problems of an element as icon of their severity, the messages are shown as tooltip
+ * Shows the problems of an element as icon of their severity, the messages are shown as tooltip, also on tap
  *
  * @param props Component properties
  * @param props.problems The problems, nothing is shown if there are none
@@ -62,12 +62,12 @@ export default function ProblemBadge({
     const Icon = { error: ErrorIcon, warning: WarningIcon, info: InfoIcon }[problems.severity];
     const text = problems.messages.join("\n");
     return (
-        <Tooltip title={<span style={{ whiteSpace: "pre-wrap" }}>{text}</span>}>
+        <TapTooltip text={text}>
             <Icon
                 color={problems.severity}
-                sx={{ fontSize: 16, cursor: "help", flexShrink: 0, ...sx }}
+                sx={{ fontSize: 16, flexShrink: 0, ...sx }}
                 aria-label={text}
             />
-        </Tooltip>
+        </TapTooltip>
     );
 }

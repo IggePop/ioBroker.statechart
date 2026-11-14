@@ -1,10 +1,10 @@
 import React from "react";
-import { Tooltip } from "@mui/material";
 import type { SxProps } from "@mui/material";
 import { ChatBubbleOutline as CommentIcon } from "@mui/icons-material";
+import { TapTooltip } from "./InfoTip";
 
 /**
- * Shows that an element has a comment, the comment itself is shown as tooltip
+ * Shows that an element has a comment, the comment itself is shown as tooltip, also on tap
  *
  * @param props Component properties
  * @param props.comment The comment, nothing is shown if it is empty
@@ -21,11 +21,11 @@ export default function CommentBadge({
         return null;
     }
     return (
-        <Tooltip title={<span style={{ whiteSpace: "pre-wrap" }}>{comment.trim()}</span>}>
+        <TapTooltip text={comment.trim()}>
             <CommentIcon
-                sx={{ fontSize: 14, opacity: 0.7, cursor: "help", ...sx }}
+                sx={{ fontSize: 14, opacity: 0.7, ...sx }}
                 aria-label={comment}
             />
-        </Tooltip>
+        </TapTooltip>
     );
 }
