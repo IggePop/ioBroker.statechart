@@ -123,6 +123,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (Igge) fixed: saving merged the chart with the stored one, so deleted states, transitions or variables and switched off options could remain
 * (Igge) templates for new charts: light with motion detector, heating with window contact, alarm system
 * (Igge) warning if an input or output has no state, or its state does not exist, in the editor and in the log
 * (Igge) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact

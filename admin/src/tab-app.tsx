@@ -388,12 +388,20 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
      * @param chart The chart to save
      */
     private async saveChart(id: string, chart: Chart): Promise<void> {
-        // running or paused is only changed with the button in the chart list, the editor may have an old value
-        const enabled = this.state.charts[id]?.native?.chart?.enabled ?? chart.enabled;
         try {
-            await this.socket.extendObject(id, {
-                common: { name: chart.name },
-                native: { chart: { ...chart, enabled } },
+            // the chart is replaced, not merged: extendObject() merges objects and even arrays element by element,
+            // so deleted states or transitions and switched off options would remain
+            // charts are stored as channels, see chart-model.ts
+            const obj = (await this.socket.getObject(id)) as ioBroker.ChannelObject | null | undefined;
+            if (!obj) {
+                throw new Error(`${id} does not exist`);
+            }
+            // running or paused is only changed with the button in the chart list, the editor may have an old value
+            const enabled = obj.native?.chart?.enabled ?? chart.enabled;
+            await this.socket.setObject(id, {
+                ...obj,
+                common: { ...obj.common, name: chart.name },
+                native: { ...obj.native, chart: { ...chart, enabled } },
             });
         } catch (err) {
             this.showError(`${I18n.t("Cannot save chart")}: ${err}`);
