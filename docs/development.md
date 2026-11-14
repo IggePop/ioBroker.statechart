@@ -46,6 +46,16 @@ committed build, so `check-build` does not compare it in Dependabot pull request
 `@types/node` are ignored: `@iobroker/adapter-react-v5` requires MUI 6 and React 18, and the adapter supports
 Node.js 22.
 
+**Releases:** `npm run release minor` (or `patch`, `major`) runs without questions with `--yes`. It moves the entries
+under `WORK IN PROGRESS` in the changelog to the new version, updates `package.json` and `io-package.json`, builds,
+commits, tags and pushes. The tag starts the job `deploy`, which publishes the package to npm with trusted publishing
+(no npm token; on npmjs.com the trusted publisher must allow "npm publish") and creates the GitHub release. Stop
+`dev-server watch` before, the release runs `npm run build`.
+
+The automatic translation of the news breaks code examples and terms. So write the news of the next version by hand
+before the release, as entry `NEXT` in `common.news` of `io-package.json`, in all languages. The release renames it to
+the new version and does not translate anything.
+
 | Path | Content |
 |---|---|
 | `src/main.ts` | Adapter: loads the charts, subscribes the inputs, restarts a chart when it is saved |
