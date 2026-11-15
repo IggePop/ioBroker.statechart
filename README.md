@@ -123,15 +123,16 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.5.0 (2026-11-15)
 * (Igge) button "Show everything" in the toolbar: zooms and scrolls so that the whole chart is visible
-* (Igge) fixed: on touch screens, the icons of problems, hints and comments showed their explanation only on a long press
-* (Igge) fixed: the list of charts and the properties could be made so narrow that their buttons were cut off
-* (Igge) fixed: with "Snap to the grid", the states did not snap onto the dots of the background, but between them
 * (Igge) button "Show the grid" in the toolbar: hides or shows the dots of the background
 * (Igge) "Same width" and "Same height" in the menu for aligning: the selected elements get the size of the one selected first (after a selection with a rectangle: of the largest one)
 * (Igge) the chart can also be paused and started with a button in the toolbar of the editor
 * (Igge) active states are easier to see: thicker green border with a light green glow
+* (Igge) fixed: on touch screens, the icons of problems, hints and comments showed their explanation only on a long press
+* (Igge) fixed: the list of charts and the properties could be made so narrow that their buttons were cut off
+* (Igge) fixed: with "Snap to the grid", the states did not snap onto the dots of the background, but between them
+
 ### 0.4.0 (2026-11-14)
 * (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
 * (Igge) templates for new charts: light with motion detector, heating with window contact, alarm system
