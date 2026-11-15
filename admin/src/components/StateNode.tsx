@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Handle, NodeResizer, Position } from "@xyflow/react";
 import type { Node, NodeProps } from "@xyflow/react";
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, Typography, alpha, useTheme } from "@mui/material";
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartState } from "../../../src/lib/chart-model";
 import { stateBackground } from "../flow-model";
@@ -116,7 +116,7 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                 sx={{
                     width: "100%",
                     height: "100%",
-                    border: isActive || isDropTarget ? 3 : 2,
+                    border: isActive ? 4 : isDropTarget ? 3 : 2,
                     // like in Stateflow, parallel states have a dashed border
                     borderStyle: order !== undefined ? "dashed" : "solid",
                     borderColor,
@@ -128,7 +128,10 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                           ? theme.palette.grey[dark ? 900 : 100]
                           : stateBackground(state.color, dark, depth),
                     color: disabled ? "text.disabled" : undefined,
-                    boxShadow: isActive ? 6 : 0,
+                    // an active state also gets a light green glow around its border, so it is seen at a glance
+                    boxShadow: isActive
+                        ? `0 0 0 5px ${alpha(theme.palette.success.main, 0.35)}, ${theme.shadows[6]}`
+                        : 0,
                     px: 1,
                     py: 0.5,
                     overflow: "hidden",
