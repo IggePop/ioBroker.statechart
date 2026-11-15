@@ -124,6 +124,10 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.5.1 (2026-11-15)
+* (Igge) documentation updated: active states, tooltips on tap, start and pause in the toolbar, the new layout functions
+* (Igge) the types of ioBroker are a direct development dependency (finding W048 of the repository checker)
+
 ### 0.5.0 (2026-11-15)
 * (Igge) button "Show everything" in the toolbar: zooms and scrolls so that the whole chart is visible
 * (Igge) button "Show the grid" in the toolbar: hides or shows the dots of the background
