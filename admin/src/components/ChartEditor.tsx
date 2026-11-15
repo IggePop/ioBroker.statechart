@@ -45,6 +45,7 @@ import {
     DeleteOutline as DeleteIcon,
     FileDownload as ExportIcon,
     FitScreen as FitViewIcon,
+    Height as SameHeightIcon,
     Functions as FunctionIcon,
     DataObject as VariablesIcon,
     GridOff as GridOffIcon,
@@ -113,10 +114,11 @@ import {
     getExecutionOrder,
     getInitialStateIds,
     isDescendantNode,
+    matchSizes,
     pasteClipboard,
     reparentNodes,
 } from "../flow-model";
-import type { Alignment, ChartFlowNode, ClipboardContent, Rect, TransitionFlowEdge } from "../flow-model";
+import type { Alignment, ChartFlowNode, ClipboardContent, Rect, SizeMatch, TransitionFlowEdge } from "../flow-model";
 import { getLabelStackOffsets, getParallelOffsets, isValidAnchor } from "../floating-edges";
 import { getDeclarations, validateChart } from "../../../src/lib/chart-validation";
 
@@ -185,6 +187,22 @@ const ALIGNMENTS: { alignment: Alignment; title: string; icon: React.ReactNode }
     { alignment: "bottom", title: "Align bottom", icon: <AlignBottomIcon fontSize="small" /> },
     { alignment: "distributeX", title: "Distribute horizontally", icon: <DistributeXIcon fontSize="small" /> },
     { alignment: "distributeY", title: "Distribute vertically", icon: <DistributeYIcon fontSize="small" /> },
+];
+
+/** The entries of the menu for giving the selected nodes the same size, below the alignments */
+const SIZE_MATCHES: { match: SizeMatch; title: string; icon: React.ReactNode }[] = [
+    // the arrow of the height icon turned sideways
+    {
+        match: "width",
+        title: "Same width",
+        icon: (
+            <SameHeightIcon
+                sx={{ rotate: "90deg" }}
+                fontSize="small"
+            />
+        ),
+    },
+    { match: "height", title: "Same height", icon: <SameHeightIcon fontSize="small" /> },
 ];
 
 /**
@@ -425,6 +443,33 @@ function ChartEditorInner({
                 return position && parent
                     ? { ...n, position: { x: position.x - parent.x, y: position.y - parent.y } }
                     : n;
+            }),
+        );
+    };
+
+    /**
+     * Gives the selected nodes the width or height of the largest one, they keep their top left corners
+     *
+     * @param match Which size is made the same
+     */
+    const matchSize = (match: SizeMatch): void => {
+        setAlignMenu(null);
+        const rects = new Map<string, Rect>();
+        for (const node of nodes) {
+            const rect = node.selected ? getRect(node.id) : null;
+            if (rect) {
+                rects.set(node.id, rect);
+            }
+        }
+        const sizes = matchSizes(rects, match);
+        if (!sizes.size) {
+            return;
+        }
+        record();
+        setNodes(nds =>
+            nds.map(n => {
+                const size = sizes.get(n.id);
+                return size ? { ...n, width: size.width, height: size.height } : n;
             }),
         );
     };
@@ -1254,6 +1299,17 @@ function ChartEditorInner({
                                 // distributing needs one in the middle
                                 disabled={alignment.startsWith("distribute") && selectedNodes.length < 3}
                                 onClick={() => align(alignment)}
+                            >
+                                <ListItemIcon>{icon}</ListItemIcon>
+                                <ListItemText>{I18n.t(title)}</ListItemText>
+                            </MenuItem>
+                        ))}
+                        <Divider />
+                        {SIZE_MATCHES.map(({ match, title, icon }) => (
+                            <MenuItem
+                                key={match}
+                                dense
+                                onClick={() => matchSize(match)}
                             >
                                 <ListItemIcon>{icon}</ListItemIcon>
                                 <ListItemText>{I18n.t(title)}</ListItemText>

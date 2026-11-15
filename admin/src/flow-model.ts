@@ -615,6 +615,30 @@ export function pasteClipboard(
     };
 }
 
+/** Which size of the selected nodes is made the same */
+export type SizeMatch = "width" | "height";
+
+/**
+ * Gives rectangles the same width or height, that of the largest one, so the content of none of them gets too small
+ *
+ * @param rects The sizes by ID (the positions are not used, the rectangles keep their top left corners)
+ * @param match Which size is made the same
+ * @returns the new sizes by ID, only of the rectangles which change
+ */
+export function matchSizes(rects: Map<string, Rect>, match: SizeMatch): Map<string, { width: number; height: number }> {
+    const result = new Map<string, { width: number; height: number }>();
+    if (rects.size < 2) {
+        return result;
+    }
+    const size = Math.round(Math.max(...[...rects.values()].map(r => r[match])));
+    for (const [id, rect] of rects) {
+        if (Math.round(rect[match]) !== size) {
+            result.set(id, { width: Math.round(rect.width), height: Math.round(rect.height), [match]: size });
+        }
+    }
+    return result;
+}
+
 /** How selected nodes are aligned or distributed */
 export type Alignment = "left" | "centerX" | "right" | "top" | "centerY" | "bottom" | "distributeX" | "distributeY";
 

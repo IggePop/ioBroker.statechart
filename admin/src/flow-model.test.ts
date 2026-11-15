@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { DEFAULT_STATE_COLOR, alignRects, getNestingDepths, stateBackground } from "./flow-model";
+import { DEFAULT_STATE_COLOR, alignRects, getNestingDepths, matchSizes, stateBackground } from "./flow-model";
 import type { Rect } from "./flow-model";
 
 /** Three rectangles of different sizes, "a" is the leftmost and topmost */
@@ -51,6 +51,29 @@ describe("flow-model => alignRects", () => {
     it("does nothing with less than two rectangles", () => {
         const rects = new Map([["a", { x: 5, y: 5, width: 10, height: 10 }]]);
         expect(alignRects(rects, "left").size).to.equal(0);
+    });
+});
+
+describe("flow-model => matchSizes", () => {
+    const rects = new Map<string, Rect>([
+        ["a", { x: 0, y: 0, width: 100, height: 50 }],
+        ["b", { x: 120, y: 10, width: 160, height: 80 }],
+        ["c", { x: 400, y: 20, width: 160, height: 40 }],
+    ]);
+
+    it("gives all the width of the widest one, the heights stay", () => {
+        expect(Object.fromEntries(matchSizes(rects, "width"))).to.deep.equal({ a: { width: 160, height: 50 } });
+    });
+
+    it("gives all the height of the highest one, the widths stay", () => {
+        expect(Object.fromEntries(matchSizes(rects, "height"))).to.deep.equal({
+            a: { width: 100, height: 80 },
+            c: { width: 160, height: 80 },
+        });
+    });
+
+    it("does nothing with less than two rectangles", () => {
+        expect(matchSizes(new Map([["a", { x: 0, y: 0, width: 10, height: 10 }]]), "width").size).to.equal(0);
     });
 });
 
