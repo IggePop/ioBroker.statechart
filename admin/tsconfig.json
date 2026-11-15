@@ -11,7 +11,7 @@
         "checkJs": false,
         "lib": ["es2023", "DOM", "DOM.Iterable"],
         // only load the ioBroker and Node.js globals, so ioBroker.State etc. resolve correctly
-        "types": ["iobroker", "node"],
+        "types": ["@iobroker/types", "node"],
         "jsx": "react"
     },
     "include": ["./src/**/*.ts", "./src/**/*.tsx", "../src/lib/adapter-config.d.ts"],
