@@ -52,17 +52,18 @@ of the running chart on the top left, the variables on the right.*
 
 ### Installation
 
-The adapter is not in the ioBroker repositories yet, but can be installed directly from GitHub:
+The adapter is not in the ioBroker repositories yet, but its released versions are on npm and can be installed
+from there:
 
 - **Admin:** tab **Adapters** → icon **Install from custom URL** (GitHub cat) → tab **Custom** →
-  URL `https://github.com/IggePop/ioBroker.statechart` → **Install**
+  URL `iobroker.statechart` → **Install**
 - **or on the console** of the ioBroker system:
   ```bash
-  iobroker url https://github.com/IggePop/ioBroker.statechart
+  iobroker url iobroker.statechart
   ```
 
-Then add an instance of **State Machine**. This installs the current development version, which may
-still change incompatibly.
+Then add an instance of **State Machine**. Please do not install it directly from GitHub: that is the current
+development version, not a tested release. Until 1.0, the format of the charts may still change.
 
 Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.20 or newer.
 
