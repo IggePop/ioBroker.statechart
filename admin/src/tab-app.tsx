@@ -447,12 +447,15 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                 <Toolbar
                     variant="dense"
-                    sx={{ gap: 1, borderBottom: 1, borderColor: "divider" }}
+                    // narrow gutters and gaps, so the buttons fit at the minimum width of the list
+                    sx={{ gap: 0.5, px: { xs: 1.5, sm: 1.5 }, borderBottom: 1, borderColor: "divider" }}
                 >
                     <ELEMENT_STYLES.chart.Icon sx={{ color: `${ELEMENT_STYLES.chart.color}.main` }} />
                     <Typography
                         variant="subtitle1"
-                        sx={{ flex: 1 }}
+                        // the title is cut rather than pushing the buttons out of the list
+                        sx={{ flex: 1, minWidth: 0 }}
+                        noWrap
                     >
                         {I18n.t("Charts")}
                     </Typography>
@@ -727,7 +730,8 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                     side="left"
                     storageKey="statechart.chartListWidth"
                     defaultWidth={240}
-                    minWidth={160}
+                    // the buttons of the toolbar and of the charts must stay visible
+                    minWidth={220}
                     maxWidth={600}
                     label={I18n.t("Charts")}
                 >

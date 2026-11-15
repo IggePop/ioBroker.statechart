@@ -18,12 +18,12 @@ Die Werkzeugleiste über dem Chart ist nach Aufgaben gruppiert, der Tooltip jede
 | Verlauf | **Rückgängig** (Strg+Z), **Wiederholen** (Strg+Y) |
 | Zwischenablage | **Ausschneiden** (Strg+X), **Kopieren** (Strg+C), **Einfügen** (Strg+V), auch zwischen Charts, und **Löschen** (Entf) |
 | Hinzufügen | **Zustand hinzufügen**, **Funktion hinzufügen**, **Notiz hinzufügen**, in der Farbe des Elements, das sie anlegen |
-| Anordnen | Ausgewählte Elemente **ausrichten** (Menü), **Am Raster einrasten** ein und aus, **Alles anzeigen** (zoomt und verschiebt so, dass das ganze Chart zu sehen ist) |
+| Anordnen | Ausgewählte Elemente **ausrichten** (Menü), **Am Raster einrasten** ein und aus, **Raster anzeigen** (die Punkte im Hintergrund) ein und aus, **Alles anzeigen** (zoomt und verschiebt so, dass das ganze Chart zu sehen ist) |
 | Ausgabe (rechts) | **Code anzeigen**, **Chart exportieren** (JSON), **Als Bild exportieren** (PNG), siehe [Import und Export](#import-und-export) |
 | Ausführen (rechts) | **Live-Werte** ein und aus, **Simulation** starten und beenden, siehe [Ein laufendes Chart beobachten](#ein-laufendes-chart-beobachten) und [Simulation](#simulation) |
 
 Mit **Am Raster einrasten** rasten Zustände, Funktionsblöcke und Notizen an den Punkten des Hintergrunds ein. Der Browser
-merkt sich die Einstellung.
+merkt sich die Einstellung, wie auch die von **Raster anzeigen**.
 
 ## Beschriftung von Übergängen
 

@@ -126,6 +126,9 @@ with, endorsed or sponsored by The MathWorks, Inc.
 ### **WORK IN PROGRESS**
 * (Igge) button "Show everything" in the toolbar: zooms and scrolls so that the whole chart is visible
 * (Igge) fixed: on touch screens, the icons of problems, hints and comments showed their explanation only on a long press
+* (Igge) fixed: the list of charts and the properties could be made so narrow that their buttons were cut off
+* (Igge) fixed: with "Snap to the grid", the states did not snap onto the dots of the background, but between them
+* (Igge) button "Show the grid" in the toolbar: hides or shows the dots of the background
 ### 0.4.0 (2026-11-14)
 * (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
 * (Igge) templates for new charts: light with motion detector, heating with window contact, alarm system

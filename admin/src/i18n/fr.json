@@ -112,6 +112,8 @@
     "rightAngledHelp": "Les flèches sont composées de lignes horizontales et verticales au lieu de courbes. Les états côte à côte ou l'un au-dessus de l'autre sont reliés par une ligne droite.",
     "snapToGridOn": "Aimanter à la grille : activé (cliquer pour désactiver)",
     "snapToGridOff": "Aimanter à la grille : désactivé (cliquer pour activer)",
+    "showGridOn": "Afficher la grille : activé (cliquer pour la masquer)",
+    "showGridOff": "Afficher la grille : désactivé (cliquer pour l'afficher)",
     "Wake up on": "Réveillez-vous le",
     "every update": "chaque mise à jour",
     "value changes only": "la valeur change uniquement",

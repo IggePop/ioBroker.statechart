@@ -112,6 +112,8 @@
     "rightAngledHelp": "Le frecce sono composte da linee orizzontali e verticali invece che da curve. Gli stati affiancati o uno sopra l'altro sono collegati da una linea retta.",
     "snapToGridOn": "Aggancia alla griglia: attivo (clic per disattivare)",
     "snapToGridOff": "Aggancia alla griglia: disattivo (clic per attivare)",
+    "showGridOn": "Mostra la griglia: attivo (clic per nasconderla)",
+    "showGridOff": "Mostra la griglia: disattivo (clic per mostrarla)",
     "Wake up on": "Svegliati",
     "every update": "ogni aggiornamento",
     "value changes only": "cambia solo il valore",

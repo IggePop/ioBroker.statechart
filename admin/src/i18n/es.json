@@ -112,6 +112,8 @@
     "rightAngledHelp": "Las flechas se componen de líneas horizontales y verticales en lugar de curvas. Los estados uno al lado del otro o uno encima del otro se conectan con una línea recta.",
     "snapToGridOn": "Ajustar a la cuadrícula: activado (clic para desactivar)",
     "snapToGridOff": "Ajustar a la cuadrícula: desactivado (clic para activar)",
+    "showGridOn": "Mostrar la cuadrícula: activado (clic para ocultarla)",
+    "showGridOff": "Mostrar la cuadrícula: desactivado (clic para mostrarla)",
     "Wake up on": "despertarse",
     "every update": "cada actualización",
     "value changes only": "solo cambios de valor",

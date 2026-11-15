@@ -38,6 +38,7 @@ import {
     ViewColumn as DistributeXIcon,
     ViewStream as DistributeYIcon,
     Code as CodeIcon,
+    Apps as ShowGridIcon,
     ContentCopy as CopyIcon,
     ContentCut as CutIcon,
     ContentPaste as PasteIcon,
@@ -140,6 +141,9 @@ const SHOW_LIVE_KEY = "statechart.showLiveValues";
 
 /** Key in the browser storage: if states, function blocks and notes snap to the grid */
 const SNAP_TO_GRID_KEY = "statechart.snapToGrid";
+
+/** Key in the browser storage: if the dots of the background are shown */
+const SHOW_GRID_KEY = "statechart.showGrid";
 
 /** Distance of the dots of the background, the states snap to them */
 const GRID_SIZE = 20;
@@ -334,6 +338,11 @@ function ChartEditorInner({
     const toggleSnapToGrid = (): void => {
         saveSetting(SNAP_TO_GRID_KEY, !snapToGrid);
         setSnapToGrid(!snapToGrid);
+    };
+    const [showGrid, setShowGrid] = useState(() => loadSetting(SHOW_GRID_KEY));
+    const toggleShowGrid = (): void => {
+        saveSetting(SHOW_GRID_KEY, !showGrid);
+        setShowGrid(!showGrid);
     };
     /** IDs of the states and transitions where the simulation stops, they are not stored in the chart */
     const [breakpoints, setBreakpoints] = useState<ReadonlySet<string>>(new Set());
@@ -1259,6 +1268,12 @@ function ChartEditorInner({
                         onClick={toggleSnapToGrid}
                     />
                     <ToolButton
+                        title={I18n.t(showGrid ? "showGridOn" : "showGridOff")}
+                        icon={<ShowGridIcon />}
+                        color={showGrid ? "primary" : "default"}
+                        onClick={toggleShowGrid}
+                    />
+                    <ToolButton
                         title={I18n.t("Fit view")}
                         icon={<FitViewIcon />}
                         disabled={!nodes.length}
@@ -1348,7 +1363,14 @@ function ChartEditorInner({
                         fitView
                         fitViewOptions={FIT_VIEW_OPTIONS}
                     >
-                        <Background gap={GRID_SIZE} />
+                        {showGrid && (
+                            <Background
+                                gap={GRID_SIZE}
+                                // React Flow draws the dots half a gap away from the multiples of the gap, where the
+                                // states snap to: this moves the centers of the dots (radius 0.5) onto the multiples
+                                offset={0.5 - GRID_SIZE / 2}
+                            />
+                        )}
                         <Controls fitViewOptions={FIT_VIEW_OPTIONS} />
                         <MiniMap
                             pannable
@@ -1380,7 +1402,8 @@ function ChartEditorInner({
                 side="right"
                 storageKey="statechart.propertiesWidth"
                 defaultWidth={360}
-                minWidth={260}
+                // the tabs and the buttons of the variables must stay visible
+                minWidth={320}
                 maxWidth={900}
                 label={I18n.t("Properties")}
                 expandRequest={propertiesRequest}
@@ -1390,7 +1413,7 @@ function ChartEditorInner({
                     onChange={(_e, value: string) => setPanelTab(value)}
                     variant="fullWidth"
                     // icons in front of the labels, compact enough for a narrow panel
-                    sx={{ "& .MuiTab-root": { minHeight: 48, px: 1, gap: 0.5 } }}
+                    sx={{ "& .MuiTab-root": { minHeight: 48, minWidth: 0, px: 1, gap: 0.5 } }}
                 >
                     <Tab
                         value="properties"

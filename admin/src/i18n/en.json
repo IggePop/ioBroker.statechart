@@ -112,6 +112,8 @@
     "rightAngledHelp": "The arrows consist of horizontal and vertical lines instead of curves. States side by side or one above the other are connected by a straight line.",
     "snapToGridOn": "Snap to the grid: on (click to switch off)",
     "snapToGridOff": "Snap to the grid: off (click to switch on)",
+    "showGridOn": "Show the grid: on (click to hide it)",
+    "showGridOff": "Show the grid: off (click to show it)",
     "Wake up on": "Wake up on",
     "every update": "every update",
     "value changes only": "value changes only",
