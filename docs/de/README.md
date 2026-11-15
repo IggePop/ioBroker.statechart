@@ -36,7 +36,8 @@ oben links die Live-Werte des laufenden Charts, rechts die Variablen.*
 - Zustände und Übergänge lassen sich deaktivieren, wie auskommentiert: Sie bleiben im Chart, werden aber nicht ausgeführt
 - Pro Eingang: Aufwecken bei jeder Aktualisierung oder nur bei Änderung, Filter nach ack, Entprellen
 - Hilfsfunktionen: getState (beliebige Datenpunkte), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, Änderungserkennung (hasChanged...)
-- Ausgewählte Elemente ausrichten und verteilen, Einrasten am Raster (abschaltbar)
+- Ausgewählte Elemente ausrichten und verteilen, auf gleiche Breite oder Höhe bringen, Einrasten am Raster
+  (abschaltbar, das Raster lässt sich ausblenden), das ganze Chart mit einem Klick anzeigen
 - Die Chart-Liste und die Eigenschaften lassen sich in der Breite ändern und einklappen, für mehr Platz für das Chart
 - Rückgängig/Wiederholen (Strg+Z, Strg+Y), Ausschneiden/Kopieren/Einfügen/Löschen von Zuständen, Funktionsblöcken und Notizen (Strg+X, Strg+C, Strg+V, Entf), auch zwischen Charts, und eine Warnung bei ungespeicherten Änderungen
 - **Code anzeigen**: das aus dem Chart generierte JavaScript, das genau zeigt, wie der Adapter es ausführt
@@ -78,8 +79,8 @@ Voraussetzungen: Node.js 22 oder neuer, js-controller 6.0.11 oder neuer, Admin 7
    ihrem Pfeil verbunden.
 6. Einen Zustand oder Übergang anklicken (oder doppelklicken), um rechts seine Aktionen bzw. seine
    Beschriftung zu bearbeiten.
-7. **Speichern** klicken. Neue Charts sind angehalten: Starte das Chart mit ▶ in der Chart-Liste. Nach dem
-   Speichern startet der Adapter ein laufendes Chart sofort neu.
+7. **Speichern** klicken. Neue Charts sind angehalten: Starte das Chart mit ▶ in der Chart-Liste oder in der
+   Werkzeugleiste. Nach dem Speichern startet der Adapter ein laufendes Chart sofort neu.
 
 ### Beispiel: Licht mit Bewegungsmelder
 

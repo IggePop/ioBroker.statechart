@@ -193,7 +193,7 @@ Transition label: `[tooWarm(temperature)]{heating = false;}`
 ## Comments and notes
 
 - **Comment:** states, transitions, function blocks and the chart itself have a field **Comment** in their properties.
-  A speech bubble on the canvas shows that there is a comment, the comment is shown as tooltip.
+  A speech bubble on the canvas shows that there is a comment, the comment is shown as tooltip (on hover or tap).
 - **Notes** (icon **Add note** in the toolbar) are free texts on the canvas, like sticky notes. Drop a note into a
   state, so it moves together with it.
 - **Color:** states are light yellow, another color can be chosen under **Color** in their properties, e.g. to highlight
@@ -223,7 +223,7 @@ It stays in the chart and can be switched on again at any time.
 ## Checking the chart
 
 While you edit, the editor checks the chart. Errors are shown red, warnings orange, both at the state, transition,
-function block or variable, with the message as tooltip of the icon. Hints are only shown by a blue icon. When a
+function block or variable, with the message as tooltip of the icon (on hover or tap). Hints are only shown by a blue icon. When a
 chart starts, the adapter writes errors and warnings to the log, hints only with the log level debug.
 
 - **Code:** syntax errors, unknown variables and events, invalid temporal logic, writing an input (warning). They are
@@ -252,7 +252,7 @@ shown by the [simulation](#simulation).
 
 While a chart runs, the editor shows what it does:
 
-- The **active states** have a green border.
+- The **active states** have a thick green border with a light green glow.
 - **Live values** (panel at the top left of the canvas, switched on and off with the icon **Live values** in the
   toolbar, green while they are shown):
   the current values of all variables. They are also shown in the line of each variable in the tab **Variables**.
@@ -342,7 +342,7 @@ Three states control a chart. They react on commands (written without ack), the 
 
 | State | Write | Effect |
 |---|---|---|
-| `enabled` | `false` / `true` | Pauses the chart, or starts it in its initial state, like ▶ and ⏸ in the chart list. The state always shows whether the chart runs, also when it is started or paused in the editor |
+| `enabled` | `false` / `true` | Pauses the chart, or starts it in its initial state, like ▶ and ⏸ in the chart list or in the toolbar. The state always shows whether the chart runs, also when it is started or paused in the editor |
 | `reset` | `true` | Starts a running chart again in its initial state, the entry actions of the initial states are executed. A paused chart stays paused |
 | `event` | name of an input | Wakes up the chart with the event of this input, without changing its value: transitions like `button[...]` and counting expressions like `after(3, button)` react as if the input was updated. Other names are logged as warning |
 

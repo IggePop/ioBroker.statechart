@@ -44,7 +44,8 @@ of the running chart on the top left, the variables on the right.*
 - States and transitions can be disabled, like commented out: they stay in the chart, but are not executed
 - Per input: wake up on every update or only on changes, filter by ack, debounce
 - Helper functions: getState (any state), setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime, change detection (hasChanged...)
-- Align and distribute the selected elements, snap to the grid (can be switched off)
+- Align and distribute the selected elements, give them the same width or height, snap to the grid (can be switched
+  off, the grid can be hidden), show the whole chart with one click
 - The list of charts and the properties panel can be resized and collapsed, for more space for the chart
 - Undo/redo (Ctrl+Z, Ctrl+Y), cut/copy/paste/delete of states, function blocks and notes (Ctrl+X, Ctrl+C, Ctrl+V, Del), also between charts, and a warning about unsaved changes
 - **Show code**: the JavaScript generated from the chart, showing exactly how the adapter executes it
@@ -83,7 +84,7 @@ Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.20 o
    move a transition to another state, drop the grip on that state: its label and all other properties are kept.
    Drag a label to move it, e.g. if it covers another one; a moved label stays connected to its arrow by a thin line.
 6. Select a state or transition (or double click it) to edit its actions or label on the right.
-7. Click **Save**. New charts are paused: start the chart with ▶ in the chart list. After saving, the adapter
+7. Click **Save**. New charts are paused: start the chart with ▶ in the chart list or in the toolbar. After saving, the adapter
    restarts a running chart immediately.
 
 ### Example: light with motion detector

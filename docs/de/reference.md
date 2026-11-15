@@ -201,7 +201,7 @@ Beschriftung eines Übergangs: `[zuWarm(temperatur)]{heizung = false;}`
 
 - **Kommentar:** Zustände, Übergänge, Funktionsblöcke und das Chart selbst haben in ihren Eigenschaften ein Feld
   **Kommentar**. Eine Sprechblase auf der Zeichenfläche zeigt, dass es einen Kommentar gibt, der Kommentar erscheint
-  als Tooltip.
+  als Tooltip (beim Überfahren oder Antippen).
 - **Notizen** (Symbol **Notiz hinzufügen** in der Werkzeugleiste) sind freie Texte auf der Zeichenfläche, wie
   Haftzettel. Lass eine Notiz über einem Zustand los, dann bewegt sie sich mit ihm.
 - **Farbe:** Zustände sind hellgelb, unter **Farbe** in ihren Eigenschaften lässt sich eine andere Farbe wählen, z.B.
@@ -232,7 +232,8 @@ Code. Er bleibt im Chart und lässt sich jederzeit wieder einschalten.
 ## Prüfung des Charts
 
 Während du bearbeitest, prüft der Editor das Chart. Fehler erscheinen rot, Warnungen orange, beide am Zustand,
-Übergang, Funktionsblock oder an der Variablen, die Meldung steht im Tooltip des Symbols. Hinweise zeigt nur ein blaues
+Übergang, Funktionsblock oder an der Variablen, die Meldung steht im Tooltip des Symbols (beim
+Überfahren oder Antippen). Hinweise zeigt nur ein blaues
 Symbol. Beim Start eines Charts schreibt der Adapter Fehler und Warnungen ins Log, Hinweise nur mit der Log-Stufe
 debug.
 
@@ -262,7 +263,7 @@ wird, zeigt die [Simulation](#simulation).
 
 Während ein Chart läuft, zeigt der Editor, was es tut:
 
-- Die **aktiven Zustände** haben einen grünen Rahmen.
+- Die **aktiven Zustände** haben einen breiten grünen Rahmen mit hellgrünem Schein.
 - **Live-Werte** (Tafel oben links auf der Zeichenfläche, ein- und ausgeschaltet mit dem Symbol **Live-Werte** in der
   Werkzeugleiste, grün, solange sie angezeigt werden): die aktuellen Werte aller Variablen. Sie stehen auch in der Zeile jeder Variable im Reiter **Variablen**.
 - Ein **Übergang leuchtet kurz auf**, wenn das Chart ihn nimmt.
@@ -353,7 +354,7 @@ Drei Datenpunkte steuern ein Chart. Sie reagieren auf Befehle (ohne ack geschrie
 
 | Datenpunkt | Schreiben | Wirkung |
 |---|---|---|
-| `enabled` | `false` / `true` | Hält das Chart an oder startet es in seinem Startzustand, wie ▶ und ⏸ in der Chart-Liste. Der Datenpunkt zeigt immer, ob das Chart läuft, auch wenn es im Editor gestartet oder angehalten wurde |
+| `enabled` | `false` / `true` | Hält das Chart an oder startet es in seinem Startzustand, wie ▶ und ⏸ in der Chart-Liste oder in der Werkzeugleiste. Der Datenpunkt zeigt immer, ob das Chart läuft, auch wenn es im Editor gestartet oder angehalten wurde |
 | `reset` | `true` | Startet ein laufendes Chart neu in seinem Startzustand, die entry-Aktionen der Startzustände laufen. Ein angehaltenes Chart bleibt angehalten |
 | `event` | Name eines Eingangs | Weckt das Chart mit dem Event dieses Eingangs, ohne seinen Wert zu ändern: Übergänge wie `taster[...]` und Zählausdrücke wie `after(3, taster)` reagieren so, als wäre der Eingang aktualisiert worden. Andere Namen werden als Warnung geloggt |
 
