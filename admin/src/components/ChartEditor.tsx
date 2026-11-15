@@ -55,6 +55,8 @@ import {
     Tune as PropertiesIcon,
     MonitorHeartOutlined as LiveIcon,
     StickyNote2Outlined as NoteIcon,
+    Pause as PauseIcon,
+    PlayArrow as StartIcon,
     Redo as RedoIcon,
     Save as SaveIcon,
     Science as SimulationIcon,
@@ -296,6 +298,8 @@ interface ChartEditorProps {
     /** Sends a command of the simulation to the adapter, e.g. "simulationStart" */
     onSimulate: (command: string, message?: Record<string, any>) => void;
     onClearHistory: () => void;
+    /** Pauses the running chart in the adapter, or starts the paused one (like the buttons in the list of charts) */
+    onTogglePaused: () => void;
     onSave: (chart: Chart) => Promise<void>;
     /** Shows an error, e.g. if the image of the chart cannot be created */
     onError: (message: string) => void;
@@ -321,6 +325,7 @@ function ChartEditorInner({
     simulationStatus,
     onSimulate,
     onClearHistory,
+    onTogglePaused,
     onSave,
     onError,
     backups,
@@ -1354,6 +1359,14 @@ function ChartEditorInner({
                         onClick={() => void exportImage()}
                     />
                     <ToolDivider />
+                    {/* the saved state of the chart, unsaved changes do not matter */}
+                    <ToolButton
+                        title={I18n.t(savedChart.enabled === false ? "Start chart" : "Pause chart")}
+                        icon={savedChart.enabled === false ? <StartIcon /> : <PauseIcon />}
+                        // the same colors as in the list of charts
+                        color={savedChart.enabled === false ? "success" : "warning"}
+                        onClick={onTogglePaused}
+                    />
                     <ToolButton
                         title={I18n.t(showLive ? "Hide live values" : "Show live values")}
                         icon={<LiveIcon />}

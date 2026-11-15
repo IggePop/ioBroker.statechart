@@ -130,6 +130,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) fixed: with "Snap to the grid", the states did not snap onto the dots of the background, but between them
 * (Igge) button "Show the grid" in the toolbar: hides or shows the dots of the background
 * (Igge) "Same width" and "Same height" in the menu for aligning: the selected elements get the size of the largest one
+* (Igge) the chart can also be paused and started with a button in the toolbar of the editor
 ### 0.4.0 (2026-11-14)
 * (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
 * (Igge) templates for new charts: light with motion detector, heating with window contact, alarm system
