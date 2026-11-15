@@ -117,10 +117,19 @@ import {
     getInitialStateIds,
     isDescendantNode,
     matchSizes,
+    updateSelectionOrder,
     pasteClipboard,
     reparentNodes,
 } from "../flow-model";
-import type { Alignment, ChartFlowNode, ClipboardContent, Rect, SizeMatch, TransitionFlowEdge } from "../flow-model";
+import type {
+    Alignment,
+    ChartFlowNode,
+    ClipboardContent,
+    Rect,
+    SelectionOrder,
+    SizeMatch,
+    TransitionFlowEdge,
+} from "../flow-model";
 import { getLabelStackOffsets, getParallelOffsets, isValidAnchor } from "../floating-edges";
 import { getDeclarations, validateChart } from "../../../src/lib/chart-validation";
 
@@ -452,8 +461,20 @@ function ChartEditorInner({
         );
     };
 
+    /** The order in which the nodes were selected, for "Same width" and "Same height" */
+    const selectionOrder = useRef<SelectionOrder>({ ids: [], first: null });
+    const selectedNodeIds = nodes.filter(n => n.selected).map(n => n.id);
+    const selectedNodeKey = selectedNodeIds.join("\n");
+    useEffect(() => {
+        selectionOrder.current = updateSelectionOrder(
+            selectionOrder.current,
+            selectedNodeKey ? selectedNodeKey.split("\n") : [],
+        );
+    }, [selectedNodeKey]);
+
     /**
-     * Gives the selected nodes the width or height of the largest one, they keep their top left corners
+     * Gives the selected nodes the width or height of the one selected first, or of the largest one if they were
+     * selected all at once, e.g. with a rectangle. They keep their top left corners.
      *
      * @param match Which size is made the same
      */
@@ -466,7 +487,7 @@ function ChartEditorInner({
                 rects.set(node.id, rect);
             }
         }
-        const sizes = matchSizes(rects, match);
+        const sizes = matchSizes(rects, match, selectionOrder.current.first);
         if (!sizes.size) {
             return;
         }

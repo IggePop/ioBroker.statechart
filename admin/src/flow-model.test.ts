@@ -1,5 +1,12 @@
 import { expect } from "chai";
-import { DEFAULT_STATE_COLOR, alignRects, getNestingDepths, matchSizes, stateBackground } from "./flow-model";
+import {
+    DEFAULT_STATE_COLOR,
+    alignRects,
+    getNestingDepths,
+    matchSizes,
+    stateBackground,
+    updateSelectionOrder,
+} from "./flow-model";
 import type { Rect } from "./flow-model";
 
 /** Three rectangles of different sizes, "a" is the leftmost and topmost */
@@ -72,8 +79,35 @@ describe("flow-model => matchSizes", () => {
         });
     });
 
+    it("gives all the size of the reference, also if it is smaller", () => {
+        expect(Object.fromEntries(matchSizes(rects, "width", "a"))).to.deep.equal({
+            b: { width: 100, height: 80 },
+            c: { width: 100, height: 40 },
+        });
+    });
+
     it("does nothing with less than two rectangles", () => {
         expect(matchSizes(new Map([["a", { x: 0, y: 0, width: 10, height: 10 }]]), "width").size).to.equal(0);
+    });
+});
+
+describe("flow-model => updateSelectionOrder", () => {
+    it("remembers the node clicked first while more are added", () => {
+        let order = updateSelectionOrder({ ids: [], first: null }, ["b"]);
+        order = updateSelectionOrder(order, ["a", "b"]);
+        order = updateSelectionOrder(order, ["a", "b", "c"]);
+        expect(order).to.deep.equal({ ids: ["b", "a", "c"], first: "b" });
+    });
+
+    it("has no first node after a selection with a rectangle", () => {
+        expect(updateSelectionOrder({ ids: [], first: null }, ["a", "b"]).first).to.equal(null);
+    });
+
+    it("forgets the first node when it is deselected, a new click starts again", () => {
+        let order = updateSelectionOrder({ ids: [], first: null }, ["a"]);
+        order = updateSelectionOrder(order, ["a", "b"]);
+        expect(updateSelectionOrder(order, ["b"]).first).to.equal(null);
+        expect(updateSelectionOrder(order, ["c"]).first).to.equal("c");
     });
 });
 

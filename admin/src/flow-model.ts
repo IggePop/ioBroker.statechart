@@ -618,19 +618,55 @@ export function pasteClipboard(
 /** Which size of the selected nodes is made the same */
 export type SizeMatch = "width" | "height";
 
+/** The order in which the nodes were selected */
+export interface SelectionOrder {
+    /** IDs of the selected nodes, in the order they were selected */
+    ids: string[];
+    /**
+     * The node which was selected first on its own, e.g. by a click; null if there is none, e.g. after a selection
+     * with a rectangle, which selects several nodes at once
+     */
+    first: string | null;
+}
+
 /**
- * Gives rectangles the same width or height, that of the largest one, so the content of none of them gets too small
+ * @param order The order before the selection changed
+ * @param selectedIds IDs of the nodes which are selected now
+ * @returns the order after the change: nodes which are no longer selected are removed, new ones are added at the end
+ */
+export function updateSelectionOrder(order: SelectionOrder, selectedIds: string[]): SelectionOrder {
+    const selected = new Set(selectedIds);
+    const kept = order.ids.filter(id => selected.has(id));
+    const added = selectedIds.filter(id => !kept.includes(id));
+    let first: string | null = null;
+    if (order.first && selected.has(order.first)) {
+        first = order.first;
+    } else if (!kept.length && added.length === 1) {
+        first = added[0];
+    }
+    return { ids: [...kept, ...added], first };
+}
+
+/**
+ * Gives rectangles the same width or height: that of the reference, usually the one selected first, or without
+ * one that of the largest
  *
  * @param rects The sizes by ID (the positions are not used, the rectangles keep their top left corners)
  * @param match Which size is made the same
+ * @param referenceId ID of the rectangle whose size the others get, the largest one if it is null or not in rects
  * @returns the new sizes by ID, only of the rectangles which change
  */
-export function matchSizes(rects: Map<string, Rect>, match: SizeMatch): Map<string, { width: number; height: number }> {
+export function matchSizes(
+    rects: Map<string, Rect>,
+    match: SizeMatch,
+    referenceId: string | null = null,
+): Map<string, { width: number; height: number }> {
     const result = new Map<string, { width: number; height: number }>();
     if (rects.size < 2) {
         return result;
     }
-    const size = Math.round(Math.max(...[...rects.values()].map(r => r[match])));
+    const reference = referenceId ? rects.get(referenceId) : undefined;
+    const size = Math.round(reference ? reference[match] : Math.max(...[...rects.values()].map(r => r[match])));
     for (const [id, rect] of rects) {
         if (Math.round(rect[match]) !== size) {
             result.set(id, { width: Math.round(rect.width), height: Math.round(rect.height), [match]: size });
