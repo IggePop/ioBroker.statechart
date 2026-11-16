@@ -132,6 +132,8 @@ import type {
 } from "../flow-model";
 import { getLabelStackOffsets, getParallelOffsets, isValidAnchor } from "../floating-edges";
 import { getDeclarations, validateChart } from "../../../src/lib/chart-validation";
+import { findSymbolUsages } from "../../../src/lib/chart-analysis";
+import type { SymbolUsage } from "../../../src/lib/chart-analysis";
 
 // defined outside the component, so React Flow does not re-create them on every render
 const nodeTypes = { state: StateNode, function: FunctionNode, note: NoteNode };
@@ -1213,6 +1215,62 @@ function ChartEditorInner({
         setEdges(eds => eds.map(e => ({ ...e, selected: e.id === id })));
     };
 
+    /** where the variables are used, for the list in the details of a variable */
+    const symbolUsages = useMemo(
+        () => findSymbolUsages(flowToChart(chart, nodes, edges)),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [codeSignature],
+    );
+
+    /**
+     * @param kind Kind of the element
+     * @param id Its ID
+     * @returns its name in the list of uses of a variable: the name of a state, "Off → On" for a transition, the
+     *   functions declared in a function block
+     */
+    const describeElement = (kind: SymbolUsage["kind"], id: string): string => {
+        const stateName = (stateId: string): string => {
+            const node = nodes.find(n => n.id === stateId);
+            return node?.type === "state" ? node.data.state.name : stateId;
+        };
+        if (kind === "transition") {
+            const edge = edges.find(e => e.id === id);
+            return edge ? `${stateName(edge.source)} → ${stateName(edge.target)}` : id;
+        }
+        if (kind === "function") {
+            const node = nodes.find(n => n.id === id);
+            const declared = node?.type === "function" ? getDeclarations(node.data.fn.code).map(d => d.name) : [];
+            return declared.length ? declared.join(", ") : I18n.t("Function");
+        }
+        return stateName(id);
+    };
+
+    /**
+     * Selects an element and moves the view to it, keeping the zoom. The panel stays at the variables.
+     *
+     * @param kind Kind of the element
+     * @param id Its ID
+     */
+    const showElement = (kind: SymbolUsage["kind"], id: string): void => {
+        let center: { x: number; y: number } | null = null;
+        const middle = (rect: Rect | null): { x: number; y: number } | null =>
+            rect && { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+        if (kind === "transition") {
+            const edge = edges.find(e => e.id === id);
+            const from = edge && middle(getRect(edge.source));
+            const to = edge && middle(getRect(edge.target));
+            center = from && to ? { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 } : null;
+            selectTransition(id);
+        } else {
+            center = middle(getRect(id));
+            setNodes(nds => nds.map(n => (n.selected === (n.id === id) ? n : { ...n, selected: n.id === id })));
+            setEdges(eds => eds.map(e => (e.selected ? { ...e, selected: false } : e)));
+        }
+        if (center) {
+            void reactFlow.setCenter(center.x, center.y, { zoom: reactFlow.getZoom(), duration: 300 });
+        }
+    };
+
     /** Color of the transitions and their arrowheads */
     const edgeColor = theme.palette.mode === "dark" ? theme.palette.common.white : theme.palette.common.black;
 
@@ -1560,6 +1618,9 @@ function ChartEditorInner({
                             problems={symbolProblems}
                             onChange={symbols => updateChart({ symbols })}
                             liveValues={liveValues}
+                            usages={symbolUsages}
+                            describeElement={describeElement}
+                            onShowElement={showElement}
                             socket={socket}
                             theme={theme}
                         />

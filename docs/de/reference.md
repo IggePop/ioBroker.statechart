@@ -74,10 +74,18 @@ Variablen abhängen, nicht von Funktionen wie `isTimeBetween()`, die sich ohne A
 Aktionen liefern `elapsed(einheit)` und `duration(bedingung, einheit)` die Zeiten als Zahl (siehe Hilfsfunktionen).
 Die Zähler und die Zeiten von `after(n, einheit, bedingung)` laufen nach einem Neustart des Adapters weiter.
 
+## Wo eine Variable verwendet wird
+
+Wenn du im Reiter **Variablen** eine Variable aufklappst, zeigt **Verwendet in** (ein Klick klappt es auf) die Zustände, Übergänge und
+Funktionsblöcke, die sie verwenden, mit der Stelle (z.B. `entry`, Bedingung, Aktion) und ob die Variable dort gelesen
+oder geschrieben wird. Ein Klick auf einen Eintrag wählt das Element aus und verschiebt die Ansicht dorthin. Es zählen
+nur echte Verwendungen: nicht der Name in einem Text oder Kommentar und nicht eine gleichnamige lokale Variable, die im
+Code deklariert wird.
+
 ## Wann Eingänge das Chart aufwecken
 
-Jeder Eingang hat im Reiter **Variablen** unter **Optionen zum Aufwecken** drei Einstellungen (gleich sichtbar, wenn
-eine davon vom Standard abweicht):
+Jeder Eingang hat im Reiter **Variablen** unter **Optionen zum Aufwecken** drei Einstellungen (ein Klick klappt sie
+auf, die Schaltfläche zeigt „angepasst“, wenn eine davon vom Standard abweicht):
 
 | Einstellung | Werte | Standard |
 |---|---|---|

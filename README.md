@@ -115,6 +115,9 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (Igge) the details of a variable list where it is used (states, transitions, function blocks), a click shows the element
+* (Igge) the wake up options of an input are always collapsed at first, the button shows if they are customized
 ### 0.5.1 (2026-11-15)
 * (Igge) documentation updated: active states, tooltips on tap, start and pause in the toolbar, the new layout functions
 * (Igge) the types of ioBroker are a direct development dependency (finding W048 of the repository checker)

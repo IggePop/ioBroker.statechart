@@ -73,10 +73,17 @@ not on functions like `isTimeBetween()` which change without a wakeup. In condit
 `duration(condition, unit)` give the times as numbers (see the helper functions). The counters and the times of
 `after(n, unit, condition)` continue after a restart of the adapter.
 
+## Where a variable is used
+
+When you open a variable in the tab **Variables**, **Used in** (a click expands it) lists the states, transitions and function blocks
+which use it, with the part (e.g. `entry`, condition, action) and whether the variable is read or written there. A
+click on an entry selects the element and moves the view to it. Only real uses count: not the name in a text or
+comment, and not a local variable of the same name declared in the code.
+
 ## When inputs wake up the chart
 
-Every input has three settings in the tab **Variables**, under **Wake up options** (shown right away if one of
-them differs from the default):
+Every input has three settings in the tab **Variables**, under **Wake up options** (a click expands them, the button shows "customized" if one of them differs from the
+default):
 
 | Setting | Values | Default |
 |---|---|---|

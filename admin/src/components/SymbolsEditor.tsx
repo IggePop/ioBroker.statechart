@@ -19,6 +19,8 @@ import type { ChartSymbol, SymbolScope } from "../../../src/lib/chart-model";
 import { formatValue } from "./LiveValuesPanel";
 import ProblemBadge from "./ProblemBadge";
 import type { ProblemList } from "./ProblemBadge";
+import type { SymbolUsage } from "../../../src/lib/chart-analysis";
+import { ELEMENT_STYLES } from "../element-style";
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 
@@ -167,18 +169,18 @@ const SEARCH_FROM = 8;
  * @param names The names of all variables
  * @returns the problem of the name, empty if there is none
  */
+/**
+ * @param symbol An input
+ * @returns true if it does not wake up the chart like by default (on every update, any ack, no debounce)
+ */
+const hasTriggerOptions = (symbol: ChartSymbol): boolean => !!(symbol.trigger || symbol.ack || symbol.debounceMs);
+
 function getNameError(symbol: ChartSymbol, index: number, names: string[]): string {
     if (!IDENTIFIER.test(symbol.name)) {
         return I18n.t("Invalid name");
     }
     return names.indexOf(symbol.name) !== index ? I18n.t("Name already used") : "";
 }
-
-/**
- * @param symbol An input
- * @returns true if it does not wake up the chart like by default (on every update, any ack, no debounce)
- */
-const hasTriggerOptions = (symbol: ChartSymbol): boolean => !!(symbol.trigger || symbol.ack || symbol.debounceMs);
 
 /**
  * The collapsed line of a variable: name, state or initial value, current value and problems
@@ -279,6 +281,9 @@ function SymbolRow({
  * @param props.onChange Called with the changed properties
  * @param props.onDelete Deletes the variable
  * @param props.onSelectState Opens the dialog to select the state
+ * @param props.usages Where the variable is used
+ * @param props.describeElement Name of an element which uses it
+ * @param props.onShowElement Selects an element and moves the view to it
  */
 function SymbolDetails({
     symbol,
@@ -287,6 +292,9 @@ function SymbolDetails({
     onChange,
     onDelete,
     onSelectState,
+    usages,
+    describeElement,
+    onShowElement,
 }: {
     symbol: ChartSymbol;
     nameError: string;
@@ -294,9 +302,12 @@ function SymbolDetails({
     onChange: (patch: Partial<ChartSymbol>) => void;
     onDelete: () => void;
     onSelectState: () => void;
+    usages: SymbolUsage[];
+    describeElement: (kind: SymbolUsage["kind"], id: string) => string;
+    onShowElement: (kind: SymbolUsage["kind"], id: string) => void;
 }): React.JSX.Element {
-    // options which differ from the default are shown right away
-    const [advanced, setAdvanced] = useState(() => hasTriggerOptions(symbol));
+    // collapsed at first, like the list of uses
+    const [advanced, setAdvanced] = useState(false);
     return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, pt: 1.5, pb: 2, pl: 3 }}>
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -364,7 +375,8 @@ function SymbolDetails({
                         startIcon={advanced ? <ExpandedIcon /> : <CollapsedIcon />}
                         onClick={() => setAdvanced(!advanced)}
                     >
-                        {I18n.t("Wake up options")}
+                        {/* collapsed, it still shows that the input does not wake up the chart like by default */}
+                        {I18n.t(hasTriggerOptions(symbol) ? "Wake up options (customized)" : "Wake up options")}
                     </Button>
                     <Collapse in={advanced}>
                         <Box sx={{ pt: 1.5 }}>
@@ -376,6 +388,114 @@ function SymbolDetails({
                     </Collapse>
                 </Box>
             )}
+            <UsageList
+                usages={usages}
+                describeElement={describeElement}
+                onShowElement={onShowElement}
+            />
+        </Box>
+    );
+}
+
+/**
+ * @param part A part of an element
+ * @returns its translated text: the actions of states keep their names, like in the properties
+ */
+const partTitle = (part: SymbolUsage["part"]): string =>
+    ({
+        entry: "entry",
+        during: "during",
+        exit: "exit",
+        event: I18n.t("Event"),
+        condition: I18n.t("Condition"),
+        action: I18n.t("Action"),
+        code: I18n.t("Code"),
+    })[part];
+
+/**
+ * Where a variable is used, a click on an entry selects the element and shows it on the canvas
+ *
+ * @param props Component properties
+ * @param props.usages The uses of the variable
+ * @param props.describeElement Name of an element, e.g. of a state or "Off → On" for a transition
+ * @param props.onShowElement Selects an element and moves the view to it
+ */
+function UsageList({
+    usages,
+    describeElement,
+    onShowElement,
+}: {
+    usages: SymbolUsage[];
+    describeElement: (kind: SymbolUsage["kind"], id: string) => string;
+    onShowElement: (kind: SymbolUsage["kind"], id: string) => void;
+}): React.JSX.Element {
+    const [open, setOpen] = useState(false);
+    if (!usages.length) {
+        return (
+            <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ px: 0.5 }}
+            >
+                {I18n.t("Not used in the chart")}
+            </Typography>
+        );
+    }
+    return (
+        <Box>
+            {/* collapsible like the wake up options */}
+            <Button
+                size="small"
+                startIcon={open ? <ExpandedIcon /> : <CollapsedIcon />}
+                onClick={() => setOpen(!open)}
+            >
+                {I18n.t("Used in (%s)", String(usages.length))}
+            </Button>
+            <Collapse in={open}>
+                <Box sx={{ pt: 0.5 }}>
+                    {usages.map(usage => {
+                        const { Icon, color } = ELEMENT_STYLES[usage.kind];
+                        const access =
+                            usage.read && usage.write ? "reads and writes" : usage.write ? "writes" : "reads";
+                        return (
+                            <ButtonBase
+                                key={`${usage.kind}:${usage.id}:${usage.part}`}
+                                title={I18n.t("Show in the chart")}
+                                onClick={() => onShowElement(usage.kind, usage.id)}
+                                sx={{
+                                    display: "flex",
+                                    width: "100%",
+                                    justifyContent: "flex-start",
+                                    alignItems: "center",
+                                    gap: 0.75,
+                                    px: 0.5,
+                                    py: 0.25,
+                                    borderRadius: 1,
+                                    textAlign: "left",
+                                    "&:hover": { bgcolor: "action.hover" },
+                                }}
+                            >
+                                <Icon sx={{ fontSize: 16, color: `${color}.main`, flexShrink: 0 }} />
+                                <Typography
+                                    variant="body2"
+                                    noWrap
+                                    sx={{ flex: 1, minWidth: 0 }}
+                                >
+                                    {describeElement(usage.kind, usage.id)}
+                                </Typography>
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    noWrap
+                                    sx={{ flexShrink: 0 }}
+                                >
+                                    {partTitle(usage.part)} · {I18n.t(access)}
+                                </Typography>
+                            </ButtonBase>
+                        );
+                    })}
+                </Box>
+            </Collapse>
         </Box>
     );
 }
@@ -387,6 +507,12 @@ interface SymbolsEditorProps {
     onChange: (symbols: ChartSymbol[]) => void;
     /** Current values of the variables, empty if the chart does not run */
     liveValues: Record<string, any>;
+    /** Where the variables are used, by name */
+    usages: Map<string, SymbolUsage[]>;
+    /** Name of an element which uses a variable, e.g. of a state or "Off → On" for a transition */
+    describeElement: (kind: SymbolUsage["kind"], id: string) => string;
+    /** Selects an element and moves the view to it */
+    onShowElement: (kind: SymbolUsage["kind"], id: string) => void;
     socket: AdminConnection;
     theme: IobTheme;
 }
@@ -399,6 +525,9 @@ interface SymbolsEditorProps {
  * @param props.problems Problems found by the analysis of the chart, by name
  * @param props.onChange Called with the changed variables
  * @param props.liveValues Current values of the variables, empty if the chart does not run
+ * @param props.usages Where the variables are used, by name
+ * @param props.describeElement Name of an element which uses a variable
+ * @param props.onShowElement Selects an element and moves the view to it
  * @param props.socket Connection to ioBroker, for the dialog to select a state
  * @param props.theme Theme of the admin, for the dialog to select a state
  */
@@ -407,6 +536,9 @@ export default function SymbolsEditor({
     problems,
     onChange,
     liveValues,
+    usages,
+    describeElement,
+    onShowElement,
     socket,
     theme,
 }: SymbolsEditorProps): React.JSX.Element {
@@ -544,6 +676,9 @@ export default function SymbolsEditor({
                                                 onChange={patch => update(index, patch)}
                                                 onDelete={() => remove(index)}
                                                 onSelectState={() => setSelectFor(index)}
+                                                usages={usages.get(symbol.name) || []}
+                                                describeElement={describeElement}
+                                                onShowElement={onShowElement}
                                             />
                                         )}
                                     </Box>

@@ -199,6 +199,75 @@ class Usage {
     }
 }
 
+/** Where a variable is used: in which element, in which part of it, and if it is read or written there */
+export interface SymbolUsage {
+    /** Kind of the element */
+    kind: "state" | "transition" | "function";
+    /** ID of the state, transition or function block */
+    id: string;
+    /** The part of the element: actions of a state, parts of a transition label, code of a function block */
+    part: "entry" | "during" | "exit" | "event" | "condition" | "action" | "code";
+    /** If the value of the variable is used there */
+    read: boolean;
+    /** If the variable is set there */
+    write: boolean;
+}
+
+/**
+ * Finds where the variables of a chart are used. Only real uses count, not the name in a string or comment, and not
+ * a local declaration with the same name.
+ *
+ * @param chart The chart
+ * @returns the uses by name of the variable, in the order of the states, transitions and function blocks
+ */
+export function findSymbolUsages(chart: Chart): Map<string, SymbolUsage[]> {
+    const result = new Map<string, SymbolUsage[]>();
+    const names = new Set(chart.symbols.map(s => s.name));
+    const add = (
+        kind: SymbolUsage["kind"],
+        id: string,
+        part: SymbolUsage["part"],
+        usage: { read: ReadonlySet<string>; written: ReadonlySet<string> },
+    ): void => {
+        for (const name of names) {
+            const read = usage.read.has(name);
+            const write = usage.written.has(name);
+            if (read || write) {
+                result.set(name, [...(result.get(name) || []), { kind, id, part, read, write }]);
+            }
+        }
+    };
+    const collect = (code: string | undefined, kind: "expression" | "statements"): Usage => {
+        const usage = new Usage();
+        usage.add(code, kind);
+        return usage;
+    };
+
+    for (const state of chart.states) {
+        for (const part of ["entry", "during", "exit"] as const) {
+            add("state", state.id, part, collect(state[part], "statements"));
+        }
+    }
+    for (const transition of chart.transitions) {
+        let label;
+        try {
+            label = parseTransitionLabel(transition.label);
+        } catch {
+            continue;
+        }
+        const events = new Set([label.event, label.temporal?.event].filter((e): e is string => !!e));
+        add("transition", transition.id, "event", { read: events, written: new Set() });
+        const condition = collect(label.condition, "expression");
+        condition.add(label.temporal?.condition, "expression");
+        add("transition", transition.id, "condition", condition);
+        add("transition", transition.id, "action", collect(label.action, "statements"));
+    }
+    for (const fn of chart.functions || []) {
+        add("function", fn.id, "code", collect(fn.code, "statements"));
+    }
+    return result;
+}
+
 /**
  * Finds the logical problems of a chart
  *

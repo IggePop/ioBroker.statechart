@@ -28,7 +28,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var chart_analysis_exports = {};
 __export(chart_analysis_exports, {
-  analyzeChart: () => analyzeChart
+  analyzeChart: () => analyzeChart,
+  findSymbolUsages: () => findSymbolUsages
 });
 module.exports = __toCommonJS(chart_analysis_exports);
 var acorn = __toESM(require("acorn"));
@@ -169,6 +170,47 @@ class Usage {
       }
     }
   }
+}
+function findSymbolUsages(chart) {
+  const result = /* @__PURE__ */ new Map();
+  const names = new Set(chart.symbols.map((s) => s.name));
+  const add = (kind, id, part, usage) => {
+    for (const name of names) {
+      const read = usage.read.has(name);
+      const write = usage.written.has(name);
+      if (read || write) {
+        result.set(name, [...result.get(name) || [], { kind, id, part, read, write }]);
+      }
+    }
+  };
+  const collect = (code, kind) => {
+    const usage = new Usage();
+    usage.add(code, kind);
+    return usage;
+  };
+  for (const state of chart.states) {
+    for (const part of ["entry", "during", "exit"]) {
+      add("state", state.id, part, collect(state[part], "statements"));
+    }
+  }
+  for (const transition of chart.transitions) {
+    let label;
+    try {
+      label = (0, import_chart_model.parseTransitionLabel)(transition.label);
+    } catch {
+      continue;
+    }
+    const events = new Set([label.event, label.temporal?.event].filter((e) => !!e));
+    add("transition", transition.id, "event", { read: events, written: /* @__PURE__ */ new Set() });
+    const condition = collect(label.condition, "expression");
+    condition.add(label.temporal?.condition, "expression");
+    add("transition", transition.id, "condition", condition);
+    add("transition", transition.id, "action", collect(label.action, "statements"));
+  }
+  for (const fn of chart.functions || []) {
+    add("function", fn.id, "code", collect(fn.code, "statements"));
+  }
+  return result;
 }
 function analyzeChart(chart) {
   const structure = new import_chart_structure.ChartStructure(chart);
@@ -362,6 +404,7 @@ function findShadowed(structure, validBySource, add, stateName) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  analyzeChart
+  analyzeChart,
+  findSymbolUsages
 });
 //# sourceMappingURL=chart-analysis.js.map

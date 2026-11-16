@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { analyzeChart } from "./chart-analysis";
+import { analyzeChart, findSymbolUsages } from "./chart-analysis";
 import type { Chart, ChartState, ChartTransition } from "./chart-model";
 
 /**
@@ -204,5 +204,38 @@ describe("chart-analysis => analyzeChart", () => {
             "local: The variable is written but never read",
             "unused: The variable is not used",
         ]);
+    });
+});
+
+describe("chart-analysis => findSymbolUsages", () => {
+    const chart = createChart(
+        [
+            { id: "off", name: "Off", entry: 'light = false; log("motion and count");' },
+            { id: "on", name: "On", entry: "light = true;\ncount++;", exit: "let motion = 1;" },
+        ],
+        [
+            { source: "off", target: "on", label: "motion[motion && count < 3]" },
+            { source: "on", target: "off", label: "after(2, min, !motion){count = 0;}" },
+        ],
+        { initial: "off" },
+    );
+    const usages = findSymbolUsages(chart);
+    const format = (name: string): string[] =>
+        (usages.get(name) || []).map(u => `${u.id}.${u.part}:${u.read ? "r" : ""}${u.write ? "w" : ""}`);
+
+    it("finds reads and writes in actions, labels and function blocks", () => {
+        expect(format("light")).to.deep.equal(["off.entry:w", "on.entry:w", "f1.code:w"]);
+        expect(format("motion")).to.deep.equal(["t0.event:r", "t0.condition:r", "t1.condition:r", "f1.code:r"]);
+        expect(format("count")).to.deep.equal(["on.entry:w", "t0.condition:r", "t1.action:w", "f1.code:r"]);
+    });
+
+    it("ignores names in strings and local declarations", () => {
+        // "motion and count" in the log text, "let motion" in the exit action of On
+        expect(format("motion").some(u => u.startsWith("off.") || u.startsWith("on."))).to.equal(false);
+    });
+
+    it("has no entry for an unused variable", () => {
+        const unused = findSymbolUsages({ ...chart, symbols: [...chart.symbols, { name: "spare", scope: "local" }] });
+        expect(unused.get("spare")).to.equal(undefined);
     });
 });
