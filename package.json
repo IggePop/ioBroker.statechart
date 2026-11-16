@@ -56,7 +56,7 @@
     "@types/node": "^22.20.5",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
-    "@xyflow/react": "^12.12.0",
+    "@xyflow/react": "^12.12.1",
     "html-to-image": "^1.11.11",
     "patch-package": "^8.0.1",
     "react": "^18.3.1",
