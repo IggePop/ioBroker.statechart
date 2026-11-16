@@ -98,7 +98,7 @@ Das Licht geht bei Bewegung an und nach 2 Minuten ohne Bewegung aus: `after(2, m
 - [Referenz](reference.md): der Editor und seine Werkzeugleiste, Beschriftung von Übergängen und Zeitlogik, wann Eingänge das Chart aufwecken, Aktionen,
   verschachtelte und parallele Zustände, Hilfsfunktionen, Funktionsblöcke, ein laufendes Chart beobachten,
   Simulation, Import und Export, vom Adapter angelegte Datenpunkte, Neustart, Ausführung und Einschränkungen
-- [Entwicklung](../development.md) (Englisch): Build, Dev-Server, Tests und Aufbau des Projekts
+- [Entwicklung](development.md): Build, Dev-Server, Tests und Aufbau des Projekts
 
 ### Hinweis
 

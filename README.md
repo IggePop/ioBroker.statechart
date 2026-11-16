@@ -103,7 +103,7 @@ The light goes on with motion and off after 2 minutes without motion: `after(2, 
 - [Reference](docs/en/reference.md): the editor and its toolbar, transition labels and temporal logic, when inputs wake up the chart, actions,
   nested and parallel states, helper functions, function blocks, watching a running chart, simulation, import and
   export, states created by the adapter, restart, execution model and limitations
-- [Development](docs/development.md): build, dev-server, tests and the structure of the project
+- [Development](docs/en/development.md): build, dev-server, tests and the structure of the project
 
 ## Disclaimer
 
