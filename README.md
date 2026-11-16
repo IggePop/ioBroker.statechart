@@ -52,18 +52,8 @@ of the running chart on the top left, the variables on the right.*
 
 ### Installation
 
-The adapter is not in the ioBroker repositories yet, but its released versions are on npm and can be installed
-from there:
-
-- **Admin:** tab **Adapters** → icon **Install from custom URL** (GitHub cat) → tab **Custom** →
-  URL `iobroker.statechart` → **Install**
-- **or on the console** of the ioBroker system:
-  ```bash
-  iobroker url iobroker.statechart
-  ```
-
-Then add an instance of **State Machine**. Please do not install it directly from GitHub: that is the current
-development version, not a tested release. Until 1.0, the format of the charts may still change.
+Install the adapter **State Machine** in the admin, tab **Adapters**, and add an instance. Until 1.0, the format of
+the charts may still change.
 
 Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.20 or newer.
 
@@ -183,6 +173,8 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) helper functions: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime
 * (Igge) code editor with syntax highlighting, error checks and completion, generated code view
 * (Igge) undo/redo, copy/paste, import/export of charts as JSON
+
+Older changes: [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
 ## License
 MIT License

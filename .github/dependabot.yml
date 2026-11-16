@@ -3,10 +3,11 @@ updates:
   - package-ecosystem: npm
     directory: "/"
     schedule:
-      interval: monthly
-      time: "00:05"
+      # a random time once a month, to spread the load on GitHub
+      interval: cron
+      cronjob: "54 5 5 * *"
       timezone: Europe/Berlin
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 15
     # new versions are only proposed after some days, to reduce the risk of compromised packages
     cooldown:
       default-days: 7
@@ -36,9 +37,10 @@ updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: monthly
-      time: "00:05"
+      # a random time once a month, to spread the load on GitHub
+      interval: cron
+      cronjob: "29 5 10 * *"
       timezone: Europe/Berlin
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 15
     assignees:
       - IggePop

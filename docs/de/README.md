@@ -44,18 +44,8 @@ oben links die Live-Werte des laufenden Charts, rechts die Variablen.*
 
 ### Installation
 
-Der Adapter ist noch nicht in den ioBroker-Repositories, seine veröffentlichten Versionen liegen aber auf npm und
-lassen sich von dort installieren:
-
-- **Admin:** Reiter **Adapter** → Symbol **Aus eigener URL installieren** (GitHub-Katze) → Reiter
-  **Benutzerdefiniert** → URL `iobroker.statechart` → **Installieren**
-- **oder auf der Konsole** des ioBroker-Systems:
-  ```bash
-  iobroker url iobroker.statechart
-  ```
-
-Danach eine Instanz von **Zustandsmaschine** hinzufügen. Bitte nicht direkt von GitHub installieren: Das ist der
-aktuelle Entwicklungsstand, kein getestetes Release. Bis zur 1.0 kann sich das Format der Charts noch ändern.
+Den Adapter **Zustandsmaschine** im Admin im Reiter **Adapter** installieren und eine Instanz hinzufügen. Bis zur
+1.0 kann sich das Format der Charts noch ändern.
 
 Voraussetzungen: Node.js 22 oder neuer, js-controller 6.0.11 oder neuer, Admin 7.6.20 oder neuer.
 
