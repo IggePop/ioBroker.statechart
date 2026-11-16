@@ -13,10 +13,11 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+-**"
   pull_request: {}
 
-# Cancel previous PR/branch runs when a new commit is pushed
+# Cancel previous PR/branch runs when a new commit is pushed. Runs on main always finish: the repository checker
+# of ioBroker reports a cancelled latest run, e.g. when Dependabot merged several updates one after another.
 concurrency:
   group: ${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   # Performs quick checks before the expensive test runs
@@ -74,7 +75,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Rebuild build and admin/build"
-          git push
+          # runs on main are not cancelled: if main has moved on meanwhile, the run of the newer commit rebuilds
+          if ! git push; then
+            git fetch origin main
+            if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+              echo "main has moved on, the run of the newer commit rebuilds build and admin/build"
+              exit 0
+            fi
+            exit 1
+          fi
 
   # Runs adapter tests on all supported node versions and OSes
   adapter-tests:
