@@ -29,6 +29,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var chart_runtime_exports = {};
 __export(chart_runtime_exports, {
   ChartRuntime: () => ChartRuntime,
+  SCRIPT_TIMEOUT_MS: () => SCRIPT_TIMEOUT_MS,
   getChartHash: () => getChartHash
 });
 module.exports = __toCommonJS(chart_runtime_exports);
@@ -174,6 +175,8 @@ class ChartRuntime {
   breakpointHit = null;
   /** JSON of the last status passed to host.onSimulationStatus() */
   lastStatus = "";
+  /** why the chart must be stopped, see fault(), null as long as it runs normally */
+  faulted = null;
   /** the current time, can be replaced in tests. A simulation can be ahead of the real time. */
   now = () => Date.now() + this.timeOffset;
   /** The chart as it is executed, without disabled states and transitions, see getExecutedChart() */
@@ -1445,7 +1448,7 @@ class ChartRuntime {
    * @param context The state whose condition or action it is, for elapsed() and duration()
    */
   run(script, where, context = this.context) {
-    if (!script) {
+    if (!script || this.faulted) {
       return void 0;
     }
     const previous = this.context;
@@ -1453,11 +1456,28 @@ class ChartRuntime {
     try {
       return script.runInContext(this.sandbox, { timeout: SCRIPT_TIMEOUT_MS });
     } catch (err) {
-      this.host.log.warn(`[${this.chart.name}] ${where}: ${err.message}`);
+      if (err?.code === "ERR_SCRIPT_EXECUTION_TIMEOUT") {
+        this.fault(`${where} did not finish within ${SCRIPT_TIMEOUT_MS / 1e3} s (endless loop?)`);
+      } else {
+        this.host.log.warn(`[${this.chart.name}] ${where}: ${err.message}`);
+      }
       return void 0;
     } finally {
       this.context = previous;
     }
+  }
+  /**
+   * Marks the chart to be stopped, logs the reason as error and tells the host, once
+   *
+   * @param message Why the chart must be stopped
+   */
+  fault(message) {
+    if (this.faulted) {
+      return;
+    }
+    this.faulted = message;
+    this.host.log.error(`[${this.chart.name}] Stopped: ${message}`);
+    this.host.onFault?.(message);
   }
   /**
    * Executes an action and writes all changed outputs
@@ -1520,6 +1540,7 @@ ${this.prepareCode(code, "statements")}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ChartRuntime,
+  SCRIPT_TIMEOUT_MS,
   getChartHash
 });
 //# sourceMappingURL=chart-runtime.js.map

@@ -1739,3 +1739,31 @@ describe("chart-runtime => nested states (Stateflow semantics)", () => {
         expect(chart.symbols.find(s => s.name === "trace")?.initial).to.deep.equal([]);
     });
 });
+
+describe("chart-runtime => protection of the adapter", () => {
+    let runtime: ChartRuntime | undefined;
+    afterEach(() => runtime?.stop());
+
+    it("stops a chart whose code does not finish within the time limit", async function () {
+        this.timeout(10000);
+        const host = Object.assign(createHost({ "test.0.motion": false, "test.0.light": false }), {
+            faults: [] as string[],
+            onFault: (message: string) => host.faults.push(message),
+        });
+        const chart = createLightChart();
+        chart.states[1].entry = "light = true; while (true) {}";
+        chart.states[1].during = "count++;";
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        runtime.handleInput("test.0.motion", true);
+        expect(host.faults).to.have.length(1);
+        expect(host.faults[0]).to.match(/did not finish within 1 s/);
+        expect(host.warnings.some(w => w.includes("Stopped:"))).to.equal(true);
+        // no code runs anymore, so it cannot block the adapter again until the chart is stopped
+        const count = runtime.sandbox.count;
+        runtime.handleInput("test.0.motion", false);
+        runtime.handleInput("test.0.motion", true);
+        expect(runtime.sandbox.count).to.equal(count);
+        expect(host.faults).to.have.length(1);
+    });
+});

@@ -401,11 +401,22 @@ Funktionsblöcken deklariert sind, werden nicht wiederhergestellt.
   zum richtigen Zeitpunkt bräuchte.
 - Bedingungen und Aktionen sind JavaScript, nicht MATLAB- oder C-Syntax.
 
+## Fehler im Code
+
+Bedingungen, Aktionen und Funktionsblöcke laufen im Prozess des Adapters, jedes Chart in einem eigenen
+JavaScript-Kontext. Alle Charts teilen sich den Prozess, deshalb schützt der Adapter sie voreinander:
+
+- **Exception:** Sie wird mit Chart und Stelle als Warnung geloggt, der Rest dieser Bedingung oder Aktion wird
+  übersprungen. Das Chart läuft weiter.
+- **Zeitlimit:** Jede Bedingung und Aktion muss innerhalb von 1 Sekunde fertig sein. Ein Chart, das es überschreitet,
+  z.B. wegen einer Endlosschleife, wird sofort angehalten wie mit ⏸, der Grund steht als Fehler im Log. Behebe den
+  Fehler und starte es wieder. Eine Simulation wird stattdessen beendet.
+
 ## Einschränkungen
 
 - History- und Verbindungspunkte werden noch nicht unterstützt.
 - Beim Löschen eines Superstates werden auch seine Unterzustände gelöscht.
 - Ungespeicherte Änderungen gehen verloren, wenn ein anderes Chart ausgewählt wird.
-- Bedingungen und Aktionen laufen in einem eigenen JavaScript-Kontext mit 1 Sekunde Zeitlimit, das
-  ist aber **keine Sicherheits-Sandbox**: Wer Charts bearbeiten darf, kann im Adapter beliebigen Code
+- Bedingungen und Aktionen laufen in einem eigenen JavaScript-Kontext mit Zeitlimit (siehe
+  [Fehler im Code](#fehler-im-code)), das ist aber **keine Sicherheits-Sandbox**: Wer Charts bearbeiten darf, kann im Adapter beliebigen Code
   ausführen, wie beim JavaScript-Adapter auch.

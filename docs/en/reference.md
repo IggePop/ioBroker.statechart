@@ -387,11 +387,22 @@ restart** in the chart properties is switched off. Variables declared in functio
   wakeup at the right time.
 - Conditions and actions use JavaScript, not MATLAB/C syntax.
 
+## Errors in the code
+
+Conditions, actions and function blocks run in the adapter process, each chart in its own JavaScript context. All
+charts share the process, so the adapter protects them from each other:
+
+- **Exception:** it is logged as warning with the chart and the place, the rest of that condition or action is
+  skipped. The chart continues.
+- **Time limit:** every condition and action must finish within 1 second. A chart which exceeds it, e.g. because of
+  an endless loop, is stopped right away and paused like with ⏸, the reason is logged as error. Fix it and start it
+  again. A simulation ends instead.
+
 ## Limitations
 
 - History junctions and connective junctions are not supported yet.
 - Deleting a super state also deletes its sub states.
 - Unsaved changes are lost when you select another chart.
-- Conditions and actions run in a separate JavaScript context with a time limit of 1 second, but this
-  is **no security sandbox**: everyone who may edit charts can execute any code in the adapter,
+- Conditions and actions run in a separate JavaScript context with a time limit (see
+  [Errors in the code](#errors-in-the-code)), but this is **no security sandbox**: everyone who may edit charts can execute any code in the adapter,
   just like with the JavaScript adapter.

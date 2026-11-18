@@ -188,7 +188,7 @@ class Statechart extends utils.Adapter {
      * @param simulated Run it as simulation, see ChartRuntime
      */
     private createRuntime(chartId: string, chart: Chart, simulated = false): ChartRuntime {
-        return new ChartRuntime(
+        const runtime: ChartRuntime = new ChartRuntime(
             chartId,
             chart,
             {
@@ -213,6 +213,25 @@ class Statechart extends utils.Adapter {
                 onSimulationStatus: status => {
                     void this.setState(`charts.${chartId}.simulationStatus`, JSON.stringify(status), true);
                 },
+                // e.g. an endless loop: a simulation ends, a chart is paused like with the button in the editor
+                onFault: () => {
+                    this.chartQueue = this.chartQueue
+                        .then(async () => {
+                            // the chart may have been restarted meanwhile, e.g. after a change
+                            if (this.runtimes.has(chartId) && this.runtimes.get(chartId) !== runtime) {
+                                return;
+                            }
+                            if (simulated) {
+                                await this.stopSimulation(chartId);
+                                return;
+                            }
+                            this.stopChart(chartId);
+                            await this.extendObjectAsync(`charts.${chartId}`, {
+                                native: { chart: { enabled: false } },
+                            });
+                        })
+                        .catch(err => this.log.error(`Cannot stop chart ${chartId}: ${err.message}`));
+                },
                 loadPersisted: async () => {
                     const state = await this.getStateAsync(`charts.${chartId}.snapshot`);
                     return typeof state?.val === "string" && state.val ? JSON.parse(state.val) : null;
@@ -224,6 +243,7 @@ class Statechart extends utils.Adapter {
             },
             simulated,
         );
+        return runtime;
     }
 
     /**

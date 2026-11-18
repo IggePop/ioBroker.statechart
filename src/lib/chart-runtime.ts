@@ -12,8 +12,8 @@ import { ChartStructure, HISTORY_SUFFIX } from "./chart-structure";
 import { getDeclarations, prepareHelperCalls, validateChart } from "./chart-validation";
 import type { CodeKind } from "./chart-validation";
 
-/** Maximum run time of a single condition or action */
-const SCRIPT_TIMEOUT_MS = 1000;
+/** Maximum run time of a single condition or action, a chart which exceeds it is stopped */
+export const SCRIPT_TIMEOUT_MS = 1000;
 
 /** Longer delays are not supported by setTimeout() */
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
@@ -148,6 +148,11 @@ export interface RuntimeHost {
     onHistory?: (entries: HistoryEntry[]) => void;
     /** Simulation: called when the status changes */
     onSimulationStatus?: (status: SimulationStatus) => void;
+    /**
+     * The chart must be stopped, e.g. because its code did not finish within the time limit. Called once with the
+     * reason, which is also logged as error. The runtime does not execute any code of the chart afterwards.
+     */
+    onFault?: (message: string) => void;
     /** Writes to the log of the adapter */
     log: Pick<ioBroker.Logger, LogLevel>;
 }
@@ -335,6 +340,8 @@ export class ChartRuntime {
     breakpointHit: string | null = null;
     /** JSON of the last status passed to host.onSimulationStatus() */
     lastStatus = "";
+    /** why the chart must be stopped, see fault(), null as long as it runs normally */
+    faulted: string | null = null;
     /** the current time, can be replaced in tests. A simulation can be ahead of the real time. */
     now = (): number => Date.now() + this.timeOffset;
 
@@ -1770,7 +1777,8 @@ export class ChartRuntime {
      * @param context The state whose condition or action it is, for elapsed() and duration()
      */
     run(script: vm.Script | null, where: string, context: string | null = this.context): any {
-        if (!script) {
+        // a faulted chart is about to be stopped, its code must not block the adapter again meanwhile
+        if (!script || this.faulted) {
             return undefined;
         }
         const previous = this.context;
@@ -1778,11 +1786,30 @@ export class ChartRuntime {
         try {
             return script.runInContext(this.sandbox, { timeout: SCRIPT_TIMEOUT_MS });
         } catch (err) {
-            this.host.log.warn(`[${this.chart.name}] ${where}: ${err.message}`);
+            if (err?.code === "ERR_SCRIPT_EXECUTION_TIMEOUT") {
+                // all charts share the process: an endless loop would block all of them on every wakeup
+                this.fault(`${where} did not finish within ${SCRIPT_TIMEOUT_MS / 1000} s (endless loop?)`);
+            } else {
+                this.host.log.warn(`[${this.chart.name}] ${where}: ${err.message}`);
+            }
             return undefined;
         } finally {
             this.context = previous;
         }
+    }
+
+    /**
+     * Marks the chart to be stopped, logs the reason as error and tells the host, once
+     *
+     * @param message Why the chart must be stopped
+     */
+    fault(message: string): void {
+        if (this.faulted) {
+            return;
+        }
+        this.faulted = message;
+        this.host.log.error(`[${this.chart.name}] Stopped: ${message}`);
+        this.host.onFault?.(message);
     }
 
     /**
