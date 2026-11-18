@@ -40,6 +40,10 @@ Alle Teile sind optional und dürfen über mehrere Zeilen gehen.
 | `[bedingung]` | JavaScript-Ausdruck, der Übergang wird nur genommen, wenn er wahr ist | `[temp > 21 && !fenster]` |
 | `{aktion}` | JavaScript, wird ausgeführt, wenn der Übergang genommen wird | `{zaehler++; licht = true;}` |
 
+Beispiel: `motion[motion && brightness < 50]{light = true;}` wird geprüft, wenn sich der Eingang `motion` ändert, und
+genommen, wenn eine Bewegung erkannt ist und die Variable `brightness` unter 50 liegt. Dann schaltet er den Ausgang
+`light` ein.
+
 Ohne Event wird ein Übergang bei jeder Änderung eines beliebigen Eingangs geprüft. Hat ein Zustand
 mehrere ausgehende Übergänge, werden sie in der Reihenfolge ihrer **Priorität** geprüft (steht am Pfeil).
 

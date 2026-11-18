@@ -122,6 +122,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) fixed: an exception in a promise of the code of a chart restarted the adapter, and an endless loop in a promise was not aborted
 * (Igge) a chart which writes more than 1000 times per minute (e.g. a feedback loop) is stopped
 * (Igge) fixed: with the modern themes of admin 8 (also with the automatic theme), the editor stayed light instead of following the theme of the admin
+* (Igge) the explanation of the transition label shows conditions with variables and a complete example
 ### 0.5.1 (2026-11-15)
 * (Igge) documentation updated: active states, tooltips on tap, start and pause in the toolbar, the new layout functions
 * (Igge) the types of ioBroker are a direct development dependency (finding W048 of the repository checker)

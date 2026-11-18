@@ -39,6 +39,9 @@ All parts are optional and may span several lines.
 | `[condition]` | JavaScript expression, the transition is only taken if it is true | `[temp > 21 && !window]` |
 | `{action}` | JavaScript, executed when the transition is taken | `{count++; light = true;}` |
 
+Example: `motion[motion && brightness < 50]{light = true;}` is checked when the input `motion` changes, and taken
+if motion is detected and the variable `brightness` is below 50. Then it switches on the output `light`.
+
 Without event, a transition is checked whenever any input changes. If a state has several outgoing
 transitions, they are checked in the order of their **priority** (shown at the arrow).
 

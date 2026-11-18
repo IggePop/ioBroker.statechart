@@ -22,7 +22,7 @@
     "Delete state": "Delete state",
     "Transition": "Transition",
     "Label": "Label",
-    "labelHelp": "event[condition]{action}, every part is optional. Event: name of an input, or a temporal expression like after(5, sec), before(...), at(...), every(...), after(3, input), after(5, min, condition) or at(\"sunset\", -30)",
+    "labelHelp": "event[condition]{action}, every part is optional. Event: name of an input, or a temporal expression like after(5, sec), before(...), at(...), every(...), after(3, input), after(5, min, condition) or at(\"sunset\", -30)\nCondition: JavaScript with the variables, e.g. [motion && brightness < 50] or [temperature > target + 0.5]\nExample: motion[motion && brightness < 50]{light = true;}",
     "Priority": "Priority",
     "priorityHelp": "Transitions of the same state are checked in this order",
     "Delete transition": "Delete transition",

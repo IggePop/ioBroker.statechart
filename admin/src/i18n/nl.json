@@ -22,7 +22,7 @@
     "Delete state": "Staat verwijderen",
     "Transition": "Overgang",
     "Label": "Label",
-    "labelHelp": "event[condition]{action}, elk deel is optioneel. Event: naam van een ingang, of een tijdsexpressie zoals after(5, sec), before(...), at(...), every(...), after(3, input), after(5, min, condition) of at(\"sunset\", -30)",
+    "labelHelp": "event[condition]{action}, elk deel is optioneel. Event: naam van een ingang, of een tijdsexpressie zoals after(5, sec), before(...), at(...), every(...), after(3, input), after(5, min, condition) of at(\"sunset\", -30)\nVoorwaarde: JavaScript met de variabelen, bijv. [motion && brightness < 50] of [temperature > target + 0.5]\nVoorbeeld: motion[motion && brightness < 50]{light = true;}",
     "Priority": "Prioriteit",
     "priorityHelp": "Overgangen van dezelfde status worden in deze volgorde gecontroleerd",
     "Delete transition": "Overgang verwijderen",

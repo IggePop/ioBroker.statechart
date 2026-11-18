@@ -22,7 +22,7 @@
     "Delete state": "Удалить состояние",
     "Transition": "Переход",
     "Label": "Этикетка",
-    "labelHelp": "event[condition]{action}, каждая часть необязательна. Событие: имя входа или временное выражение, например after(5, sec), before(...), at(...), every(...), after(3, input), after(5, min, condition) или at(\"sunset\", -30)",
+    "labelHelp": "event[condition]{action}, каждая часть необязательна. Событие: имя входа или временное выражение, например after(5, sec), before(...), at(...), every(...), after(3, input), after(5, min, condition) или at(\"sunset\", -30)\nУсловие: JavaScript с переменными, например [motion && brightness < 50] или [temperature > target + 0.5]\nПример: motion[motion && brightness < 50]{light = true;}",
     "Priority": "Приоритет",
     "priorityHelp": "Переходы одного и того же состояния проверяются в таком порядке",
     "Delete transition": "Удалить переход",

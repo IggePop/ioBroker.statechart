@@ -22,7 +22,7 @@
     "Delete state": "删除状态",
     "Transition": "转换",
     "Label": "标签",
-    "labelHelp": "event[condition]{action},每个部分都是可选的。事件:输入的名称,或时间表达式,如 after(5, sec)、before(...)、at(...)、every(...)、after(3, input)、after(5, min, condition) 或 at(\"sunset\", -30)",
+    "labelHelp": "event[condition]{action},每个部分都是可选的。事件:输入的名称,或时间表达式,如 after(5, sec)、before(...)、at(...)、every(...)、after(3, input)、after(5, min, condition) 或 at(\"sunset\", -30)\n条件:使用变量的 JavaScript,例如 [motion && brightness < 50] 或 [temperature > target + 0.5]\n示例:motion[motion && brightness < 50]{light = true;}",
     "Priority": "优先级",
     "priorityHelp": "同一状态的转换按此顺序检查",
     "Delete transition": "删除转换",

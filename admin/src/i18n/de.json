@@ -22,7 +22,7 @@
     "Delete state": "Zustand löschen",
     "Transition": "Übergang",
     "Label": "Beschriftung",
-    "labelHelp": "event[bedingung]{aktion}, jeder Teil ist optional. Event: Name eines Eingangs oder ein Zeitausdruck wie after(5, sec), before(...), at(...), every(...), after(3, eingang), after(5, min, bedingung) oder at(\"sunset\", -30)",
+    "labelHelp": "event[bedingung]{aktion}, jeder Teil ist optional. Event: Name eines Eingangs oder ein Zeitausdruck wie after(5, sec), before(...), at(...), every(...), after(3, eingang), after(5, min, bedingung) oder at(\"sunset\", -30)\nBedingung: JavaScript mit den Variablen, z.B. [motion && brightness < 50] oder [temperature > target + 0.5]\nBeispiel: motion[motion && brightness < 50]{light = true;}",
     "Priority": "Priorität",
     "priorityHelp": "Übergänge desselben Zustands werden in dieser Reihenfolge geprüft",
     "Delete transition": "Übergang löschen",

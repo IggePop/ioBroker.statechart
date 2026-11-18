@@ -22,7 +22,7 @@
     "Delete state": "Видалити стан",
     "Transition": "Перехід",
     "Label": "Мітка",
-    "labelHelp": "event[condition]{action}, кожна частина необов’язкова. Подія: назва входу або часовий вираз, наприклад after(5, sec), before(...), at(...), every(...), after(3, input), after(5, min, condition) або at(\"sunset\", -30)",
+    "labelHelp": "event[condition]{action}, кожна частина необов’язкова. Подія: назва входу або часовий вираз, наприклад after(5, sec), before(...), at(...), every(...), after(3, input), after(5, min, condition) або at(\"sunset\", -30)\nУмова: JavaScript зі змінними, наприклад [motion && brightness < 50] або [temperature > target + 0.5]\nПриклад: motion[motion && brightness < 50]{light = true;}",
     "Priority": "Пріоритет",
     "priorityHelp": "Переходи одного стану перевіряються в такому порядку",
     "Delete transition": "Видалити перехід",
