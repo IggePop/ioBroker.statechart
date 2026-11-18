@@ -413,6 +413,9 @@ JavaScript-Kontext. Alle Charts teilen sich den Prozess, deshalb schützt der Ad
   Fehler und starte es wieder. Eine Simulation wird stattdessen beendet.
 - **Promises:** Callbacks von Promises (`.then()`, `async`-Funktionen) laufen direkt nach dem Code, der sie erzeugt,
   innerhalb seines Zeitlimits. Eine Exception darin wird wie jede andere geloggt und startet den Adapter nicht neu.
+- **Schreibzugriffe:** Ein Chart darf höchstens 1000-mal pro Minute schreiben (Ausgänge, `setState()`,
+  `setStateDelayed()`, `sendTo()`), weit mehr, als ein Chart braucht. Ein Chart, das mehr schreibt, z.B. wegen einer
+  Rückkopplung über die eigenen Eingänge, wird angehalten wie nach einer Zeitüberschreitung.
 
 ## Einschränkungen
 

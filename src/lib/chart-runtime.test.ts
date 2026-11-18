@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ChartRuntime, getChartHash, getErrorOrigin } from "./chart-runtime";
+import { ChartRuntime, MAX_WRITES_PER_MINUTE, getChartHash, getErrorOrigin } from "./chart-runtime";
 import { MAX_SUPER_STEPS } from "./chart-model";
 import type { HistoryEntry, PersistedChart, SimulationStatus } from "./chart-runtime";
 import type { Chart, ChartState, ChartSymbol } from "./chart-model";
@@ -1805,5 +1805,23 @@ describe("chart-runtime => protection of the adapter", () => {
         expect(getErrorOrigin(new Error("from somewhere else"))).to.equal(null);
         // the chart continues
         expect(host.states["test.0.light"]).to.equal(true);
+    });
+
+    it("stops a chart which writes too often", async () => {
+        const host = Object.assign(createHost({ "test.0.motion": false, "test.0.light": false }), {
+            faults: [] as string[],
+            onFault: (message: string) => host.faults.push(message),
+        });
+        const chart = createLightChart();
+        // like a feedback loop: far more writes than any chart needs
+        chart.states[1].entry = `light = true; for (let i = 0; i < ${MAX_WRITES_PER_MINUTE + 10}; i++) { setState("test.0.other", i); }`;
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        runtime.handleInput("test.0.motion", true);
+        await wait(10);
+        expect(host.faults).to.have.length(1);
+        expect(host.faults[0]).to.match(/wrote more than 1000 times within a minute/);
+        // light = false at the start, light = true, and setState() until the limit
+        expect(host.writes).to.have.length(MAX_WRITES_PER_MINUTE);
     });
 });

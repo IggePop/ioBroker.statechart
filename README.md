@@ -120,6 +120,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) the wake up options of an input are always collapsed at first, the button shows if they are customized
 * (Igge) a chart whose code does not finish within the time limit of 1 s (e.g. an endless loop) is stopped, so it cannot block the other charts again and again
 * (Igge) fixed: an exception in a promise of the code of a chart restarted the adapter, and an endless loop in a promise was not aborted
+* (Igge) a chart which writes more than 1000 times per minute (e.g. a feedback loop) is stopped
 ### 0.5.1 (2026-11-15)
 * (Igge) documentation updated: active states, tooltips on tap, start and pause in the toolbar, the new layout functions
 * (Igge) the types of ioBroker are a direct development dependency (finding W048 of the repository checker)

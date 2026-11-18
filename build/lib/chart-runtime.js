@@ -29,6 +29,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var chart_runtime_exports = {};
 __export(chart_runtime_exports, {
   ChartRuntime: () => ChartRuntime,
+  MAX_WRITES_PER_MINUTE: () => MAX_WRITES_PER_MINUTE,
   SCRIPT_TIMEOUT_MS: () => SCRIPT_TIMEOUT_MS,
   getChartHash: () => getChartHash,
   getErrorOrigin: () => getErrorOrigin
@@ -44,6 +45,7 @@ var import_chart_model = require("./chart-model");
 var import_chart_structure = require("./chart-structure");
 var import_chart_validation = require("./chart-validation");
 const SCRIPT_TIMEOUT_MS = 1e3;
+const MAX_WRITES_PER_MINUTE = 1e3;
 const SCRIPT_FILE_PREFIX = "statechart-code/";
 function getErrorOrigin(err) {
   const stack = typeof err?.stack === "string" ? err.stack : "";
@@ -184,6 +186,10 @@ class ChartRuntime {
   lastStatus = "";
   /** why the chart must be stopped, see fault(), null as long as it runs normally */
   faulted = null;
+  /** writes in the current minute, see countWrite() */
+  writeCount = 0;
+  /** real time when the current minute of writeCount began */
+  writeCountSince = 0;
   /** the current time, can be replaced in tests. A simulation can be ahead of the real time. */
   now = () => Date.now() + this.timeOffset;
   /** The chart as it is executed, without disabled states and transitions, see getExecutedChart() */
@@ -693,6 +699,9 @@ class ChartRuntime {
         this.host.log[method](`${prefix} ${message}`);
       },
       setState: (id, value, ack = false) => {
+        if (!this.countWrite()) {
+          return;
+        }
         if (this.simulated) {
           this.recordEffect(describe("setState", [id, value, ...ack ? [true] : []]));
           return;
@@ -704,6 +713,9 @@ class ChartRuntime {
         this.delayedWrites.add(timer);
         this.scheduleAt(this.now() + Math.max(Number(delayMs) || 0, 0), timer, () => {
           this.delayedWrites.delete(timer);
+          if (!this.countWrite()) {
+            return;
+          }
           if (this.simulated) {
             this.recordEffect(describe("setState", [id, value, ...ack ? [true] : []]));
             return;
@@ -712,6 +724,9 @@ class ChartRuntime {
         });
       },
       sendTo: (instance, command, message) => {
+        if (!this.countWrite()) {
+          return;
+        }
         if (this.simulated) {
           this.recordEffect(describe("sendTo", [instance, command, message]));
           return;
@@ -1474,6 +1489,27 @@ class ChartRuntime {
     }
   }
   /**
+   * Counts a write of the chart (also a recorded one in a simulation) and stops the chart if it writes too often
+   *
+   * @returns false if the write must not happen
+   */
+  countWrite() {
+    if (this.faulted) {
+      return false;
+    }
+    const now = Date.now();
+    if (now - this.writeCountSince >= 6e4) {
+      this.writeCountSince = now;
+      this.writeCount = 0;
+    }
+    this.writeCount++;
+    if (this.writeCount > MAX_WRITES_PER_MINUTE) {
+      this.fault(`wrote more than ${MAX_WRITES_PER_MINUTE} times within a minute (feedback loop?)`);
+      return false;
+    }
+    return true;
+  }
+  /**
    * Marks the chart to be stopped, logs the reason as error and tells the host, once
    *
    * @param message Why the chart must be stopped
@@ -1509,6 +1545,9 @@ ${this.prepareCode(code, "statements")}
       }
       const val = this.sandbox[symbol.name];
       if (val !== this.outputValues.get(symbol.name)) {
+        if (!this.countWrite()) {
+          return;
+        }
         this.outputValues.set(symbol.name, val);
         if (this.simulated) {
           this.recordEffect(`${symbol.name} = ${val === void 0 ? "undefined" : JSON.stringify(val)}`);
@@ -1547,6 +1586,7 @@ ${this.prepareCode(code, "statements")}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ChartRuntime,
+  MAX_WRITES_PER_MINUTE,
   SCRIPT_TIMEOUT_MS,
   getChartHash,
   getErrorOrigin

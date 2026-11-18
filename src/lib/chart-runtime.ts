@@ -15,6 +15,12 @@ import type { CodeKind } from "./chart-validation";
 /** Maximum run time of a single condition or action, a chart which exceeds it is stopped */
 export const SCRIPT_TIMEOUT_MS = 1000;
 
+/**
+ * Maximum number of writes of a chart within a minute (outputs, setState(), sendTo()), a chart which exceeds it is
+ * stopped: e.g. a feedback loop through its own inputs would flood the system otherwise
+ */
+export const MAX_WRITES_PER_MINUTE = 1000;
+
 /** Prefix of the file names of the compiled code, followed by the chart ID and the place, see getErrorOrigin() */
 const SCRIPT_FILE_PREFIX = "statechart-code/";
 
@@ -358,6 +364,10 @@ export class ChartRuntime {
     lastStatus = "";
     /** why the chart must be stopped, see fault(), null as long as it runs normally */
     faulted: string | null = null;
+    /** writes in the current minute, see countWrite() */
+    writeCount = 0;
+    /** real time when the current minute of writeCount began */
+    writeCountSince = 0;
     /** the current time, can be replaced in tests. A simulation can be ahead of the real time. */
     now = (): number => Date.now() + this.timeOffset;
 
@@ -955,6 +965,9 @@ export class ChartRuntime {
                 this.host.log[method](`${prefix} ${message}`);
             },
             setState: (id: string, value: any, ack = false) => {
+                if (!this.countWrite()) {
+                    return;
+                }
                 if (this.simulated) {
                     this.recordEffect(describe("setState", [id, value, ...(ack ? [true] : [])]));
                     return;
@@ -966,6 +979,9 @@ export class ChartRuntime {
                 this.delayedWrites.add(timer);
                 this.scheduleAt(this.now() + Math.max(Number(delayMs) || 0, 0), timer, () => {
                     this.delayedWrites.delete(timer);
+                    if (!this.countWrite()) {
+                        return;
+                    }
                     if (this.simulated) {
                         this.recordEffect(describe("setState", [id, value, ...(ack ? [true] : [])]));
                         return;
@@ -974,6 +990,9 @@ export class ChartRuntime {
                 });
             },
             sendTo: (instance: string, command: string, message: any) => {
+                if (!this.countWrite()) {
+                    return;
+                }
                 if (this.simulated) {
                     this.recordEffect(describe("sendTo", [instance, command, message]));
                     return;
@@ -1817,6 +1836,29 @@ export class ChartRuntime {
     }
 
     /**
+     * Counts a write of the chart (also a recorded one in a simulation) and stops the chart if it writes too often
+     *
+     * @returns false if the write must not happen
+     */
+    countWrite(): boolean {
+        if (this.faulted) {
+            return false;
+        }
+        // the real time, also in a simulation which is ahead of it
+        const now = Date.now();
+        if (now - this.writeCountSince >= 60_000) {
+            this.writeCountSince = now;
+            this.writeCount = 0;
+        }
+        this.writeCount++;
+        if (this.writeCount > MAX_WRITES_PER_MINUTE) {
+            this.fault(`wrote more than ${MAX_WRITES_PER_MINUTE} times within a minute (feedback loop?)`);
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Marks the chart to be stopped, logs the reason as error and tells the host, once
      *
      * @param message Why the chart must be stopped
@@ -1853,6 +1895,9 @@ export class ChartRuntime {
             }
             const val = this.sandbox[symbol.name];
             if (val !== this.outputValues.get(symbol.name)) {
+                if (!this.countWrite()) {
+                    return;
+                }
                 this.outputValues.set(symbol.name, val);
                 if (this.simulated) {
                     this.recordEffect(`${symbol.name} = ${val === undefined ? "undefined" : JSON.stringify(val)}`);

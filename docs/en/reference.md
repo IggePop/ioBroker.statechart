@@ -399,6 +399,9 @@ charts share the process, so the adapter protects them from each other:
   again. A simulation ends instead.
 - **Promises:** callbacks of promises (`.then()`, `async` functions) run right after the code which creates them,
   within its time limit. An exception in them is logged like any other, it does not restart the adapter.
+- **Writes:** a chart may write at most 1000 times per minute (outputs, `setState()`, `setStateDelayed()`,
+  `sendTo()`), far more than a chart needs. A chart which exceeds it, e.g. because of a feedback loop through its own
+  inputs, is stopped like after exceeding the time limit.
 
 ## Limitations
 
