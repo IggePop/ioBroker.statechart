@@ -343,6 +343,7 @@ For every chart, the adapter creates below `statechart.<instance>.charts.<chart>
 | `history` | The last 200 events (starts and transitions taken) as JSON. Writing it without ack clears it |
 | `simulation` | `true` while the chart runs as simulation from the editor |
 | `simulationStatus` | Status of the simulation as JSON: paused, time offset, waiting events, next timer, breakpoint |
+| `error` | Last error or warning of the chart, e.g. `On/entry: boom` or `Stopped: …`, see [Errors in the code](#errors-in-the-code). Cleared when the chart starts, kept when it is stopped because of an error. Messages of `log()` are not shown here, nor problems of a simulation |
 
 The chart itself is stored in the object `statechart.<instance>.charts.<chart>`.
 
@@ -405,6 +406,8 @@ charts share the process, so the adapter protects them from each other:
 - **Writes:** a chart may write at most 1000 times per minute (outputs, `setState()`, `setStateDelayed()`,
   `sendTo()`), far more than a chart needs. A chart which exceeds it, e.g. because of a feedback loop through its own
   inputs, is stopped like after exceeding the time limit.
+
+The last error or warning of a chart is also written to its state `error`, e.g. to show it in vis or to get notified.
 
 ## Limitations
 

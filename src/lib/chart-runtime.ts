@@ -175,6 +175,11 @@ export interface RuntimeHost {
      * reason, which is also logged as error. The runtime does not execute any code of the chart afterwards.
      */
     onFault?: (message: string) => void;
+    /**
+     * Called with each problem of the chart which is logged as warning or error, e.g. an exception in its code or a
+     * state which cannot be written. Not called for log() of the code of the chart.
+     */
+    onError?: (message: string) => void;
     /** Writes to the log of the adapter */
     log: Pick<ioBroker.Logger, LogLevel>;
 }
@@ -485,7 +490,7 @@ export class ChartRuntime {
                 }
                 this.stateCache.set(id, toSnapshot(state));
             } catch (err) {
-                this.host.log.warn(`[${this.chart.name}] Cannot read ${id}: ${err.message}`);
+                this.report("warn", `Cannot read ${id}: ${err.message}`);
                 this.stateCache.set(id, null);
             }
         }
@@ -587,7 +592,7 @@ export class ChartRuntime {
     subscribe(): void {
         this.actor?.subscribe({
             next: snapshot => this.publishActiveStates(snapshot.value),
-            error: err => this.host.log.error(`[${this.chart.name}] ${String(err)}`),
+            error: err => this.report("error", String(err)),
         });
     }
 
@@ -846,7 +851,7 @@ export class ChartRuntime {
         try {
             due = this.getNextDailyTime(transition.temporal as TemporalExpression, after);
         } catch (err) {
-            this.host.log.warn(`[${this.chart.name}] ${transition.where}: ${err.message}`);
+            this.report("warn", `${transition.where}: ${err.message}`);
             return;
         }
         if (due === null) {
@@ -919,10 +924,11 @@ export class ChartRuntime {
                 where = `Transition ${source} -> ${target}`;
             }
             // hints of the analysis, e.g. unused variables, are often intended
-            const log = { error: this.host.log.error, warning: this.host.log.warn, info: this.host.log.debug }[
-                diagnostic.severity
-            ];
-            log(`[${this.chart.name}] ${where}: ${diagnostic.message}`);
+            if (diagnostic.severity === "info") {
+                this.host.log.debug(`[${this.chart.name}] ${where}: ${diagnostic.message}`);
+            } else {
+                this.report(diagnostic.severity === "error" ? "error" : "warn", `${where}: ${diagnostic.message}`);
+            }
         }
     }
 
@@ -954,7 +960,7 @@ export class ChartRuntime {
         const write = (id: string, value: any, ack: boolean): Promise<void> =>
             this.host
                 .writeState(String(id), value, !!ack)
-                .catch(err => this.host.log.warn(`${prefix} Cannot write ${id}: ${err}`));
+                .catch(err => this.report("warn", `Cannot write ${id}: ${err}`));
         const describe = (name: string, args: any[]): string =>
             `${name}(${args.map(arg => (arg === undefined ? "undefined" : JSON.stringify(arg))).join(", ")})`;
         return {
@@ -1385,8 +1391,9 @@ export class ChartRuntime {
                 }
             }
             if (steps >= MAX_SUPER_STEPS) {
-                this.host.log.warn(
-                    `[${this.chart.name}] Stopped after ${MAX_SUPER_STEPS} transitions in one wakeup, the transitions probably form a loop. The chart continues on the next wakeup.`,
+                this.report(
+                    "warn",
+                    `Stopped after ${MAX_SUPER_STEPS} transitions in one wakeup, the transitions probably form a loop. The chart continues on the next wakeup.`,
                 );
             }
         }
@@ -1749,7 +1756,7 @@ export class ChartRuntime {
         const target = this.statesById.get(transition.target);
         const where = `${source.name} -> ${target?.name ?? transition.target}`;
         if (!target) {
-            this.host.log.warn(`[${this.chart.name}] Transition ${where}: unknown target, ignored`);
+            this.report("warn", `Transition ${where}: unknown target, ignored`);
             return null;
         }
         if (this.structure.getCrossedParallel(transition) !== undefined) {
@@ -1761,7 +1768,7 @@ export class ChartRuntime {
         try {
             label = parseTransitionLabel(transition.label);
         } catch (err) {
-            this.host.log.error(`[${this.chart.name}] Transition ${where}: ${err.message}, ignored`);
+            this.report("error", `Transition ${where}: ${err.message}, ignored`);
             return null;
         }
 
@@ -1803,7 +1810,7 @@ export class ChartRuntime {
             // the file name tells the adapter where an error in a promise comes from, see getErrorOrigin()
             return new vm.Script(code, { filename: `${SCRIPT_FILE_PREFIX}${this.chartId}/${where}` });
         } catch (err) {
-            this.host.log.error(`[${this.chart.name}] ${where}: ${err.message}`);
+            this.report("error", `${where}: ${err.message}`);
             return null;
         }
     }
@@ -1827,7 +1834,7 @@ export class ChartRuntime {
                 // all charts share the process: an endless loop would block all of them on every wakeup
                 this.fault(`${where} did not finish within ${SCRIPT_TIMEOUT_MS / 1000} s (endless loop?)`);
             } else {
-                this.host.log.warn(`[${this.chart.name}] ${where}: ${err.message}`);
+                this.report("warn", `${where}: ${err.message}`);
             }
             return undefined;
         } finally {
@@ -1859,6 +1866,17 @@ export class ChartRuntime {
     }
 
     /**
+     * Logs a problem of the chart, e.g. an exception in its code, and passes it to host.onError()
+     *
+     * @param level Log level
+     * @param message The problem, without the name of the chart
+     */
+    report(level: "warn" | "error", message: string): void {
+        this.host.log[level](`[${this.chart.name}] ${message}`);
+        this.host.onError?.(message);
+    }
+
+    /**
      * Marks the chart to be stopped, logs the reason as error and tells the host, once
      *
      * @param message Why the chart must be stopped
@@ -1868,7 +1886,7 @@ export class ChartRuntime {
             return;
         }
         this.faulted = message;
-        this.host.log.error(`[${this.chart.name}] Stopped: ${message}`);
+        this.report("error", `Stopped: ${message}`);
         this.host.onFault?.(message);
     }
 
@@ -1905,7 +1923,7 @@ export class ChartRuntime {
                 }
                 this.host
                     .writeState(symbol.stateId, val)
-                    .catch(err => this.host.log.warn(`[${this.chart.name}] Cannot write ${symbol.stateId}: ${err}`));
+                    .catch(err => this.report("warn", `Cannot write ${symbol.stateId}: ${err}`));
             }
         }
     }

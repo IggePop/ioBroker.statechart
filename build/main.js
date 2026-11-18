@@ -50,8 +50,12 @@ class Statechart extends utils.Adapter {
         if (!origin) {
           return false;
         }
-        const name = this.runtimes.get(origin.chartId)?.chart.name ?? origin.chartId;
-        this.log.warn(`[${name}] ${origin.where}: ${err.message}`);
+        const runtime = this.runtimes.get(origin.chartId);
+        if (runtime) {
+          runtime.report("warn", `${origin.where}: ${err.message}`);
+        } else {
+          this.log.warn(`[${origin.chartId}] ${origin.where}: ${err.message}`);
+        }
         return true;
       }
     });
@@ -147,11 +151,13 @@ class Statechart extends utils.Adapter {
       await this.setState(`charts.${chartId}.values`, "{}", true);
       return;
     }
+    await this.setState(`charts.${chartId}.error`, "", true);
     const runtime = this.createRuntime(chartId, chart);
     try {
       await runtime.start({ restore });
     } catch (err) {
       this.log.error(`Cannot start chart "${chart.name}": ${err.message}`);
+      await this.setState(`charts.${chartId}.error`, `Cannot start: ${err.message}`, true);
       return;
     }
     this.runtimes.set(chartId, runtime);
@@ -210,6 +216,12 @@ class Statechart extends utils.Adapter {
         onHistory: (entries) => this.addHistory(chartId, entries),
         onSimulationStatus: (status) => {
           void this.setState(`charts.${chartId}.simulationStatus`, JSON.stringify(status), true);
+        },
+        // the error state shows the problems of the real chart, not those of a simulation
+        onError: (message) => {
+          if (!simulated) {
+            void this.setState(`charts.${chartId}.error`, message, true);
+          }
         },
         // e.g. an endless loop: a simulation ends, a chart is paused like with the button in the editor
         onFault: () => {
@@ -435,6 +447,19 @@ class Statechart extends utils.Adapter {
    * @param chartId Chart ID
    */
   async createChartStates(chartId) {
+    await this.setObjectNotExistsAsync(`charts.${chartId}.error`, {
+      type: "state",
+      common: {
+        name: "Last error or warning of the chart, e.g. an exception in its code, empty after a start without",
+        type: "string",
+        role: "text",
+        read: true,
+        write: false,
+        // also for a paused chart, which has not run since the state was added
+        def: ""
+      },
+      native: {}
+    });
     await this.setObjectNotExistsAsync(`charts.${chartId}.activeState`, {
       type: "state",
       common: {

@@ -357,6 +357,7 @@ Für jedes Chart legt der Adapter unter `statechart.<instanz>.charts.<chart>` an
 | `history` | Die letzten 200 Ereignisse (Starts und genommene Übergänge) als JSON. Schreiben ohne ack leert ihn |
 | `simulation` | `true`, solange das Chart als Simulation aus dem Editor läuft |
 | `simulationStatus` | Status der Simulation als JSON: angehalten, Zeitversatz, wartende Ereignisse, nächster Timer, Haltepunkt |
+| `error` | Letzter Fehler oder letzte Warnung des Charts, z.B. `On/entry: boom` oder `Stopped: …`, siehe [Fehler im Code](#fehler-im-code). Wird beim Start des Charts geleert und bleibt erhalten, wenn es wegen eines Fehlers angehalten wird. Meldungen von `log()` erscheinen hier nicht, ebenso wenig Probleme einer Simulation |
 
 Das Chart selbst ist im Objekt `statechart.<instanz>.charts.<chart>` gespeichert.
 
@@ -420,6 +421,9 @@ JavaScript-Kontext. Alle Charts teilen sich den Prozess, deshalb schützt der Ad
 - **Schreibzugriffe:** Ein Chart darf höchstens 1000-mal pro Minute schreiben (Ausgänge, `setState()`,
   `setStateDelayed()`, `sendTo()`), weit mehr, als ein Chart braucht. Ein Chart, das mehr schreibt, z.B. wegen einer
   Rückkopplung über die eigenen Eingänge, wird angehalten wie nach einer Zeitüberschreitung.
+
+Der letzte Fehler oder die letzte Warnung eines Charts steht außerdem in seinem Datenpunkt `error`, z.B. um ihn in vis
+anzuzeigen oder sich benachrichtigen zu lassen.
 
 ## Einschränkungen
 

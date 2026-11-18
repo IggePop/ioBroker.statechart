@@ -1824,4 +1824,19 @@ describe("chart-runtime => protection of the adapter", () => {
         // light = false at the start, light = true, and setState() until the limit
         expect(host.writes).to.have.length(MAX_WRITES_PER_MINUTE);
     });
+
+    it("passes the problems of the chart to onError, but not log() of its code", async () => {
+        const host = Object.assign(createHost({ "test.0.motion": false, "test.0.light": false }), {
+            errors: [] as string[],
+            onError: (message: string) => host.errors.push(message),
+        });
+        const chart = createLightChart();
+        chart.states[1].entry = 'light = true; log("only a message", "warn"); throw new Error("boom");';
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        runtime.handleInput("test.0.motion", true);
+        expect(host.errors).to.deep.equal(["On/entry: boom"]);
+        expect(host.warnings).to.include("[Light] only a message");
+    });
 });
+
