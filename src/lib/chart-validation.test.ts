@@ -30,6 +30,10 @@ describe("chart-validation => validateCode", () => {
         expect(validateCode("", "statements", symbols)).to.deep.equal([]);
     });
 
+    it("knows Promise, its callbacks run within the time limit of the code", () => {
+        expect(validateCode("Promise.resolve(1).then(v => log(v));", "statements", symbols)).to.deep.equal([]);
+    });
+
     it("reports unknown variables with their position", () => {
         const code = "light = motoin;";
         expect(summarize(validateCode(code, "statements", symbols), code)).to.deep.equal([

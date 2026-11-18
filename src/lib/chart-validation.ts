@@ -41,6 +41,8 @@ export const GLOBALS = new Set([
     "Map",
     "Set",
     "Error",
+    // promise callbacks run within the time limit of the code, see ChartRuntime.run()
+    "Promise",
     "parseInt",
     "parseFloat",
     "isNaN",
