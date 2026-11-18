@@ -29,7 +29,8 @@ import {
     PlayArrow as StartIcon,
 } from "@mui/icons-material";
 import { DialogConfirm, GenericApp, I18n, Loader } from "@iobroker/adapter-react-v5";
-import type { GenericAppProps, GenericAppState } from "@iobroker/adapter-react-v5";
+import type { GenericAppProps, GenericAppState, IobTheme, ThemeName } from "@iobroker/adapter-react-v5";
+import { resolveThemeName } from "./theme";
 import "@xyflow/react/dist/style.css";
 
 import ChartEditor from "./components/ChartEditor";
@@ -118,6 +119,30 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             pendingSelect: null,
         };
         this.chartPrefix = `${this.adapterName}.${this.instance}.charts.`;
+        // the admin tells the tab when its theme changes. Replaces the handler of GenericApp, which also stores the
+        // theme name in the local storage shared with the admin, as light for themes it does not know.
+        this.onReceiveMessage = (message: { data: string | { type: string; themeName?: string } } | null): void => {
+            const data = message?.data;
+            if (data === "updateTheme" || (typeof data === "object" && data?.type === "updateTheme")) {
+                const theme = this.createTheme(typeof data === "object" ? (data.themeName as ThemeName) : null);
+                this.setState({ theme, themeName: this.getThemeName(theme), themeType: this.getThemeType(theme) });
+            }
+        };
+    }
+
+    /**
+     * @param name Theme name, e.g. from the admin
+     * @returns the theme of the tab, also for themes of the admin which `@iobroker/adapter-react-v5` does not know
+     */
+    public override createTheme(name?: ThemeName | "auto" | null): IobTheme {
+        let stored: string | null = null;
+        try {
+            stored = window.localStorage.getItem("App.themeName");
+        } catch {
+            // e.g. no access to the local storage, then the preference of the system decides
+        }
+        const prefersDark = !!window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+        return super.createTheme(resolveThemeName(name, stored, prefersDark));
     }
 
     /**
