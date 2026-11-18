@@ -397,6 +397,8 @@ charts share the process, so the adapter protects them from each other:
 - **Time limit:** every condition and action must finish within 1 second. A chart which exceeds it, e.g. because of
   an endless loop, is stopped right away and paused like with ⏸, the reason is logged as error. Fix it and start it
   again. A simulation ends instead.
+- **Promises:** callbacks of promises (`.then()`, `async` functions) run right after the code which creates them,
+  within its time limit. An exception in them is logged like any other, it does not restart the adapter.
 
 ## Limitations
 

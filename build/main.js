@@ -42,7 +42,18 @@ class Statechart extends utils.Adapter {
   constructor(options = {}) {
     super({
       ...options,
-      name: "statechart"
+      name: "statechart",
+      // an exception in a promise of the code of a chart: logged like other exceptions in the code of a chart,
+      // instead of restarting the adapter with all charts
+      error: (err) => {
+        const origin = (0, import_chart_runtime.getErrorOrigin)(err);
+        if (!origin) {
+          return false;
+        }
+        const name = this.runtimes.get(origin.chartId)?.chart.name ?? origin.chartId;
+        this.log.warn(`[${name}] ${origin.where}: ${err.message}`);
+        return true;
+      }
     });
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));

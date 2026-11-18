@@ -30,7 +30,8 @@ var chart_runtime_exports = {};
 __export(chart_runtime_exports, {
   ChartRuntime: () => ChartRuntime,
   SCRIPT_TIMEOUT_MS: () => SCRIPT_TIMEOUT_MS,
-  getChartHash: () => getChartHash
+  getChartHash: () => getChartHash,
+  getErrorOrigin: () => getErrorOrigin
 });
 module.exports = __toCommonJS(chart_runtime_exports);
 var import_node_crypto = __toESM(require("node:crypto"));
@@ -43,6 +44,12 @@ var import_chart_model = require("./chart-model");
 var import_chart_structure = require("./chart-structure");
 var import_chart_validation = require("./chart-validation");
 const SCRIPT_TIMEOUT_MS = 1e3;
+const SCRIPT_FILE_PREFIX = "statechart-code/";
+function getErrorOrigin(err) {
+  const stack = typeof err?.stack === "string" ? err.stack : "";
+  const match = /statechart-code\/([^/\n]+)\/([^\n]*?):\d+:\d+/.exec(stack);
+  return match ? { chartId: match[1], where: match[2] } : null;
+}
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
 const DAY_MS = 24 * 60 * 60 * 1e3;
 const MAX_ADVANCE_TIMERS = 1e4;
@@ -87,7 +94,7 @@ class ChartRuntime {
     this.chart = (0, import_chart_model.getExecutedChart)(fullChart);
     this.structure = new import_chart_structure.ChartStructure(this.chart);
     this.statesById = this.structure.statesById;
-    this.sandbox = import_node_vm.default.createContext({ ...this.createHelpers(), ...import_chart_model.TIME_UNITS });
+    this.sandbox = import_node_vm.default.createContext({ ...this.createHelpers(), ...import_chart_model.TIME_UNITS }, { microtaskMode: "afterEvaluate" });
     this.hash = getChartHash(fullChart);
     this.prepareAllCode();
   }
@@ -1436,7 +1443,7 @@ class ChartRuntime {
    */
   compile(code, where) {
     try {
-      return new import_node_vm.default.Script(code, { filename: `${this.chart.name}/${where}` });
+      return new import_node_vm.default.Script(code, { filename: `${SCRIPT_FILE_PREFIX}${this.chartId}/${where}` });
     } catch (err) {
       this.host.log.error(`[${this.chart.name}] ${where}: ${err.message}`);
       return null;
@@ -1541,6 +1548,7 @@ ${this.prepareCode(code, "statements")}
 0 && (module.exports = {
   ChartRuntime,
   SCRIPT_TIMEOUT_MS,
-  getChartHash
+  getChartHash,
+  getErrorOrigin
 });
 //# sourceMappingURL=chart-runtime.js.map

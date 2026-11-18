@@ -411,6 +411,8 @@ JavaScript-Kontext. Alle Charts teilen sich den Prozess, deshalb schützt der Ad
 - **Zeitlimit:** Jede Bedingung und Aktion muss innerhalb von 1 Sekunde fertig sein. Ein Chart, das es überschreitet,
   z.B. wegen einer Endlosschleife, wird sofort angehalten wie mit ⏸, der Grund steht als Fehler im Log. Behebe den
   Fehler und starte es wieder. Eine Simulation wird stattdessen beendet.
+- **Promises:** Callbacks von Promises (`.then()`, `async`-Funktionen) laufen direkt nach dem Code, der sie erzeugt,
+  innerhalb seines Zeitlimits. Eine Exception darin wird wie jede andere geloggt und startet den Adapter nicht neu.
 
 ## Einschränkungen
 

@@ -6,7 +6,7 @@
 // you need to create an adapter
 import * as utils from "@iobroker/adapter-core";
 import type { Chart } from "./lib/chart-model";
-import { ChartRuntime } from "./lib/chart-runtime";
+import { ChartRuntime, getErrorOrigin } from "./lib/chart-runtime";
 import type { HistoryEntry, Location } from "./lib/chart-runtime";
 
 /** Maximum number of entries in the history of a chart (state charts.<chart>.history) */
@@ -37,6 +37,17 @@ class Statechart extends utils.Adapter {
         super({
             ...options,
             name: "statechart",
+            // an exception in a promise of the code of a chart: logged like other exceptions in the code of a chart,
+            // instead of restarting the adapter with all charts
+            error: (err: Error) => {
+                const origin = getErrorOrigin(err);
+                if (!origin) {
+                    return false;
+                }
+                const name = this.runtimes.get(origin.chartId)?.chart.name ?? origin.chartId;
+                this.log.warn(`[${name}] ${origin.where}: ${err.message}`);
+                return true;
+            },
         });
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));

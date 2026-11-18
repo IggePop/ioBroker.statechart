@@ -15,6 +15,22 @@ import type { CodeKind } from "./chart-validation";
 /** Maximum run time of a single condition or action, a chart which exceeds it is stopped */
 export const SCRIPT_TIMEOUT_MS = 1000;
 
+/** Prefix of the file names of the compiled code, followed by the chart ID and the place, see getErrorOrigin() */
+const SCRIPT_FILE_PREFIX = "statechart-code/";
+
+/**
+ * Finds out if an error comes from the code of a chart, e.g. an exception in a promise of an action, which is not
+ * caught where the code runs but reported to the adapter as unhandled rejection
+ *
+ * @param err The error
+ * @returns the ID of the chart and the place in it, null if the error does not come from a chart
+ */
+export function getErrorOrigin(err: unknown): { chartId: string; where: string } | null {
+    const stack = typeof (err as Error | undefined)?.stack === "string" ? (err as Error).stack! : "";
+    const match = /statechart-code\/([^/\n]+)\/([^\n]*?):\d+:\d+/.exec(stack);
+    return match ? { chartId: match[1], where: match[2] } : null;
+}
+
 /** Longer delays are not supported by setTimeout() */
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
 
@@ -365,7 +381,8 @@ export class ChartRuntime {
         this.structure = new ChartStructure(this.chart);
         this.statesById = this.structure.statesById;
         // the time units can be used in the helpers, e.g. elapsed(min)
-        this.sandbox = vm.createContext({ ...this.createHelpers(), ...TIME_UNITS });
+        // promise callbacks run right after the code, within its time limit, instead of later without one
+        this.sandbox = vm.createContext({ ...this.createHelpers(), ...TIME_UNITS }, { microtaskMode: "afterEvaluate" });
         // of the full chart: disabling or enabling a state or transition changes the logic
         this.hash = getChartHash(fullChart);
         this.prepareAllCode();
@@ -1764,7 +1781,8 @@ export class ChartRuntime {
      */
     compile(code: string, where: string): vm.Script | null {
         try {
-            return new vm.Script(code, { filename: `${this.chart.name}/${where}` });
+            // the file name tells the adapter where an error in a promise comes from, see getErrorOrigin()
+            return new vm.Script(code, { filename: `${SCRIPT_FILE_PREFIX}${this.chartId}/${where}` });
         } catch (err) {
             this.host.log.error(`[${this.chart.name}] ${where}: ${err.message}`);
             return null;

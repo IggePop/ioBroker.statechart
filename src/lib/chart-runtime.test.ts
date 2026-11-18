@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ChartRuntime, getChartHash } from "./chart-runtime";
+import { ChartRuntime, getChartHash, getErrorOrigin } from "./chart-runtime";
 import { MAX_SUPER_STEPS } from "./chart-model";
 import type { HistoryEntry, PersistedChart, SimulationStatus } from "./chart-runtime";
 import type { Chart, ChartState, ChartSymbol } from "./chart-model";
@@ -1765,5 +1765,45 @@ describe("chart-runtime => protection of the adapter", () => {
         runtime.handleInput("test.0.motion", true);
         expect(runtime.sandbox.count).to.equal(count);
         expect(host.faults).to.have.length(1);
+    });
+
+    it("applies the time limit also to promise callbacks", async function () {
+        this.timeout(10000);
+        const host = Object.assign(createHost({ "test.0.motion": false, "test.0.light": false }), {
+            faults: [] as string[],
+            onFault: (message: string) => host.faults.push(message),
+        });
+        const chart = createLightChart();
+        chart.states[1].entry = "light = true; Promise.resolve().then(() => { while (true) {} });";
+        runtime = new ChartRuntime("light", chart, host);
+        await runtime.start();
+        runtime.handleInput("test.0.motion", true);
+        expect(host.faults).to.have.length(1);
+        expect(host.faults[0]).to.match(/did not finish within 1 s/);
+    });
+
+    it("tells where an exception in a promise comes from", async () => {
+        const host = createHost({ "test.0.motion": false, "test.0.light": false });
+        const chart = createLightChart();
+        chart.states[1].entry = 'light = true; Promise.resolve().then(() => { throw new Error("async boom"); });';
+        // the exception is not caught where the code runs, the adapter gets it as unhandled rejection; mocha would
+        // report it as failure, so only this test listens meanwhile
+        const listeners = process.listeners("unhandledRejection");
+        process.removeAllListeners("unhandledRejection");
+        let err: unknown;
+        try {
+            const rejected = new Promise<unknown>(resolve => process.once("unhandledRejection", resolve));
+            runtime = new ChartRuntime("light", chart, host);
+            await runtime.start();
+            runtime.handleInput("test.0.motion", true);
+            err = await rejected;
+        } finally {
+            listeners.forEach(listener => process.on("unhandledRejection", listener));
+        }
+        expect((err as Error).message).to.equal("async boom");
+        expect(getErrorOrigin(err)).to.deep.equal({ chartId: "light", where: "On/entry" });
+        expect(getErrorOrigin(new Error("from somewhere else"))).to.equal(null);
+        // the chart continues
+        expect(host.states["test.0.light"]).to.equal(true);
     });
 });
