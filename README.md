@@ -61,7 +61,8 @@ Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.20 o
 
 1. Open **State Machine** in the admin side bar.
 2. Create a chart with **+** in the list on the left. Choose a **template** to start with a working example (light
-   with motion detector, heating with window contact, alarm system), or an empty chart.
+   with motion detector, heating with window contact, alarm system, washing machine done, shutter with automatic and
+   manual mode, push button with short, long and double press, presence), or an empty chart.
 3. Define the variables in the tab **Variables** on the right, with **+** next to their group. The variables are
    grouped by kind, each one is a line with its state and current value, a click on it shows its settings:
    - **Input**: read from an ioBroker state, every change wakes up the chart
@@ -119,6 +120,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) menu "View" in the toolbar: show or hide the grid, the minimap and the zoom buttons
 * (Igge) Ctrl+S saves the chart, also while typing in a field or code editor
 * (Igge) a paused chart keeps showing its last active states and values in the editor, gray and with their time, to help with debugging
+* (Igge) four new templates: washing machine done, shutter with automatic and manual mode, push button with short, long and double press, presence
 ### 0.6.0 (2026-11-19)
 * (Igge) the details of a variable list where it is used (states, transitions, function blocks), a click shows the element
 * (Igge) the wake up options of an input are always collapsed at first, the button shows if they are customized
