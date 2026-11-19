@@ -443,6 +443,7 @@ function StateProperties({
                     onChange={value => onChange({ [action]: value })}
                     validate={tools.validateAction}
                     completions={tools.completions}
+                    minRows={3}
                 />
             ))}
             <CommentField
@@ -507,7 +508,7 @@ function TransitionProperties({
                 validate={tools.validateLabel}
                 completions={tools.completions}
                 info={I18n.t("labelHelp")}
-                minRows={3}
+                minRows={5}
             />
             <TextField
                 size="small"
