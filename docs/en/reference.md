@@ -17,12 +17,12 @@ The toolbar above the chart is grouped by tasks, the tooltip of each icon shows 
 | History | **Undo** (Ctrl+Z), **Redo** (Ctrl+Y) |
 | Clipboard | **Cut** (Ctrl+X), **Copy** (Ctrl+C), **Paste** (Ctrl+V), also between charts, and **Delete** (Del) |
 | Add | **Add state**, **Add function**, **Add note**, in the color of the element they add |
-| Layout | **Align** the selected elements, or give them the **same width** or **height** as the one selected first (menu, after a selection with a rectangle as the largest one), **Snap to the grid** on and off, **Show the grid** (the dots of the background) on and off, **Show everything** (zooms and scrolls so that the whole chart is visible) |
+| Layout | **Align** the selected elements, or give them the **same width** or **height** as the one selected first (menu, after a selection with a rectangle as the largest one), **Snap to the grid** on and off, **View** (menu: show the grid, i.e. the dots of the background, the minimap and the zoom buttons), **Show everything** (zooms and scrolls so that the whole chart is visible) |
 | Output (right) | **Show code**, **Export chart** (JSON), **Export as image** (PNG), see [Import and export](#import-and-export) |
 | Running (right) | **Pause** or **Start** the chart (like in the list of charts), **Live values** on and off, **Simulation** start and stop, see [Watching a running chart](#watching-a-running-chart) and [Simulation](#simulation) |
 
 With **Snap to the grid** switched on, states, function blocks and notes snap to the dots of the background. The
-browser remembers the setting, like that of **Show the grid**.
+browser remembers the setting, like those of the menu **View**.
 
 ## Transition labels
 

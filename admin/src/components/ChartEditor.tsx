@@ -38,7 +38,7 @@ import {
     ViewColumn as DistributeXIcon,
     ViewStream as DistributeYIcon,
     Code as CodeIcon,
-    Apps as ShowGridIcon,
+    Check as CheckIcon,
     ContentCopy as CopyIcon,
     ContentCut as CutIcon,
     ContentPaste as PasteIcon,
@@ -61,6 +61,7 @@ import {
     Save as SaveIcon,
     Science as SimulationIcon,
     Undo as UndoIcon,
+    VisibilityOutlined as ViewIcon,
 } from "@mui/icons-material";
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { AdminConnection, IobTheme } from "@iobroker/adapter-react-v5";
@@ -160,6 +161,12 @@ const SNAP_TO_GRID_KEY = "statechart.snapToGrid";
 /** Key in the browser storage: if the dots of the background are shown */
 const SHOW_GRID_KEY = "statechart.showGrid";
 
+/** Key in the browser storage: if the minimap at the bottom right is shown */
+const SHOW_MINIMAP_KEY = "statechart.showMinimap";
+
+/** Key in the browser storage: if the zoom buttons at the bottom left are shown */
+const SHOW_ZOOM_KEY = "statechart.showZoomButtons";
+
 /** Distance of the dots of the background, the states snap to them */
 const GRID_SIZE = 20;
 
@@ -200,6 +207,13 @@ const ALIGNMENTS: { alignment: Alignment; title: string; icon: React.ReactNode }
     { alignment: "bottom", title: "Align bottom", icon: <AlignBottomIcon fontSize="small" /> },
     { alignment: "distributeX", title: "Distribute horizontally", icon: <DistributeXIcon fontSize="small" /> },
     { alignment: "distributeY", title: "Distribute vertically", icon: <DistributeYIcon fontSize="small" /> },
+];
+
+/** The entries of the menu "View": what the canvas shows besides the chart */
+const VIEW_OPTIONS: { option: "grid" | "minimap" | "zoom"; title: string }[] = [
+    { option: "grid", title: "Show the grid" },
+    { option: "minimap", title: "Show the minimap" },
+    { option: "zoom", title: "Show the zoom buttons" },
 ];
 
 /** The entries of the menu for giving the selected nodes the same size, below the alignments */
@@ -373,11 +387,21 @@ function ChartEditorInner({
         saveSetting(SNAP_TO_GRID_KEY, !snapToGrid);
         setSnapToGrid(!snapToGrid);
     };
-    const [showGrid, setShowGrid] = useState(() => loadSetting(SHOW_GRID_KEY));
-    const toggleShowGrid = (): void => {
-        saveSetting(SHOW_GRID_KEY, !showGrid);
-        setShowGrid(!showGrid);
+    /** what the canvas shows besides the chart, see the menu "View"; remembered by the browser */
+    const [view, setView] = useState(() => ({
+        grid: loadSetting(SHOW_GRID_KEY),
+        minimap: loadSetting(SHOW_MINIMAP_KEY),
+        zoom: loadSetting(SHOW_ZOOM_KEY),
+    }));
+    const showGrid = view.grid;
+    const toggleView = (option: keyof typeof view): void => {
+        const value = !view[option];
+        saveSetting({ grid: SHOW_GRID_KEY, minimap: SHOW_MINIMAP_KEY, zoom: SHOW_ZOOM_KEY }[option], value);
+        setView({ ...view, [option]: value });
     };
+    /** the button which opened the menu "View" */
+    const [viewMenu, setViewMenu] = useState<HTMLElement | null>(null);
+    const viewButton = useRef<HTMLSpanElement>(null);
     /** IDs of the states and transitions where the simulation stops, they are not stored in the chart */
     const [breakpoints, setBreakpoints] = useState<ReadonlySet<string>>(new Set());
     /** transitions which were just taken by the running chart, they are highlighted for a moment */
@@ -1407,12 +1431,31 @@ function ChartEditorInner({
                         color={snapToGrid ? "primary" : "default"}
                         onClick={toggleSnapToGrid}
                     />
-                    <ToolButton
-                        title={I18n.t(showGrid ? "showGridOn" : "showGridOff")}
-                        icon={<ShowGridIcon />}
-                        color={showGrid ? "primary" : "default"}
-                        onClick={toggleShowGrid}
-                    />
+                    {/* the anchor of the menu */}
+                    <span ref={viewButton}>
+                        <ToolButton
+                            title={I18n.t("View")}
+                            icon={<ViewIcon />}
+                            onClick={() => setViewMenu(viewButton.current)}
+                        />
+                    </span>
+                    <Menu
+                        anchorEl={viewMenu}
+                        open={!!viewMenu}
+                        onClose={() => setViewMenu(null)}
+                    >
+                        {/* the menu stays open, so several options can be switched at once */}
+                        {VIEW_OPTIONS.map(({ option, title }) => (
+                            <MenuItem
+                                key={option}
+                                dense
+                                onClick={() => toggleView(option)}
+                            >
+                                <ListItemIcon>{view[option] && <CheckIcon fontSize="small" />}</ListItemIcon>
+                                <ListItemText>{I18n.t(title)}</ListItemText>
+                            </MenuItem>
+                        ))}
+                    </Menu>
                     <ToolButton
                         title={I18n.t("Fit view")}
                         icon={<FitViewIcon />}
@@ -1519,11 +1562,13 @@ function ChartEditorInner({
                                 offset={0.5 - GRID_SIZE / 2}
                             />
                         )}
-                        <Controls fitViewOptions={FIT_VIEW_OPTIONS} />
-                        <MiniMap
-                            pannable
-                            zoomable
-                        />
+                        {view.zoom && <Controls fitViewOptions={FIT_VIEW_OPTIONS} />}
+                        {view.minimap && (
+                            <MiniMap
+                                pannable
+                                zoomable
+                            />
+                        )}
                         {(showLive || simulating) && (
                             <Panel position="top-left">
                                 <LiveValuesPanel
