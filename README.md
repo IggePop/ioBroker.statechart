@@ -124,6 +124,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) fixed: with the modern themes of admin 8 (also with the automatic theme), the editor stayed light instead of following the theme of the admin
 * (Igge) the explanation of the transition label shows conditions with variables and a complete example
 * (Igge) new state `charts.<id>.error` with the last error or warning of a chart, e.g. to show it in vis
+* (Igge) the longer explanations behind the ⓘ icons are split into paragraphs, so they are easier to read
 ### 0.5.1 (2026-11-15)
 * (Igge) documentation updated: active states, tooltips on tap, start and pause in the toolbar, the new layout functions
 * (Igge) the types of ioBroker are a direct development dependency (finding W048 of the repository checker)
