@@ -314,6 +314,8 @@ interface ChartEditorProps {
     activeIds: string[];
     /** Current values of the variables, empty if the chart does not run */
     liveValues: Record<string, any>;
+    /** when the values were published last: for a paused chart, the time of its frozen state */
+    liveValuesTs?: number | null;
     /** Starts and transitions of the running chart, null while they are loaded */
     chartHistory: HistoryEntry[] | null;
     /** If the chart runs as simulation */
@@ -345,6 +347,7 @@ function ChartEditorInner({
     chart: savedChart,
     activeIds,
     liveValues,
+    liveValuesTs = null,
     chartHistory,
     simulating,
     simulationStatus,
@@ -1146,6 +1149,8 @@ function ChartEditorInner({
     /** Color of disabled transitions, light gray in both themes */
     const disabledColor = theme.palette.grey[theme.palette.mode === "dark" ? 700 : 400];
 
+    /** the chart is paused: the active states and values shown are the last ones before, frozen */
+    const liveFrozen = savedChart.enabled === false && !simulating;
     const displayNodes = useMemo(
         () =>
             nodes.map(n => ({
@@ -1155,6 +1160,8 @@ function ChartEditorInner({
                     ...n.data,
                     isInitial: initialIds.has(n.id),
                     isActive: activeIds.includes(n.id),
+                    // a paused chart shows its last active states as frozen
+                    frozen: liveFrozen,
                     isDropTarget: n.id === dropTarget,
                     problems: problems.get(n.id),
                     order: executionOrder.get(n.id),
@@ -1173,6 +1180,7 @@ function ChartEditorInner({
             depths,
             disabledIds,
             activeIds,
+            liveFrozen,
             dropTarget,
             problems,
             breakpoints,
@@ -1587,6 +1595,7 @@ function ChartEditorInner({
                                 <LiveValuesPanel
                                     symbols={chart.symbols}
                                     values={liveValues}
+                                    frozenAt={liveFrozen ? liveValuesTs : null}
                                     simulating={simulating}
                                     onSetInput={(name, value) => onSimulate("simulationInput", { name, value })}
                                     onEvent={name => onSimulate("simulationEvent", { name })}

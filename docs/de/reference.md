@@ -279,6 +279,10 @@ Während ein Chart läuft, zeigt der Editor, was es tut:
 - **Live-Werte** (Tafel oben links auf der Zeichenfläche, ein- und ausgeschaltet mit dem Symbol **Live-Werte** in der
   Werkzeugleiste, grün, solange sie angezeigt werden): die aktuellen Werte aller Variablen. Sie stehen auch in der Zeile jeder Variable im Reiter **Variablen**.
 - Ein **Übergang leuchtet kurz auf**, wenn das Chart ihn nimmt.
+- **Angehaltenes Chart:** Der Editor zeigt weiter den Stand beim Anhalten, eingefroren: Die zuletzt aktiven Zustände
+  haben einen grauen statt grünen Rahmen, die Live-Werte sind grau und mit der Zeit überschrieben, von der sie stammen.
+  Das hilft herauszufinden, was passiert ist, z.B. nachdem der Adapter ein Chart wegen eines Fehlers angehalten hat.
+  Beim Starten des Charts werden sie ersetzt.
 - Der Reiter **Verlauf** listet die Starts des Charts und die genommenen Übergänge, der neueste zuerst: wann, von
   welchem Zustand zu welchem, ausgelöst durch welchen Eingang oder einen Timer (`after`), und welche Zustände danach
   aktiv waren. Ein Klick auf einen Übergang wählt ihn im Chart aus. Der Adapter behält die letzten 200 Ereignisse,
@@ -350,10 +354,10 @@ Für jedes Chart legt der Adapter unter `statechart.<instanz>.charts.<chart>` an
 
 | Datenpunkt | Inhalt |
 |---|---|
-| `activeState` | Name des aktiven Zustands, verschachtelte Zustände als `Eltern.Kind`, parallele durch Kommas getrennt |
-| `activeStateIds` | IDs aller aktiven Zustände als JSON |
+| `activeState` | Name des aktiven Zustands, verschachtelte Zustände als `Eltern.Kind`, parallele durch Kommas getrennt. Leer, solange das Chart angehalten ist |
+| `activeStateIds` | IDs aller aktiven Zustände als JSON. Ein angehaltenes Chart behält die letzten |
 | `snapshot` | Gespeicherter Zustand des Charts (aktive Zustände, wann sie betreten wurden, lokale Variablen), siehe unten |
-| `values` | Aktuelle Werte aller Variablen als JSON, `{}` wenn das Chart nicht läuft |
+| `values` | Aktuelle Werte aller Variablen als JSON. Ein angehaltenes Chart behält die letzten |
 | `history` | Die letzten 200 Ereignisse (Starts und genommene Übergänge) als JSON. Schreiben ohne ack leert ihn |
 | `simulation` | `true`, solange das Chart als Simulation aus dem Editor läuft |
 | `simulationStatus` | Status der Simulation als JSON: angehalten, Zeitversatz, wartende Ereignisse, nächster Timer, Haltepunkt |

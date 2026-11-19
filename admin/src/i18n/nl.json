@@ -128,6 +128,7 @@
     "Debounce (ms)": "Debounce (ms)",
     "triggerHelp": "Wanneer deze invoer de grafiek activeert.\n\nUpdates die door ack worden uitgefilterd, veranderen de variabele niet.\n\nMet debounce wordt de grafiek pas wakker nadat de invoer gedurende deze tijd geen update heeft gehad, met de laatste waarde.",
     "Live values": "Levende waarden",
+    "Paused, state of %s": "Gepauzeerd, stand van %s",
     "The chart does not run": "De grafiek loopt niet",
     "Show live values": "Toon de live waarden van de variabelen",
     "Hide live values": "Verberg de live waarden van de variabelen",

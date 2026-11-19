@@ -57,6 +57,8 @@ type StateNodeProps = NodeProps<
         state: ChartState;
         isInitial?: boolean;
         isActive?: boolean;
+        /** The chart is paused: an active state was active when it was paused, it is shown gray instead of green */
+        frozen?: boolean;
         isDropTarget?: boolean;
         problems?: ProblemList;
         /** Position in the execution order, only for parallel states (whose parent is parallel) */
@@ -73,15 +75,18 @@ type StateNodeProps = NodeProps<
 >;
 
 function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
-    const { state, isInitial, isActive, isDropTarget, problems, order, breakpoint, history, depth, disabled } = data;
+    const { state, isInitial, isActive, frozen, isDropTarget, problems, order, breakpoint, history, depth, disabled } =
+        data;
     const theme = useTheme();
     const dark = theme.palette.mode === "dark";
+    // green while the chart runs, gray for the last active states of a paused chart
+    const activeColor = frozen ? theme.palette.grey[500] : theme.palette.success.main;
     // a disabled state is light gray, whatever its color is; drop target and selection are still shown
     let borderColor = disabled ? "text.disabled" : "text.secondary";
     if (isDropTarget) {
         borderColor = "primary.main";
     } else if (isActive) {
-        borderColor = "success.main";
+        borderColor = activeColor;
     } else if (getProblemColor(problems)) {
         borderColor = getProblemColor(problems)!;
     } else if (selected) {
@@ -129,9 +134,7 @@ function StateNode({ data, selected }: StateNodeProps): React.JSX.Element {
                           : stateBackground(state.color, dark, depth),
                     color: disabled ? "text.disabled" : undefined,
                     // an active state also gets a light green glow around its border, so it is seen at a glance
-                    boxShadow: isActive
-                        ? `0 0 0 5px ${alpha(theme.palette.success.main, 0.35)}, ${theme.shadows[6]}`
-                        : 0,
+                    boxShadow: isActive ? `0 0 0 5px ${alpha(activeColor, 0.35)}, ${theme.shadows[6]}` : 0,
                     px: 1,
                     py: 0.5,
                     overflow: "hidden",

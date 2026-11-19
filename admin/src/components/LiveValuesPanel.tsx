@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Box, IconButton, InputBase, Switch, Tooltip, Typography } from "@mui/material";
-import { Bolt as EventIcon } from "@mui/icons-material";
+import { Bolt as EventIcon, PauseCircleOutline as PausedIcon } from "@mui/icons-material";
 import { I18n } from "@iobroker/adapter-react-v5";
 import type { ChartSymbol } from "../../../src/lib/chart-model";
 
@@ -92,6 +92,7 @@ function SimulatedValue({ value, onChange }: { value: any; onChange: (value: any
  * @param props Component properties
  * @param props.symbols The variables of the chart in the editor
  * @param props.values The values published by the adapter, empty if the chart does not run
+ * @param props.frozenAt Time of the values of a paused chart, which are shown as frozen; null while it runs
  * @param props.simulating If the chart runs as simulation
  * @param props.onSetInput Simulation: sets the value of an input
  * @param props.onEvent Simulation: wakes up the chart with the event of an input, without changing its value
@@ -99,17 +100,21 @@ function SimulatedValue({ value, onChange }: { value: any; onChange: (value: any
 export default function LiveValuesPanel({
     symbols,
     values,
+    frozenAt = null,
     simulating = false,
     onSetInput,
     onEvent,
 }: {
     symbols: ChartSymbol[];
     values: Record<string, any>;
+    frozenAt?: number | null;
     simulating?: boolean;
     onSetInput?: (name: string, value: any) => void;
     onEvent?: (name: string) => void;
 }): React.JSX.Element {
     const running = Object.keys(values).length > 0;
+    // the last values of a paused chart: gray, with the time they are from
+    const frozen = running && frozenAt !== null;
     return (
         <Box
             className="nodrag nopan nowheel"
@@ -132,7 +137,17 @@ export default function LiveValuesPanel({
                 color="text.secondary"
                 component="div"
             >
-                {I18n.t(simulating ? "Simulation: set the inputs" : "Live values")}
+                {frozen ? (
+                    <Box
+                        component="span"
+                        sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}
+                    >
+                        <PausedIcon sx={{ fontSize: 14 }} />
+                        {I18n.t("Paused, state of %s", new Date(frozenAt).toLocaleString())}
+                    </Box>
+                ) : (
+                    I18n.t(simulating ? "Simulation: set the inputs" : "Live values")
+                )}
             </Typography>
             {!running ? (
                 <Typography
@@ -144,7 +159,12 @@ export default function LiveValuesPanel({
             ) : (
                 <Box
                     component="table"
-                    sx={{ borderCollapse: "collapse", fontFamily: "monospace", fontSize: 12 }}
+                    sx={{
+                        borderCollapse: "collapse",
+                        fontFamily: "monospace",
+                        fontSize: 12,
+                        color: frozen ? "text.disabled" : undefined,
+                    }}
                 >
                     <tbody>
                         {symbols.map(symbol => {

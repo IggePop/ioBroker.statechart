@@ -147,8 +147,10 @@ class Statechart extends utils.Adapter {
         this.log.info(`Chart "${chart.name}" is paused`);
       }
       await this.setState(`charts.${chartId}.activeState`, "", true);
-      await this.setState(`charts.${chartId}.activeStateIds`, "[]", true);
-      await this.setState(`charts.${chartId}.values`, "{}", true);
+      if (empty) {
+        await this.setState(`charts.${chartId}.activeStateIds`, "[]", true);
+        await this.setState(`charts.${chartId}.values`, "{}", true);
+      }
       return;
     }
     await this.setState(`charts.${chartId}.error`, "", true);

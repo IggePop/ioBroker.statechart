@@ -128,6 +128,7 @@
     "Debounce (ms)": "Debounce (ms)",
     "triggerHelp": "When this input wakes up the chart.\n\nUpdates filtered out by ack do not change the variable.\n\nWith debounce, the chart wakes up only after the input had no update for this time, with its last value.",
     "Live values": "Live values",
+    "Paused, state of %s": "Paused, state of %s",
     "The chart does not run": "The chart does not run",
     "Show live values": "Show the live values of the variables",
     "Hide live values": "Hide the live values of the variables",

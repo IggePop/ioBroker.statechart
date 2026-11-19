@@ -267,6 +267,10 @@ While a chart runs, the editor shows what it does:
   toolbar, green while they are shown):
   the current values of all variables. They are also shown in the line of each variable in the tab **Variables**.
 - A **transition lights up** for a moment when the chart takes it.
+- **Paused chart:** the editor keeps showing the state at the moment it was paused, frozen: the states which were
+  active have a gray border instead of a green one, and the live values are gray, titled with the time they are from.
+  This helps to find out what happened, e.g. after the adapter stopped a chart because of an error. Starting the
+  chart replaces them.
 - The tab **History** lists the starts of the chart and the transitions taken, newest first: when, from which state
   to which, triggered by which input or by a timer (`after`), and which states were active afterwards. Click a
   transition to select it in the chart. The adapter keeps the last 200 events, also when the editor is closed and
@@ -336,10 +340,10 @@ For every chart, the adapter creates below `statechart.<instance>.charts.<chart>
 
 | State | Content |
 |---|---|
-| `activeState` | Name of the active state, nested states as `Parent.Child`, parallel states separated by commas |
-| `activeStateIds` | IDs of all active states as JSON |
+| `activeState` | Name of the active state, nested states as `Parent.Child`, parallel states separated by commas. Empty while the chart is paused |
+| `activeStateIds` | IDs of all active states as JSON. A paused chart keeps the last ones |
 | `snapshot` | Stored state of the chart (active states, when they were entered, locals), see below |
-| `values` | Current values of all variables as JSON, `{}` if the chart does not run |
+| `values` | Current values of all variables as JSON. A paused chart keeps the last ones |
 | `history` | The last 200 events (starts and transitions taken) as JSON. Writing it without ack clears it |
 | `simulation` | `true` while the chart runs as simulation from the editor |
 | `simulationStatus` | Status of the simulation as JSON: paused, time offset, waiting events, next timer, breakpoint |

@@ -154,11 +154,13 @@ class Statechart extends utils.Adapter {
             } else {
                 this.log.info(`Chart "${chart.name}" is paused`);
             }
-            // no state is active, so the editor does not highlight the last active state anymore
+            // no state is active, e.g. for vis. activeStateIds and values keep the last state of the chart: the editor
+            // shows it as frozen, which helps to find out why it was paused, e.g. after an error
             await this.setState(`charts.${chartId}.activeState`, "", true);
-            await this.setState(`charts.${chartId}.activeStateIds`, "[]", true);
-            // the editor shows no values of a chart which does not run
-            await this.setState(`charts.${chartId}.values`, "{}", true);
+            if (empty) {
+                await this.setState(`charts.${chartId}.activeStateIds`, "[]", true);
+                await this.setState(`charts.${chartId}.values`, "{}", true);
+            }
             return;
         }
 

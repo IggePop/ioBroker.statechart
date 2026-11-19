@@ -128,6 +128,7 @@
     "Debounce (ms)": "Anti-rebond (ms)",
     "triggerHelp": "Lorsque cette entrée réveille le graphique.\n\nLes mises à jour filtrées par ack ne modifient pas la variable.\n\nAvec l'anti-rebond, le graphique se réveille seulement après que l'entrée n'a pas eu de mise à jour pour cette période, avec sa dernière valeur.",
     "Live values": "Valeurs en direct",
+    "Paused, state of %s": "En pause, état du %s",
     "The chart does not run": "Le graphique ne s'exécute pas",
     "Show live values": "Afficher les valeurs en direct des variables",
     "Hide live values": "Masquer les valeurs en direct des variables",

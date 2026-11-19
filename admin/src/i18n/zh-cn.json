@@ -128,6 +128,7 @@
     "Debounce (ms)": "防抖 (毫秒)",
     "triggerHelp": "此输入何时唤醒图表。\n\n被 ack 过滤掉的更新不会改变变量。\n\n启用防抖后,只有在输入在这段时间内没有更新时,图表才会以其最后的值被唤醒。",
     "Live values": "实时值",
+    "Paused, state of %s": "已暂停，%s 时的状态",
     "The chart does not run": "图表未运行",
     "Show live values": "显示变量的实时值",
     "Hide live values": "隐藏变量的实时值",

@@ -128,6 +128,7 @@
     "Debounce (ms)": "Entprellen (ms)",
     "triggerHelp": "Wann dieser Eingang das Chart aufweckt.\n\nAktualisierungen, die wegen ack aussortiert werden, ändern die Variable nicht.\n\nMit Entprellen wird das Chart erst geweckt, wenn der Eingang so lange keine Aktualisierung bekommen hat, mit dem letzten Wert.",
     "Live values": "Live-Werte",
+    "Paused, state of %s": "Angehalten, Stand von %s",
     "The chart does not run": "Das Chart läuft nicht",
     "Show live values": "Live-Werte der Variablen anzeigen",
     "Hide live values": "Live-Werte der Variablen ausblenden",

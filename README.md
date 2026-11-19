@@ -118,6 +118,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 ### **WORK IN PROGRESS**
 * (Igge) menu "View" in the toolbar: show or hide the grid, the minimap and the zoom buttons
 * (Igge) Ctrl+S saves the chart, also while typing in a field or code editor
+* (Igge) a paused chart keeps showing its last active states and values in the editor, gray and with their time, to help with debugging
 ### 0.6.0 (2026-11-19)
 * (Igge) the details of a variable list where it is used (states, transitions, function blocks), a click shows the element
 * (Igge) the wake up options of an input are always collapsed at first, the button shows if they are customized

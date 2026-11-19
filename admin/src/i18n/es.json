@@ -128,6 +128,7 @@
     "Debounce (ms)": "Rebote (ms)",
     "triggerHelp": "Cuando esta entrada despierta el gráfico.\n\nLas actualizaciones filtradas por ACK no cambian la variable.\n\nCon el rebote, el gráfico se activa solo después de que la entrada no se haya actualizado durante este tiempo, con su último valor.",
     "Live values": "Valores vivos",
+    "Paused, state of %s": "En pausa, estado de %s",
     "The chart does not run": "El gráfico no se ejecuta.",
     "Show live values": "Mostrar los valores en vivo de las variables.",
     "Hide live values": "Ocultar los valores en vivo de las variables.",

@@ -128,6 +128,7 @@
     "Debounce (ms)": "Odbicie (ms)",
     "triggerHelp": "Kiedy to wejście budzi wykres.\n\nAktualizacje odfiltrowane przez potwierdzenie nie powodują zmiany zmiennej.\n\nW przypadku odbicia wykres budzi się dopiero wtedy, gdy na wejściu nie było aktualizacji przez ten czas, z ostatnią wartością.",
     "Live values": "Żywe wartości",
+    "Paused, state of %s": "Wstrzymany, stan z %s",
     "The chart does not run": "Wykres nie działa",
     "Show live values": "Pokaż aktualne wartości zmiennych",
     "Hide live values": "Ukryj aktualne wartości zmiennych",

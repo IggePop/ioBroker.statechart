@@ -60,6 +60,8 @@ interface TabAppState extends GenericAppState {
     activeIds: string[];
     /** current values of the variables of the selected chart, empty if it does not run */
     liveValues: Record<string, any>;
+    /** when the values were published last, shown as the time of a frozen state of a paused chart */
+    liveValuesTs: number | null;
     /** events of the selected chart, null until they are loaded */
     history: HistoryEntry[] | null;
     /** if the selected chart runs as simulation */
@@ -109,6 +111,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             selectedChart: null,
             activeIds: [],
             liveValues: {},
+            liveValuesTs: null,
             history: null,
             simulating: false,
             simulationStatus: null,
@@ -200,7 +203,10 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
         if (name === "activeStateIds") {
             this.setState({ activeIds: Array.isArray(value) ? value : [] });
         } else if (name === "values") {
-            this.setState({ liveValues: value && typeof value === "object" ? value : {} });
+            this.setState({
+                liveValues: value && typeof value === "object" ? value : {},
+                liveValuesTs: state?.ts ?? null,
+            });
         } else if (name === "history") {
             this.setState({ history: Array.isArray(value) ? value : [] });
         } else if (name === "simulationStatus") {
@@ -323,6 +329,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
             selectedChart: id,
             activeIds: [],
             liveValues: {},
+            liveValuesTs: null,
             history: null,
             simulating: false,
             simulationStatus: null,
@@ -771,6 +778,7 @@ class TabApp extends GenericApp<GenericAppProps, TabAppState> {
                             chart={chart}
                             activeIds={this.state.activeIds}
                             liveValues={this.state.liveValues}
+                            liveValuesTs={this.state.liveValuesTs}
                             chartHistory={this.state.history}
                             simulating={this.state.simulating}
                             simulationStatus={this.state.simulationStatus}

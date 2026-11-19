@@ -128,6 +128,7 @@
     "Debounce (ms)": "Antirimbalzo (ms)",
     "triggerHelp": "Quando questo input risveglia il grafico.\n\nGli aggiornamenti filtrati da ack non modificano la variabile.\n\nCon il rimbalzo, il grafico si riattiva solo dopo che l'input non ha ricevuto aggiornamenti per questo periodo, con il suo ultimo valore.",
     "Live values": "Valori vivi",
+    "Paused, state of %s": "In pausa, stato del %s",
     "The chart does not run": "Il grafico non viene eseguito",
     "Show live values": "Mostra i valori in tempo reale delle variabili",
     "Hide live values": "Nascondi i valori live delle variabili",

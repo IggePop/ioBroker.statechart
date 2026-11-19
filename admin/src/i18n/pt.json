@@ -128,6 +128,7 @@
     "Debounce (ms)": "Debate (ms)",
     "triggerHelp": "Quando esta entrada ativa o gráfico.\n\nAs atualizações filtradas por ack não alteram a variável.\n\nCom o debounce, o gráfico só acorda depois que a entrada não teve atualização para esse horário, com seu último valor.",
     "Live values": "Valores ao vivo",
+    "Paused, state of %s": "Em pausa, estado de %s",
     "The chart does not run": "O gráfico não funciona",
     "Show live values": "Mostre os valores ao vivo das variáveis",
     "Hide live values": "Ocultar os valores ativos das variáveis",
