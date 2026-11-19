@@ -115,16 +115,17 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.6.0 (2026-11-19)
 * (Igge) the details of a variable list where it is used (states, transitions, function blocks), a click shows the element
 * (Igge) the wake up options of an input are always collapsed at first, the button shows if they are customized
 * (Igge) a chart whose code does not finish within the time limit of 1 s (e.g. an endless loop) is stopped, so it cannot block the other charts again and again
-* (Igge) fixed: an exception in a promise of the code of a chart restarted the adapter, and an endless loop in a promise was not aborted
 * (Igge) a chart which writes more than 1000 times per minute (e.g. a feedback loop) is stopped
-* (Igge) fixed: with the modern themes of admin 8 (also with the automatic theme), the editor stayed light instead of following the theme of the admin
 * (Igge) the explanation of the transition label shows conditions with variables and a complete example
 * (Igge) new state `charts.<id>.error` with the last error or warning of a chart, e.g. to show it in vis
 * (Igge) the longer explanations behind the ⓘ icons are split into paragraphs, so they are easier to read
+* (Igge) fixed: an exception in a promise of the code of a chart restarted the adapter, and an endless loop in a promise was not aborted
+* (Igge) fixed: with the modern themes of admin 8 (also with the automatic theme), the editor stayed light instead of following the theme of the admin
+
 ### 0.5.1 (2026-11-15)
 * (Igge) documentation updated: active states, tooltips on tap, start and pause in the toolbar, the new layout functions
 * (Igge) the types of ioBroker are a direct development dependency (finding W048 of the repository checker)
@@ -158,31 +159,6 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) editor: transitions are black, their labels have no background
 * (Igge) export of the whole chart as PNG image
 * (Igge) fixed: labels of transitions inside a superstate were hidden, labels of several transitions between the same states and the line to a moved label covered text, self transitions on the top or right side were drawn twisted
-
-### 0.2.0 (2026-11-01)
-* (Igge) the adapter and the editor are written in TypeScript now, no changes of the behavior
-* (Igge) live values of the variables in the editor
-* (Igge) taken transitions light up in the editor
-* (Igge) history of the starts and the transitions taken (tab "History", state `charts.<chart>.history`)
-* (Igge) a chart wakes up once right after the start, so transitions without label are taken without waiting for a change of an input
-* (Igge) chart option "super step": take transitions until none is valid anymore
-* (Igge) the arrows of transitions start and end where the states face each other (floating edges), their ends can be dragged along the border of the states or onto another state to move the transition there
-* (Igge) change detection: `hasChanged`, `hasChangedFrom` and `hasChangedTo`, e.g. `hasChangedTo(button, true)` for edges
-* (Igge) suncalc 2: `isDaytime()` is true all day during the midnight sun, `astroTime()` reports events which do not happen on a day (polar regions)
-
-### 0.1.1 (2026-10-25)
-* (Igge) renamed from "state-machine" to "statechart", because npm does not accept the old name (too similar to an existing package)
-
-### 0.1.0 (2026-10-25)
-* (Igge) initial release
-* (Igge) graphical chart editor in the admin side bar: states, transitions, nested states, function blocks, notes
-* (Igge) transition labels in Stateflow syntax event[condition]{action}, timers with after(n, unit)
-* (Igge) execution with Stateflow semantics (outer before inner transitions, inner transitions)
-* (Igge) charts continue in their state after a restart of the adapter
-* (Igge) per input: wake up on updates or changes, filter by ack, debounce
-* (Igge) helper functions: setState, setStateDelayed, sendTo, isTimeBetween, isDaytime, astroTime
-* (Igge) code editor with syntax highlighting, error checks and completion, generated code view
-* (Igge) undo/redo, copy/paste, import/export of charts as JSON
 
 Older changes: [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
