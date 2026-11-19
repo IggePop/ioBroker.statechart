@@ -14,7 +14,7 @@ Die Werkzeugleiste über dem Chart ist nach Aufgaben gruppiert, der Tooltip jede
 
 | Gruppe | Symbole |
 |---|---|
-| Speichern | **Speichern** (blau, wenn es ungespeicherte Änderungen gibt) |
+| Speichern | **Speichern** (Strg+S, auch während der Eingabe in einem Feld; blau, wenn es ungespeicherte Änderungen gibt) |
 | Verlauf | **Rückgängig** (Strg+Z), **Wiederholen** (Strg+Y) |
 | Zwischenablage | **Ausschneiden** (Strg+X), **Kopieren** (Strg+C), **Einfügen** (Strg+V), auch zwischen Charts, und **Löschen** (Entf) |
 | Hinzufügen | **Zustand hinzufügen**, **Funktion hinzufügen**, **Notiz hinzufügen**, in der Farbe des Elements, das sie anlegen |

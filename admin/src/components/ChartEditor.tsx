@@ -338,7 +338,7 @@ interface ChartEditorProps {
     theme: IobTheme;
 }
 
-type Shortcut = "undo" | "redo" | "copy" | "cut" | "paste";
+type Shortcut = "undo" | "redo" | "copy" | "cut" | "paste" | "save";
 
 function ChartEditorInner({
     chartId,
@@ -956,18 +956,31 @@ function ChartEditorInner({
     };
 
     // the keyboard shortcuts call the functions of the current render
+    // saves only if there is something to save, like the button
+    const saveShortcut = (): void => {
+        if (changed && !saving) {
+            void save();
+        }
+    };
     const shortcuts = useRef<Record<Shortcut, () => void>>({
         undo: history.undo,
         redo: history.redo,
         copy,
         cut,
         paste,
+        save: saveShortcut,
     });
     // eslint-disable-next-line react-hooks/refs
-    shortcuts.current = { undo: history.undo, redo: history.redo, copy, cut, paste };
+    shortcuts.current = { undo: history.undo, redo: history.redo, copy, cut, paste, save: saveShortcut };
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent): void => {
+            // saving also works while typing in a text field or code editor, instead of the "save page" of the browser
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "s") {
+                e.preventDefault();
+                shortcuts.current.save();
+                return;
+            }
             // text fields and code editors have their own undo, copy and paste
             if (!(e.ctrlKey || e.metaKey) || e.altKey || isTextInput(e.target)) {
                 return;
@@ -1317,7 +1330,7 @@ function ChartEditorInner({
                 >
                     {/* editing on the left, ordered by how often it is needed */}
                     <ToolButton
-                        title={`${I18n.t("Save")} (${changed ? I18n.t("unsaved changes") : I18n.t("no changes")})`}
+                        title={`${I18n.t("Save")} (Ctrl+S, ${changed ? I18n.t("unsaved changes") : I18n.t("no changes")})`}
                         icon={<SaveIcon />}
                         // highlighted when there is something to save
                         color={changed ? "primary" : "default"}

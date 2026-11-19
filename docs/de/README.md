@@ -39,7 +39,7 @@ oben links die Live-Werte des laufenden Charts, rechts die Variablen.*
 - Ausgewählte Elemente ausrichten und verteilen, auf gleiche Breite oder Höhe bringen, Einrasten am Raster
   (abschaltbar, das Raster lässt sich ausblenden), das ganze Chart mit einem Klick anzeigen
 - Die Chart-Liste und die Eigenschaften lassen sich in der Breite ändern und einklappen, für mehr Platz für das Chart
-- Rückgängig/Wiederholen (Strg+Z, Strg+Y), Ausschneiden/Kopieren/Einfügen/Löschen von Zuständen, Funktionsblöcken und Notizen (Strg+X, Strg+C, Strg+V, Entf), auch zwischen Charts, und eine Warnung bei ungespeicherten Änderungen
+- Rückgängig/Wiederholen (Strg+Z, Strg+Y), Ausschneiden/Kopieren/Einfügen/Löschen von Zuständen, Funktionsblöcken und Notizen (Strg+X, Strg+C, Strg+V, Entf), auch zwischen Charts, Speichern mit Strg+S und eine Warnung bei ungespeicherten Änderungen
 - **Code anzeigen**: das aus dem Chart generierte JavaScript, das genau zeigt, wie der Adapter es ausführt
 
 ### Installation

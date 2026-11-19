@@ -47,7 +47,7 @@ of the running chart on the top left, the variables on the right.*
 - Align and distribute the selected elements, give them the same width or height, snap to the grid (can be switched
   off, the grid can be hidden), show the whole chart with one click
 - The list of charts and the properties panel can be resized and collapsed, for more space for the chart
-- Undo/redo (Ctrl+Z, Ctrl+Y), cut/copy/paste/delete of states, function blocks and notes (Ctrl+X, Ctrl+C, Ctrl+V, Del), also between charts, and a warning about unsaved changes
+- Undo/redo (Ctrl+Z, Ctrl+Y), cut/copy/paste/delete of states, function blocks and notes (Ctrl+X, Ctrl+C, Ctrl+V, Del), also between charts, saving with Ctrl+S, and a warning about unsaved changes
 - **Show code**: the JavaScript generated from the chart, showing exactly how the adapter executes it
 
 ### Installation
@@ -117,6 +117,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
 -->
 ### **WORK IN PROGRESS**
 * (Igge) menu "View" in the toolbar: show or hide the grid, the minimap and the zoom buttons
+* (Igge) Ctrl+S saves the chart, also while typing in a field or code editor
 ### 0.6.0 (2026-11-19)
 * (Igge) the details of a variable list where it is used (states, transitions, function blocks), a click shows the element
 * (Igge) the wake up options of an input are always collapsed at first, the button shows if they are customized

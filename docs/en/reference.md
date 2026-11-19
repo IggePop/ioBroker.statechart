@@ -13,7 +13,7 @@ The toolbar above the chart is grouped by tasks, the tooltip of each icon shows 
 
 | Group | Icons |
 |---|---|
-| Save | **Save** (blue when there are unsaved changes) |
+| Save | **Save** (Ctrl+S, also while typing in a field; blue when there are unsaved changes) |
 | History | **Undo** (Ctrl+Z), **Redo** (Ctrl+Y) |
 | Clipboard | **Cut** (Ctrl+X), **Copy** (Ctrl+C), **Paste** (Ctrl+V), also between charts, and **Delete** (Del) |
 | Add | **Add state**, **Add function**, **Add note**, in the color of the element they add |
