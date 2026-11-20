@@ -13,11 +13,12 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+-**"
   pull_request: {}
 
-# Cancel previous PR/branch runs when a new commit is pushed. Runs on main always finish: the repository checker
-# of ioBroker reports a cancelled latest run, e.g. when Dependabot merged several updates one after another.
+# Cancel previous runs when a new commit is pushed. Exactly as in the ioBroker example: the repository checker
+# requires it (E3009). The newest run is never cancelled, so a cancelled run reported by the checker (W3041) is
+# only transient, e.g. after Dependabot merged several updates: "@iobroker-bot recheck" clears it.
 concurrency:
   group: ${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: true
 
 jobs:
   # Performs quick checks before the expensive test runs
@@ -75,7 +76,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Rebuild build and admin/build"
-          # runs on main are not cancelled: if main has moved on meanwhile, the run of the newer commit rebuilds
+          # if main has moved on meanwhile (a newer push cancels this run, or it finished first), the run of the newer commit rebuilds
           if ! git push; then
             git fetch origin main
             if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
