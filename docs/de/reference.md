@@ -16,7 +16,7 @@ Die Werkzeugleiste über dem Chart ist nach Aufgaben gruppiert, der Tooltip jede
 |---|---|
 | Speichern | **Speichern** (Strg+S, auch während der Eingabe in einem Feld; blau, wenn es ungespeicherte Änderungen gibt) |
 | Verlauf | **Rückgängig** (Strg+Z), **Wiederholen** (Strg+Y) |
-| Zwischenablage | **Ausschneiden** (Strg+X), **Kopieren** (Strg+C), **Einfügen** (Strg+V), auch zwischen Charts, und **Löschen** (Entf) |
+| Zwischenablage | **Ausschneiden** (Strg+X), **Kopieren** (Strg+C), **Einfügen** (Strg+V), auch zwischen Charts, und **Löschen** (Entf; ein Oberzustand mit seinen Unterzuständen, Strg+Z holt sie zurück) |
 | Hinzufügen | **Zustand hinzufügen**, **Funktion hinzufügen**, **Notiz hinzufügen**, in der Farbe des Elements, das sie anlegen |
 | Anordnen | Ausgewählte Elemente **ausrichten** oder ihnen die **gleiche Breite** oder **Höhe** wie dem zuerst ausgewählten geben (Menü, nach einer Auswahl mit dem Rahmen wie dem größten), **Am Raster einrasten** ein und aus, **Ansicht** (Menü: Raster, also die Punkte im Hintergrund, Minimap und Zoom-Knöpfe anzeigen), **Alles anzeigen** (zoomt und verschiebt so, dass das ganze Chart zu sehen ist) |
 | Ausgabe (rechts) | **Code anzeigen**, **Chart exportieren** (JSON), **Als Bild exportieren** (PNG), siehe [Import und Export](#import-und-export) |
@@ -431,9 +431,7 @@ anzuzeigen oder sich benachrichtigen zu lassen.
 
 ## Einschränkungen
 
-- History- und Verbindungspunkte werden noch nicht unterstützt.
-- Beim Löschen eines Superstates werden auch seine Unterzustände gelöscht.
-- Ungespeicherte Änderungen gehen verloren, wenn ein anderes Chart ausgewählt wird.
+- Verbindungspunkte (Verzweigungen von Übergängen, Connective Junctions) werden noch nicht unterstützt.
 - Bedingungen und Aktionen laufen in einem eigenen JavaScript-Kontext mit Zeitlimit (siehe
   [Fehler im Code](#fehler-im-code)), das ist aber **keine Sicherheits-Sandbox**: Wer Charts bearbeiten darf, kann im Adapter beliebigen Code
   ausführen, wie beim JavaScript-Adapter auch.

@@ -15,7 +15,7 @@ The toolbar above the chart is grouped by tasks, the tooltip of each icon shows 
 |---|---|
 | Save | **Save** (Ctrl+S, also while typing in a field; blue when there are unsaved changes) |
 | History | **Undo** (Ctrl+Z), **Redo** (Ctrl+Y) |
-| Clipboard | **Cut** (Ctrl+X), **Copy** (Ctrl+C), **Paste** (Ctrl+V), also between charts, and **Delete** (Del) |
+| Clipboard | **Cut** (Ctrl+X), **Copy** (Ctrl+C), **Paste** (Ctrl+V), also between charts, and **Delete** (Del; a super state together with its sub states, Ctrl+Z brings them back) |
 | Add | **Add state**, **Add function**, **Add note**, in the color of the element they add |
 | Layout | **Align** the selected elements, or give them the **same width** or **height** as the one selected first (menu, after a selection with a rectangle as the largest one), **Snap to the grid** on and off, **View** (menu: show the grid, i.e. the dots of the background, the minimap and the zoom buttons), **Show everything** (zooms and scrolls so that the whole chart is visible) |
 | Output (right) | **Show code**, **Export chart** (JSON), **Export as image** (PNG), see [Import and export](#import-and-export) |
@@ -415,9 +415,7 @@ The last error or warning of a chart is also written to its state `error`, e.g. 
 
 ## Limitations
 
-- History junctions and connective junctions are not supported yet.
-- Deleting a super state also deletes its sub states.
-- Unsaved changes are lost when you select another chart.
+- Connective junctions (branching points of transitions) are not supported yet.
 - Conditions and actions run in a separate JavaScript context with a time limit (see
   [Errors in the code](#errors-in-the-code)), but this is **no security sandbox**: everyone who may edit charts can execute any code in the adapter,
   just like with the JavaScript adapter.

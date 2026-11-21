@@ -704,13 +704,16 @@ describe("chart-runtime => temporal logic", () => {
             chart.symbols.push({ name: "measured", scope: "local", initial: 0 });
             chart.states[0].during = "measured = duration(motion, msec);";
         });
+        // a clock of the test, so a slow machine does not change the measured times
+        let now = runtime!.enteredAt.get("off")!;
+        runtime!.now = () => now;
         runtime?.handleInput("test.0.other", 1);
         expect(host.active.at(-1)).to.equal("Off");
         runtime?.handleInput("test.0.motion", true);
         expect(runtime?.sandbox.measured).to.equal(0);
-        await wait(50);
+        now += 50;
         runtime?.handleInput("test.0.motion", true);
-        expect(runtime?.sandbox.measured).to.be.at.least(40);
+        expect(runtime?.sandbox.measured).to.equal(50);
         runtime?.handleInput("test.0.other", 2);
         expect(host.active.at(-1)).to.equal("On");
     });
