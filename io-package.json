@@ -98,14 +98,14 @@
     "titleLang": {
       "en": "State Machine",
       "de": "Zustandsmaschine",
-      "ru": "Государственная машина",
-      "pt": "Máquina de estado",
-      "nl": "Staatsmachine",
+      "ru": "Конечный автомат",
+      "pt": "Máquina de estados",
+      "nl": "Toestandsmachine",
       "fr": "Machine à états",
-      "it": "Macchina dello Stato",
+      "it": "Macchina a stati",
       "es": "Máquina de estados",
-      "pl": "Maszyna Stanu",
-      "uk": "Державна машина",
+      "pl": "Maszyna stanów",
+      "uk": "Скінченний автомат",
       "zh-cn": "状态机"
     },
     "desc": {
@@ -146,7 +146,7 @@
     "type": "logic",
     "compact": true,
     "connectionType": "local",
-    "dataSource": "poll",
+    "dataSource": "push",
     "adminUI": {
       "config": "none",
       "tab": "materialize"
@@ -154,8 +154,28 @@
     "adminTab": {
       "name": {
         "en": "State Machine",
-        "de": "Zustandsmaschine"
+        "de": "Zustandsmaschine",
+        "ru": "Конечный автомат",
+        "pt": "Máquina de estados",
+        "nl": "Toestandsmachine",
+        "fr": "Machine à états",
+        "it": "Macchina a stati",
+        "es": "Máquina de estados",
+        "pl": "Maszyna stanów",
+        "uk": "Скінченний автомат",
+        "zh-cn": "状态机"
       }
+    },
+    "docs": {
+      "en": [
+        "docs/en/reference.md",
+        "docs/en/development.md"
+      ],
+      "de": [
+        "docs/de/README.md",
+        "docs/de/reference.md",
+        "docs/de/development.md"
+      ]
     },
     "eraseOnUpload": true,
     "dependencies": [
