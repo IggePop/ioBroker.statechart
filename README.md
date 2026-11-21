@@ -116,11 +116,14 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.7.0 (2026-11-21)
+* (Igge) four new templates: washing machine done, shutter with automatic and manual mode, push button with short, long and double press, presence
+* (Igge) a paused chart keeps showing its last active states and values in the editor, gray and with their time, to help with debugging. The states `activeStateIds` and `values` keep the last values when a chart is paused, `activeState` is still cleared
 * (Igge) menu "View" in the toolbar: show or hide the grid, the minimap and the zoom buttons
 * (Igge) Ctrl+S saves the chart, also while typing in a field or code editor
-* (Igge) a paused chart keeps showing its last active states and values in the editor, gray and with their time, to help with debugging
-* (Igge) four new templates: washing machine done, shutter with automatic and manual mode, push button with short, long and double press, presence
+* (Igge) larger fields for transition labels (5 lines) and the actions of states (3 lines)
+* (Igge) the name of the adapter in all languages without translation errors, documentation of branching with priorities
+
 ### 0.6.0 (2026-11-19)
 * (Igge) the details of a variable list where it is used (states, transitions, function blocks), a click shows the element
 * (Igge) the wake up options of an input are always collapsed at first, the button shows if they are customized
@@ -153,18 +156,6 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (Igge) the last 10 versions of a chart are kept when it is saved, and can be restored in the properties of the chart
 * (Igge) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact
 * (Igge) fixed: saving merged the chart with the stored one, so deleted states, transitions or variables and switched off options could remain
-
-### 0.3.0 (2026-11-14)
-* (Igge) simulation: the chart runs in the editor without switching anything, the inputs are set by hand, advance the time, pause, single steps and breakpoints on states and transitions
-* (Igge) parallel states (AND) with an execution order, and history junctions: entering a state returns to its last active sub state
-* (Igge) more temporal logic: `before`, `at`, `every`, counting the wakeups by an input (`after(3, button)`), `after(5, min, condition)`, `elapsed()`, `duration()`, and every day at a time or astro event (`at("22:30")`, `at("sunset", -30)`)
-* (Igge) `getState("id")` reads any state in conditions and actions, control states per chart: `enabled`, `reset` and `event`
-* (Igge) static check of the chart: states which never become active or are never left, transitions which are never taken, conditions which are never true, unused variables
-* (Igge) editor: color of each state (every second level of nested states darker), right-angled transitions as option, snap to the grid, align and distribute, labels of transitions can be moved
-* (Igge) editor: toolbar grouped by tasks with new buttons to cut and delete, collapsible side panels, colors and icons for each kind of element, variables grouped by kind with a search
-* (Igge) editor: transitions are black, their labels have no background
-* (Igge) export of the whole chart as PNG image
-* (Igge) fixed: labels of transitions inside a superstate were hidden, labels of several transitions between the same states and the line to a moved label covered text, self transitions on the top or right side were drawn twisted
 
 Older changes: [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
