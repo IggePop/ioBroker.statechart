@@ -45,6 +45,20 @@ if motion is detected and the variable `brightness` is below 50. Then it switche
 Without event, a transition is checked whenever any input changes. If a state has several outgoing
 transitions, they are checked in the order of their **priority** (shown at the arrow).
 
+**Branching** (if / else if / else) is done with several transitions from the same state with the same event and
+different conditions. The first one by priority whose condition is true is taken, the last one without condition is
+the "else":
+
+```
+motion[temp > 25]   → Cooling      priority 1
+motion[temp < 18]   → Heating      priority 2
+motion              → Ventilation  priority 3, "else"
+```
+
+In Stateflow, such branches are often drawn with a connective junction, a branching point on one arrow. The chart
+behaves the same, only the event is written on each transition. Connective junctions are not supported, see
+[Limitations](#limitations).
+
 ### Temporal logic
 
 Instead of an event, a transition can have a temporal expression like in Stateflow. Time is measured from entering
@@ -415,7 +429,8 @@ The last error or warning of a chart is also written to its state `error`, e.g. 
 
 ## Limitations
 
-- Connective junctions (branching points of transitions) are not supported yet.
+- Connective junctions (branching points of transitions) are not supported. Branches are drawn as several
+  transitions with priorities instead, see [Transition labels](#transition-labels).
 - Conditions and actions run in a separate JavaScript context with a time limit (see
   [Errors in the code](#errors-in-the-code)), but this is **no security sandbox**: everyone who may edit charts can execute any code in the adapter,
   just like with the JavaScript adapter.

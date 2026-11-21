@@ -47,6 +47,20 @@ genommen, wenn eine Bewegung erkannt ist und die Variable `brightness` unter 50 
 Ohne Event wird ein Übergang bei jeder Änderung eines beliebigen Eingangs geprüft. Hat ein Zustand
 mehrere ausgehende Übergänge, werden sie in der Reihenfolge ihrer **Priorität** geprüft (steht am Pfeil).
 
+**Verzweigungen** (wenn / sonst wenn / sonst) entstehen durch mehrere Übergänge vom selben Zustand mit demselben
+Event und unterschiedlichen Bedingungen. Genommen wird der erste nach Priorität, dessen Bedingung gilt, der letzte ohne
+Bedingung ist das „sonst“:
+
+```
+motion[temp > 25]   → Kühlen   Priorität 1
+motion[temp < 18]   → Heizen   Priorität 2
+motion              → Lüften   Priorität 3, „sonst“
+```
+
+In Stateflow zeichnet man solche Verzweigungen oft mit einer Connective Junction, einem Verzweigungspunkt auf einem
+Pfeil. Das Chart verhält sich genauso, nur steht das Event an jedem Übergang. Connective Junctions werden nicht
+unterstützt, siehe [Einschränkungen](#einschränkungen).
+
 ### Zeitlogik
 
 Statt eines Events kann ein Übergang wie bei Stateflow einen Zeitausdruck haben. Die Zeit wird ab dem Betreten des
@@ -431,7 +445,8 @@ anzuzeigen oder sich benachrichtigen zu lassen.
 
 ## Einschränkungen
 
-- Verbindungspunkte (Verzweigungen von Übergängen, Connective Junctions) werden noch nicht unterstützt.
+- Verbindungspunkte (Verzweigungen von Übergängen, Connective Junctions) werden nicht unterstützt. Verzweigungen
+  entstehen stattdessen durch mehrere Übergänge mit Prioritäten, siehe [Beschriftung von Übergängen](#beschriftung-von-übergängen).
 - Bedingungen und Aktionen laufen in einem eigenen JavaScript-Kontext mit Zeitlimit (siehe
   [Fehler im Code](#fehler-im-code)), das ist aber **keine Sicherheits-Sandbox**: Wer Charts bearbeiten darf, kann im Adapter beliebigen Code
   ausführen, wie beim JavaScript-Adapter auch.
