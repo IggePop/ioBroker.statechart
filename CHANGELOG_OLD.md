@@ -1,4 +1,12 @@
 # Older changes
+## 0.4.0 (2026-11-14)
+* (IggePop) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
+* (IggePop) templates for new charts: light with motion detector, heating with window contact, alarm system
+* (IggePop) warning if an input or output has no state, or its state does not exist, in the editor and in the log
+* (IggePop) the last 10 versions of a chart are kept when it is saved, and can be restored in the properties of the chart
+* (IggePop) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact
+* (IggePop) fixed: saving merged the chart with the stored one, so deleted states, transitions or variables and switched off options could remain
+
 ## 0.3.0 (2026-11-14)
 * (IggePop) simulation: the chart runs in the editor without switching anything, the inputs are set by hand, advance the time, pause, single steps and breakpoints on states and transitions
 * (IggePop) parallel states (AND) with an execution order, and history junctions: entering a state returns to its last active sub state

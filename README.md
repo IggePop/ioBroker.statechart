@@ -116,10 +116,11 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.7.1 (2026-11-22)
 * (IggePop) the adapter and its tab in the admin are called "Statechart" in all languages
 * (IggePop) fixed: a state of the adapter which could not be written, e.g. while it stops, caused an unhandled rejection
 * (IggePop) unused translations removed, a missing Polish translation added
+
 ### 0.7.0 (2026-11-21)
 * (IggePop) four new templates: washing machine done, shutter with automatic and manual mode, push button with short, long and double press, presence
 * (IggePop) a paused chart keeps showing its last active states and values in the editor, gray and with their time, to help with debugging. The states `activeStateIds` and `values` keep the last values when a chart is paused, `activeState` is still cleared
@@ -152,14 +153,6 @@ with, endorsed or sponsored by The MathWorks, Inc.
 * (IggePop) fixed: on touch screens, the icons of problems, hints and comments showed their explanation only on a long press
 * (IggePop) fixed: the list of charts and the properties could be made so narrow that their buttons were cut off
 * (IggePop) fixed: with "Snap to the grid", the states did not snap onto the dots of the background, but between them
-
-### 0.4.0 (2026-11-14)
-* (IggePop) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
-* (IggePop) templates for new charts: light with motion detector, heating with window contact, alarm system
-* (IggePop) warning if an input or output has no state, or its state does not exist, in the editor and in the log
-* (IggePop) the last 10 versions of a chart are kept when it is saved, and can be restored in the properties of the chart
-* (IggePop) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact
-* (IggePop) fixed: saving merged the chart with the stored one, so deleted states, transitions or variables and switched off options could remain
 
 Older changes: [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
