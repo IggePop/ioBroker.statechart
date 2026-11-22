@@ -10,6 +10,7 @@ import {
     Panel,
     ReactFlow,
     ReactFlowProvider,
+    useConnection,
     useReactFlow,
 } from "@xyflow/react";
 import type { OnConnect, OnEdgesChange, OnNodeDrag, OnNodesChange } from "@xyflow/react";
@@ -363,6 +364,8 @@ function ChartEditorInner({
     theme,
 }: ChartEditorProps): React.JSX.Element {
     const reactFlow = useReactFlow<ChartFlowNode, TransitionFlowEdge>();
+    /** a new transition is dragged: the points of all states are shown, see the global styles */
+    const connecting = useConnection(connection => connection.inProgress);
     /** chart level properties (name, symbols, initial state, ...), states and transitions live in nodes/edges */
     const [chart, setChart] = useState(savedChart);
     const [nodes, setNodes] = useState(() => chartToFlow(savedChart).nodes);
@@ -1328,6 +1331,21 @@ function ChartEditorInner({
                         from: { strokeWidth: 6, stroke: theme.palette.success.main },
                         to: { strokeWidth: 1, stroke: theme.palette.success.main },
                     },
+                    // the points to drag a new transition from only appear when needed: over the state, while it is
+                    // selected (touch screens have no hover) and on all states while a transition is dragged
+                    // larger than the defaults of React Flow (6 and 5 px), easier to hit, also on touch screens
+                    ".statechart-flow .react-flow__handle": {
+                        width: 10,
+                        height: 10,
+                        opacity: 0,
+                        transition: "opacity 0.15s",
+                    },
+                    ".statechart-flow .react-flow__resize-control.handle": { width: 10, height: 10, borderRadius: 2 },
+                    [[
+                        ".statechart-flow .react-flow__node:hover .react-flow__handle",
+                        ".statechart-flow .react-flow__node.selected .react-flow__handle",
+                        ".statechart-flow.statechart-connecting .react-flow__handle",
+                    ].join(", ")]: { opacity: 1 },
                 }}
             />
             <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -1539,6 +1557,7 @@ function ChartEditorInner({
                 </Toolbar>
                 <Box
                     ref={flowBox}
+                    className={connecting ? "statechart-flow statechart-connecting" : "statechart-flow"}
                     sx={{ flex: 1, minHeight: 0 }}
                 >
                     <ReactFlow

@@ -116,6 +116,8 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (IggePop) the points to drag a new transition from only appear over a state, while it is selected or while a transition is dragged, and they are larger, like the handles to resize
 ### 0.7.1 (2026-11-22)
 * (IggePop) the adapter and its tab in the admin are called "Statechart" in all languages
 * (IggePop) fixed: a state of the adapter which could not be written, e.g. while it stops, caused an unhandled rejection
