@@ -221,23 +221,23 @@ class Statechart extends utils.Adapter {
                 sendTo: (instance, command, message) => this.sendTo(instance, command, message),
                 getLocation: () => this.location,
                 onActiveChange: ({ names, ids }) => {
-                    void this.setState(`charts.${chartId}.activeState`, names, true);
-                    void this.setState(`charts.${chartId}.activeStateIds`, JSON.stringify(ids), true);
+                    this.setOwnState(`charts.${chartId}.activeState`, names, true);
+                    this.setOwnState(`charts.${chartId}.activeStateIds`, JSON.stringify(ids), true);
                 },
                 persist: data => {
-                    void this.setState(`charts.${chartId}.snapshot`, JSON.stringify(data), true);
+                    this.setOwnState(`charts.${chartId}.snapshot`, JSON.stringify(data), true);
                 },
                 onValues: values => {
-                    void this.setState(`charts.${chartId}.values`, JSON.stringify(values), true);
+                    this.setOwnState(`charts.${chartId}.values`, JSON.stringify(values), true);
                 },
                 onHistory: entries => this.addHistory(chartId, entries),
                 onSimulationStatus: status => {
-                    void this.setState(`charts.${chartId}.simulationStatus`, JSON.stringify(status), true);
+                    this.setOwnState(`charts.${chartId}.simulationStatus`, JSON.stringify(status), true);
                 },
                 // the error state shows the problems of the real chart, not those of a simulation
                 onError: message => {
                     if (!simulated) {
-                        void this.setState(`charts.${chartId}.error`, message, true);
+                        this.setOwnState(`charts.${chartId}.error`, message, true);
                     }
                 },
                 // e.g. an endless loop: a simulation ends, a chart is paused like with the button in the editor
@@ -468,6 +468,18 @@ class Statechart extends utils.Adapter {
     }
 
     /**
+     * Sets a state of the adapter without waiting for it, e.g. from a callback of a chart. A failure, e.g. while the
+     * adapter stops, is only logged, it must not become an unhandled rejection.
+     *
+     * @param id ID of the state, without the namespace
+     * @param val The value
+     * @param ack Acknowledged
+     */
+    private setOwnState(id: string, val: ioBroker.StateValue, ack: boolean): void {
+        this.setState(id, val, ack).catch(err => this.log.debug(`Cannot set ${id}: ${err.message}`));
+    }
+
+    /**
      * Appends events to the history of a chart and stores it
      *
      * @param chartId Chart ID
@@ -476,7 +488,7 @@ class Statechart extends utils.Adapter {
     private addHistory(chartId: string, entries: HistoryEntry[]): void {
         const history = [...(this.histories.get(chartId) || []), ...entries].slice(-HISTORY_LENGTH);
         this.histories.set(chartId, history);
-        void this.setState(`charts.${chartId}.history`, JSON.stringify(history), true);
+        this.setOwnState(`charts.${chartId}.history`, JSON.stringify(history), true);
     }
 
     /**
@@ -752,7 +764,7 @@ class Statechart extends utils.Adapter {
             // written by the editor ("clear"), the adapter's own updates are acknowledged
             if (!state.ack) {
                 this.histories.set(own.chartId, []);
-                void this.setState(`charts.${own.chartId}.history`, "[]", true);
+                this.setOwnState(`charts.${own.chartId}.history`, "[]", true);
             }
             return;
         }

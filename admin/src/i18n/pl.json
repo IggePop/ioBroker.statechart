@@ -1,5 +1,4 @@
 {
-    "State Machine": "Maszyna Stanu",
     "Charts": "Wykresy",
     "New chart": "Nowy wykres",
     "Delete chart": "Usuń wykres",
@@ -37,7 +36,6 @@
     "initialHelp": "np. 0, prawda lub „tekst”",
     "State ID": "Stanowy identyfikator",
     "Select state": "Wybierz stan",
-    "Add variable": "Dodaj zmienną",
     "Unknown variable \"%s\"": "Nieznana zmienna „%s”",
     "%s() needs a variable of the chart as first argument": "%s() potrzebuje zmiennej wykresu jako pierwszego argumentu",
     "Unknown event \"%s\", use the name of an input": "Nieznane zdarzenie „%s”, użyj nazwy wejścia",
@@ -132,7 +130,7 @@
     "The chart does not run": "Wykres nie działa",
     "Show live values": "Pokaż aktualne wartości zmiennych",
     "Hide live values": "Ukryj aktualne wartości zmiennych",
-    "currentValue": "Current value: %s",
+    "currentValue": "Aktualna wartość: %s",
     "History": "Historia",
     "Clear history": "Wyczyść historię",
     "historyHelp": "Początki wykresu i wykonane przejścia, najpierw najnowsze.\n\nKliknij przejście, aby je wybrać.\n\nAdapter przechowuje ostatnie 200 zdarzeń, także po ponownym uruchomieniu.",

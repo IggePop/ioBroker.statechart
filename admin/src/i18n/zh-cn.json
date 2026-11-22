@@ -1,5 +1,4 @@
 {
-    "State Machine": "状态机",
     "Charts": "图表",
     "New chart": "新建图表",
     "Delete chart": "删除图表",
@@ -37,7 +36,6 @@
     "initialHelp": "例如 0、true 或 \"text\"",
     "State ID": "数据点 ID",
     "Select state": "选择数据点",
-    "Add variable": "添加变量",
     "Unknown variable \"%s\"": "未知变量 \"%s\"",
     "%s() needs a variable of the chart as first argument": "%s() 的第一个参数必须是图表的变量",
     "Unknown event \"%s\", use the name of an input": "未知事件 \"%s\",请使用输入的名称",

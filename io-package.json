@@ -96,17 +96,17 @@
       }
     },
     "titleLang": {
-      "en": "State Machine",
-      "de": "Zustandsmaschine",
-      "ru": "Конечный автомат",
-      "pt": "Máquina de estados",
-      "nl": "Toestandsmachine",
-      "fr": "Machine à états",
-      "it": "Macchina a stati",
-      "es": "Máquina de estados",
-      "pl": "Maszyna stanów",
-      "uk": "Скінченний автомат",
-      "zh-cn": "状态机"
+      "en": "Statechart",
+      "de": "Statechart",
+      "ru": "Statechart",
+      "pt": "Statechart",
+      "nl": "Statechart",
+      "fr": "Statechart",
+      "it": "Statechart",
+      "es": "Statechart",
+      "pl": "Statechart",
+      "uk": "Statechart",
+      "zh-cn": "Statechart"
     },
     "desc": {
       "en": "Statecharts (hierarchical state machines) with a graphical editor for automations",
@@ -122,7 +122,7 @@
       "zh-cn": "状态机"
     },
     "authors": [
-      "Igge <mail@igge.org>"
+      "IggePop <mail@igge.org>"
     ],
     "keywords": [
       "state machine",
@@ -153,17 +153,17 @@
     },
     "adminTab": {
       "name": {
-        "en": "State Machine",
-        "de": "Zustandsmaschine",
-        "ru": "Конечный автомат",
-        "pt": "Máquina de estados",
-        "nl": "Toestandsmachine",
-        "fr": "Machine à états",
-        "it": "Macchina a stati",
-        "es": "Máquina de estados",
-        "pl": "Maszyna stanów",
-        "uk": "Скінченний автомат",
-        "zh-cn": "状态机"
+        "en": "Statechart",
+        "de": "Statechart",
+        "ru": "Statechart",
+        "pt": "Statechart",
+        "nl": "Statechart",
+        "fr": "Statechart",
+        "it": "Statechart",
+        "es": "Statechart",
+        "pl": "Statechart",
+        "uk": "Statechart",
+        "zh-cn": "Statechart"
       }
     },
     "docs": {

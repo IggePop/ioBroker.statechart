@@ -1,5 +1,4 @@
 {
-    "State Machine": "Державна машина",
     "Charts": "Діаграми",
     "New chart": "Нова діаграма",
     "Delete chart": "Видалити діаграму",
@@ -37,7 +36,6 @@
     "initialHelp": "напр. 0, правда або \"текст\"",
     "State ID": "Державний ідентифікатор",
     "Select state": "Виберіть стан",
-    "Add variable": "Додайте змінну",
     "Unknown variable \"%s\"": "Невідома змінна \"%s\"",
     "%s() needs a variable of the chart as first argument": "%s() потребує змінну діаграми як перший аргумент",
     "Unknown event \"%s\", use the name of an input": "Невідома подія \"%s\", використовуйте назву входу",

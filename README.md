@@ -52,14 +52,14 @@ of the running chart on the top left, the variables on the right.*
 
 ### Installation
 
-Install the adapter **State Machine** in the admin, tab **Adapters**, and add an instance. Until 1.0, the format of
+Install the adapter **Statechart** in the admin, tab **Adapters**, and add an instance. Until 1.0, the format of
 the charts may still change.
 
 Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.20 or newer.
 
 ### Getting started
 
-1. Open **State Machine** in the admin side bar.
+1. Open **Statechart** in the admin side bar.
 2. Create a chart with **+** in the list on the left. Choose a **template** to start with a working example (light
    with motion detector, heating with window contact, alarm system, washing machine done, shutter with automatic and
    manual mode, push button with short, long and double press, presence), or an empty chart.
@@ -116,53 +116,57 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (IggePop) the adapter and its tab in the admin are called "Statechart" in all languages
+* (IggePop) fixed: a state of the adapter which could not be written, e.g. while it stops, caused an unhandled rejection
+* (IggePop) unused translations removed, a missing Polish translation added
 ### 0.7.0 (2026-11-21)
-* (Igge) four new templates: washing machine done, shutter with automatic and manual mode, push button with short, long and double press, presence
-* (Igge) a paused chart keeps showing its last active states and values in the editor, gray and with their time, to help with debugging. The states `activeStateIds` and `values` keep the last values when a chart is paused, `activeState` is still cleared
-* (Igge) menu "View" in the toolbar: show or hide the grid, the minimap and the zoom buttons
-* (Igge) Ctrl+S saves the chart, also while typing in a field or code editor
-* (Igge) larger fields for transition labels (5 lines) and the actions of states (3 lines)
-* (Igge) the name of the adapter in all languages without translation errors, documentation of branching with priorities
+* (IggePop) four new templates: washing machine done, shutter with automatic and manual mode, push button with short, long and double press, presence
+* (IggePop) a paused chart keeps showing its last active states and values in the editor, gray and with their time, to help with debugging. The states `activeStateIds` and `values` keep the last values when a chart is paused, `activeState` is still cleared
+* (IggePop) menu "View" in the toolbar: show or hide the grid, the minimap and the zoom buttons
+* (IggePop) Ctrl+S saves the chart, also while typing in a field or code editor
+* (IggePop) larger fields for transition labels (5 lines) and the actions of states (3 lines)
+* (IggePop) the name of the adapter in all languages without translation errors, documentation of branching with priorities
 
 ### 0.6.0 (2026-11-19)
-* (Igge) the details of a variable list where it is used (states, transitions, function blocks), a click shows the element
-* (Igge) the wake up options of an input are always collapsed at first, the button shows if they are customized
-* (Igge) a chart whose code does not finish within the time limit of 1 s (e.g. an endless loop) is stopped, so it cannot block the other charts again and again
-* (Igge) a chart which writes more than 1000 times per minute (e.g. a feedback loop) is stopped
-* (Igge) the explanation of the transition label shows conditions with variables and a complete example
-* (Igge) new state `charts.<id>.error` with the last error or warning of a chart, e.g. to show it in vis
-* (Igge) the longer explanations behind the ⓘ icons are split into paragraphs, so they are easier to read
-* (Igge) fixed: an exception in a promise of the code of a chart restarted the adapter, and an endless loop in a promise was not aborted
-* (Igge) fixed: with the modern themes of admin 8 (also with the automatic theme), the editor stayed light instead of following the theme of the admin
+* (IggePop) the details of a variable list where it is used (states, transitions, function blocks), a click shows the element
+* (IggePop) the wake up options of an input are always collapsed at first, the button shows if they are customized
+* (IggePop) a chart whose code does not finish within the time limit of 1 s (e.g. an endless loop) is stopped, so it cannot block the other charts again and again
+* (IggePop) a chart which writes more than 1000 times per minute (e.g. a feedback loop) is stopped
+* (IggePop) the explanation of the transition label shows conditions with variables and a complete example
+* (IggePop) new state `charts.<id>.error` with the last error or warning of a chart, e.g. to show it in vis
+* (IggePop) the longer explanations behind the ⓘ icons are split into paragraphs, so they are easier to read
+* (IggePop) fixed: an exception in a promise of the code of a chart restarted the adapter, and an endless loop in a promise was not aborted
+* (IggePop) fixed: with the modern themes of admin 8 (also with the automatic theme), the editor stayed light instead of following the theme of the admin
 
 ### 0.5.1 (2026-11-15)
-* (Igge) documentation updated: active states, tooltips on tap, start and pause in the toolbar, the new layout functions
-* (Igge) the types of ioBroker are a direct development dependency (finding W048 of the repository checker)
+* (IggePop) documentation updated: active states, tooltips on tap, start and pause in the toolbar, the new layout functions
+* (IggePop) the types of ioBroker are a direct development dependency (finding W048 of the repository checker)
 
 ### 0.5.0 (2026-11-15)
-* (Igge) button "Show everything" in the toolbar: zooms and scrolls so that the whole chart is visible
-* (Igge) button "Show the grid" in the toolbar: hides or shows the dots of the background
-* (Igge) "Same width" and "Same height" in the menu for aligning: the selected elements get the size of the one selected first (after a selection with a rectangle: of the largest one)
-* (Igge) the chart can also be paused and started with a button in the toolbar of the editor
-* (Igge) active states are easier to see: thicker green border with a light green glow
-* (Igge) fixed: on touch screens, the icons of problems, hints and comments showed their explanation only on a long press
-* (Igge) fixed: the list of charts and the properties could be made so narrow that their buttons were cut off
-* (Igge) fixed: with "Snap to the grid", the states did not snap onto the dots of the background, but between them
+* (IggePop) button "Show everything" in the toolbar: zooms and scrolls so that the whole chart is visible
+* (IggePop) button "Show the grid" in the toolbar: hides or shows the dots of the background
+* (IggePop) "Same width" and "Same height" in the menu for aligning: the selected elements get the size of the one selected first (after a selection with a rectangle: of the largest one)
+* (IggePop) the chart can also be paused and started with a button in the toolbar of the editor
+* (IggePop) active states are easier to see: thicker green border with a light green glow
+* (IggePop) fixed: on touch screens, the icons of problems, hints and comments showed their explanation only on a long press
+* (IggePop) fixed: the list of charts and the properties could be made so narrow that their buttons were cut off
+* (IggePop) fixed: with "Snap to the grid", the states did not snap onto the dots of the background, but between them
 
 ### 0.4.0 (2026-11-14)
-* (Igge) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
-* (Igge) templates for new charts: light with motion detector, heating with window contact, alarm system
-* (Igge) warning if an input or output has no state, or its state does not exist, in the editor and in the log
-* (Igge) the last 10 versions of a chart are kept when it is saved, and can be restored in the properties of the chart
-* (Igge) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact
-* (Igge) fixed: saving merged the chart with the stored one, so deleted states, transitions or variables and switched off options could remain
+* (IggePop) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
+* (IggePop) templates for new charts: light with motion detector, heating with window contact, alarm system
+* (IggePop) warning if an input or output has no state, or its state does not exist, in the editor and in the log
+* (IggePop) the last 10 versions of a chart are kept when it is saved, and can be restored in the properties of the chart
+* (IggePop) the explanations in the editor are behind an ⓘ icon (on hover, click or tap), so the properties are more compact
+* (IggePop) fixed: saving merged the chart with the stored one, so deleted states, transitions or variables and switched off options could remain
 
 Older changes: [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
 ## License
 MIT License
 
-Copyright (c) 2026 Igge <mail@igge.org>
+Copyright (c) 2026 IggePop <mail@igge.org>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

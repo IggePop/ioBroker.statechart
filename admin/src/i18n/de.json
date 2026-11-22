@@ -1,5 +1,4 @@
 {
-    "State Machine": "Zustandsmaschine",
     "Charts": "Charts",
     "New chart": "Neues Chart",
     "Delete chart": "Chart löschen",
@@ -37,7 +36,6 @@
     "initialHelp": "z.B. 0, true oder \"Text\"",
     "State ID": "Datenpunkt-ID",
     "Select state": "Datenpunkt auswählen",
-    "Add variable": "Variable hinzufügen",
     "Unknown variable \"%s\"": "Unbekannte Variable \"%s\"",
     "%s() needs a variable of the chart as first argument": "%s() braucht eine Variable des Charts als erstes Argument",
     "Unknown event \"%s\", use the name of an input": "Unbekanntes Event \"%s\", verwende den Namen eines Eingangs",

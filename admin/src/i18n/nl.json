@@ -1,5 +1,4 @@
 {
-    "State Machine": "Staatsmachine",
     "Charts": "Grafieken",
     "New chart": "Nieuwe grafiek",
     "Delete chart": "Diagram verwijderen",
@@ -37,7 +36,6 @@
     "initialHelp": "bijv. 0, waar of \"tekst\"",
     "State ID": "Staats-ID",
     "Select state": "Selecteer staat",
-    "Add variable": "Variabele toevoegen",
     "Unknown variable \"%s\"": "Onbekende variabele \"%s\"",
     "%s() needs a variable of the chart as first argument": "%s() heeft een variabele van het diagram nodig als eerste argument",
     "Unknown event \"%s\", use the name of an input": "Onbekende gebeurtenis \"%s\", gebruik de naam van een invoer",

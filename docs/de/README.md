@@ -44,14 +44,14 @@ oben links die Live-Werte des laufenden Charts, rechts die Variablen.*
 
 ### Installation
 
-Den Adapter **Zustandsmaschine** im Admin im Reiter **Adapter** installieren und eine Instanz hinzufügen. Bis zur
+Den Adapter **Statechart** im Admin im Reiter **Adapter** installieren und eine Instanz hinzufügen. Bis zur
 1.0 kann sich das Format der Charts noch ändern.
 
 Voraussetzungen: Node.js 22 oder neuer, js-controller 6.0.11 oder neuer, Admin 7.6.20 oder neuer.
 
 ### Erste Schritte
 
-1. In der Seitenleiste des Admins **Zustandsmaschine** öffnen.
+1. In der Seitenleiste des Admins **Statechart** öffnen.
 2. Links in der Liste mit **+** ein Chart anlegen. Mit einer **Vorlage** beginnst du mit einem funktionierenden Beispiel
    (Licht mit Bewegungsmelder, Heizung mit Fensterkontakt, Alarmanlage, Waschmaschine fertig, Rollladen mit Automatik
    und Handbetrieb, Taster mit kurzem, langem und doppeltem Druck, Anwesenheit), oder du wählst ein leeres Chart.

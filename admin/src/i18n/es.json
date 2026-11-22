@@ -1,5 +1,4 @@
 {
-    "State Machine": "Máquina de estados",
     "Charts": "Gráficos",
     "New chart": "Nuevo gráfico",
     "Delete chart": "Eliminar gráfico",
@@ -37,7 +36,6 @@
     "initialHelp": "p.ej. 0, verdadero o \"texto\"",
     "State ID": "identificación estatal",
     "Select state": "Seleccionar estado",
-    "Add variable": "Agregar variable",
     "Unknown variable \"%s\"": "Variable desconocida \"%s\"",
     "%s() needs a variable of the chart as first argument": "%s() necesita una variable del gráfico como primer argumento",
     "Unknown event \"%s\", use the name of an input": "Evento desconocido \"%s\", use el nombre de una entrada",
