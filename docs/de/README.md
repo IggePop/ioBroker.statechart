@@ -44,8 +44,9 @@ oben links die Live-Werte des laufenden Charts, rechts die Variablen.*
 
 ### Installation
 
-Den Adapter **Statechart** im Admin im Reiter **Adapter** installieren und eine Instanz hinzufügen. Bis zur
-1.0 kann sich das Format der Charts noch ändern.
+Der Adapter ist im Beta-Repository (latest). Wähle es im Admin unter **Einstellungen** → **Repositories** aus,
+installiere dann den Adapter **Statechart** im Reiter **Adapter** und füge eine Instanz hinzu. Bis zur 1.0 kann sich
+das Format der Charts noch ändern.
 
 Voraussetzungen: Node.js 22 oder neuer, js-controller 6.0.11 oder neuer, Admin 7.6.20 oder neuer.
 

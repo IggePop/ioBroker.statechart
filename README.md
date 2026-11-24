@@ -52,8 +52,9 @@ of the running chart on the top left, the variables on the right.*
 
 ### Installation
 
-Install the adapter **Statechart** in the admin, tab **Adapters**, and add an instance. Until 1.0, the format of
-the charts may still change.
+The adapter is in the beta repository (latest). Select it in the admin under **Settings** → **Repositories**, then
+install the adapter **Statechart** in the tab **Adapters** and add an instance. Until 1.0, the format of the charts
+may still change.
 
 Requirements: Node.js 22 or newer, js-controller 6.0.11 or newer, admin 7.6.20 or newer.
 
