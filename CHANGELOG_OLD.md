@@ -1,4 +1,14 @@
 # Older changes
+## 0.5.0 (2026-11-15)
+* (IggePop) button "Show everything" in the toolbar: zooms and scrolls so that the whole chart is visible
+* (IggePop) button "Show the grid" in the toolbar: hides or shows the dots of the background
+* (IggePop) "Same width" and "Same height" in the menu for aligning: the selected elements get the size of the one selected first (after a selection with a rectangle: of the largest one)
+* (IggePop) the chart can also be paused and started with a button in the toolbar of the editor
+* (IggePop) active states are easier to see: thicker green border with a light green glow
+* (IggePop) fixed: on touch screens, the icons of problems, hints and comments showed their explanation only on a long press
+* (IggePop) fixed: the list of charts and the properties could be made so narrow that their buttons were cut off
+* (IggePop) fixed: with "Snap to the grid", the states did not snap onto the dots of the background, but between them
+
 ## 0.4.0 (2026-11-14)
 * (IggePop) states and transitions can be disabled: they are not executed, like commented out, and shown light gray
 * (IggePop) templates for new charts: light with motion detector, heating with window contact, alarm system

@@ -117,9 +117,10 @@ with, endorsed or sponsored by The MathWorks, Inc.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.7.2 (2026-11-24)
 * (IggePop) saving a chart in the editor without changing its logic, e.g. after moving states or editing comments, no longer restarts it in its initial state: it continues where it was, like after a restart of the adapter
 * (IggePop) the points to drag a new transition from only appear over a state, while it is selected or while a transition is dragged, and they are larger, like the handles to resize
+
 ### 0.7.1 (2026-11-22)
 * (IggePop) the adapter and its tab in the admin are called "Statechart" in all languages
 * (IggePop) fixed: a state of the adapter which could not be written, e.g. while it stops, caused an unhandled rejection
@@ -147,16 +148,6 @@ with, endorsed or sponsored by The MathWorks, Inc.
 ### 0.5.1 (2026-11-15)
 * (IggePop) documentation updated: active states, tooltips on tap, start and pause in the toolbar, the new layout functions
 * (IggePop) the types of ioBroker are a direct development dependency (finding W048 of the repository checker)
-
-### 0.5.0 (2026-11-15)
-* (IggePop) button "Show everything" in the toolbar: zooms and scrolls so that the whole chart is visible
-* (IggePop) button "Show the grid" in the toolbar: hides or shows the dots of the background
-* (IggePop) "Same width" and "Same height" in the menu for aligning: the selected elements get the size of the one selected first (after a selection with a rectangle: of the largest one)
-* (IggePop) the chart can also be paused and started with a button in the toolbar of the editor
-* (IggePop) active states are easier to see: thicker green border with a light green glow
-* (IggePop) fixed: on touch screens, the icons of problems, hints and comments showed their explanation only on a long press
-* (IggePop) fixed: the list of charts and the properties could be made so narrow that their buttons were cut off
-* (IggePop) fixed: with "Snap to the grid", the states did not snap onto the dots of the background, but between them
 
 Older changes: [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
