@@ -6,7 +6,7 @@
 // you need to create an adapter
 import * as utils from "@iobroker/adapter-core";
 import type { Chart } from "./lib/chart-model";
-import { ChartRuntime, getErrorOrigin } from "./lib/chart-runtime";
+import { ChartRuntime, getChartHash, getErrorOrigin } from "./lib/chart-runtime";
 import type { HistoryEntry, Location } from "./lib/chart-runtime";
 
 /** Maximum number of entries in the history of a chart (state charts.<chart>.history) */
@@ -741,10 +741,16 @@ class Statechart extends utils.Adapter {
         }
         this.chartQueue = this.chartQueue
             .then(async () => {
+                // saved in the editor with only positions, comments or colors changed: the chart continues where it
+                // was, like after a restart of the adapter (the stored state is the one of the real chart, also
+                // during a simulation)
+                const chart: Chart | undefined = obj?.type === "channel" ? obj.native?.chart : undefined;
+                const running = this.runtimes.get(chartId);
+                const sameLogic = !!chart && !!running && running.hash === getChartHash(chart);
                 // e.g. saved in the editor: a simulation ends, the new version starts
                 this.endSimulationTimer(chartId);
                 this.stopChart(chartId);
-                await this.startChart(chartId, obj);
+                await this.startChart(chartId, obj, sameLogic);
             })
             .catch(err => this.log.error(`Cannot restart chart ${chartId}: ${err.message}`));
     }

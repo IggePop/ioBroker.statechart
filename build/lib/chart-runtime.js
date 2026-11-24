@@ -59,6 +59,8 @@ const PERSISTED_VERSION = 1;
 function getChartHash(chart) {
   const logic = {
     initial: chart.initial,
+    // only if set, so the hash of other charts stays the same as before, and their stored state still fits
+    ...chart.parallel ? { parallel: true } : {},
     symbols: chart.symbols,
     // comments, notes and colors are only documentation
     states: chart.states.map(({ x: _x, y: _y, width: _w, height: _h, comment: _c, color: _co, ...state }) => state),

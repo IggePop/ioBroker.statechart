@@ -399,9 +399,10 @@ laufen mit ihrer Restzeit weiter. Ein Timer, der abgelaufen ist, während der Ad
 gleich nach dem Start. Wie nach jedem Start wacht das Chart dann einmal auf, so werden Änderungen der
 Eingänge während des Stopps bemerkt.
 
-Im Startzustand beginnt das Chart stattdessen, wenn es zwischendurch geändert wurde (Positionen im
-Editor zählen nicht), nach dem Speichern im Editor, nach dem Anhalten und wenn die Option **Zustand nach
-Neustart wiederherstellen** in den Chart-Eigenschaften ausgeschaltet ist. Variablen, die in
+Das gilt auch nach dem Speichern im Editor, wenn nur Positionen, Größen, Kommentare, Notizen oder Farben
+geändert wurden. Im Startzustand beginnt das Chart stattdessen, wenn seine Logik geändert wurde (Zustände,
+Übergänge, Variablen, Funktionsblöcke), nach dem Anhalten und wenn die Option **Zustand nach Neustart
+wiederherstellen** in den Chart-Eigenschaften ausgeschaltet ist. Variablen, die in
 Funktionsblöcken deklariert sind, werden nicht wiederhergestellt.
 
 ## Ausführung und Unterschiede zu anderen Statechart-Werkzeugen

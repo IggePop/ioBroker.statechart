@@ -118,6 +118,7 @@ with, endorsed or sponsored by The MathWorks, Inc.
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+* (IggePop) saving a chart in the editor without changing its logic, e.g. after moving states or editing comments, no longer restarts it in its initial state: it continues where it was, like after a restart of the adapter
 * (IggePop) the points to drag a new transition from only appear over a state, while it is selected or while a transition is dragged, and they are larger, like the handles to resize
 ### 0.7.1 (2026-11-22)
 * (IggePop) the adapter and its tab in the admin are called "Statechart" in all languages

@@ -549,7 +549,9 @@ describe("chart-runtime => temporal transitions and restoring after a restart", 
         documented.states[0].color = "#fde3cf";
         expect(getChartHash(documented)).to.equal(hash);
         documented.transitions[0].label = "motion";
-        expect(getChartHash(documented)).not.to.equal(hash);
+        expect(getChartHash(documented)).not.to.equal(hash);        // parallel top level states are a different machine
+        expect(getChartHash({ ...chart, parallel: true })).not.to.equal(hash);
+        expect(getChartHash({ ...chart, parallel: false })).to.equal(hash);
     });
 
     it("does not restore if it is not requested or switched off for the chart", async () => {

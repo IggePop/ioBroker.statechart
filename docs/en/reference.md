@@ -385,9 +385,10 @@ their remaining time. A timer which expired while the adapter was stopped is tak
 Like after every start, the chart then wakes up once, so changes of the inputs during the stop are
 noticed.
 
-The chart starts in its initial state instead if it was changed meanwhile (positions in the editor do not
-count), after saving it in the editor, after pausing it, and if the option **Restore the state after a
-restart** in the chart properties is switched off. Variables declared in function blocks are not restored.
+The same applies after saving the chart in the editor, if only positions, sizes, comments, notes or colors
+were changed. The chart starts in its initial state instead if its logic was changed (states, transitions,
+variables, function blocks), after pausing it, and if the option **Restore the state after a restart** in
+the chart properties is switched off. Variables declared in function blocks are not restored.
 
 ## Execution model and differences to other statechart tools
 

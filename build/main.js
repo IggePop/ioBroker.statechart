@@ -682,9 +682,12 @@ class Statechart extends utils.Adapter {
       return;
     }
     this.chartQueue = this.chartQueue.then(async () => {
+      const chart = obj?.type === "channel" ? obj.native?.chart : void 0;
+      const running = this.runtimes.get(chartId);
+      const sameLogic = !!chart && !!running && running.hash === (0, import_chart_runtime.getChartHash)(chart);
       this.endSimulationTimer(chartId);
       this.stopChart(chartId);
-      await this.startChart(chartId, obj);
+      await this.startChart(chartId, obj, sameLogic);
     }).catch((err) => this.log.error(`Cannot restart chart ${chartId}: ${err.message}`));
   }
   /**
